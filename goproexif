@@ -1,0 +1,38 @@
+#!/bin/zsh
+
+# $1 Source directory tree processed recursively
+# $2 Target directory (best on another physical disk for performance)
+# $3 copyright/author string
+
+
+source='.'
+target='.'
+copyright=''
+
+if [[ ! -z $1 ]]; then
+  source=$1
+fi
+
+if [[ ! -z $2 ]]; then
+  target=$2
+fi
+
+if [[ ! -z $3 ]]; then
+  copyright="-artist=$3 -author=$3 -xmp:copyright=$3"
+fi
+
+# For testing purposes
+
+if [[ $source = 'test' ]]; then
+  # Set output for testing
+  target='test/tmp/'
+  # Cleanup prior testing results
+  rm -r $target
+fi
+
+exiftool -r -o . '-filename<${CreateDate;DateFmt("%Y%m%d-%H%M%S")}_${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}_%f.%e' \
+ -m '-directory<'$target'${CreateDate;DateFmt("%Y-%m-%d")}' \
+ $copyright \
+ '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, Orientation: ${Orientation;}, ${Software;}, AutoRotation: ${AutoRotation;}, SceneCaptureType: ${SceneCaptureType;}, ProTune: ${ProTune;}, Sharpness: ${Sharpness;}, HDRSetting: ${HDRSetting;}, ProjectionType: ${ProjectionType;}, ExposureLockUsed: ${ExposureLockUsed;}, MeteringMode: ${MeteringMode;}, GainControl: ${GainControl;}, Contrast: ${Contrast;}, Saturation: ${Saturation;}, WhiteBalance: ${WhiteBalance;}, ImageStabilization: ${ElectronicImageStabilization;}' \
+ -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;s/HERO9 Black/GoPro_Hero9/g;s/HERO8 Black/GoPro_Hero8/g' \
+ $source
