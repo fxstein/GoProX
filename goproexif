@@ -4,6 +4,12 @@
 # $2 Target directory (best on another physical disk for performance)
 # $3 copyright/author string
 
+(
+echo "GoProExif"
+echo "Copyright © Oliver Ratzesberger 2021"
+echo "MIT License"
+echo "https://github.com/fxstein/GoProExif"
+echo ""
 
 source='.'
 target='.'
@@ -13,24 +19,33 @@ if [[ ! -z $1 ]]; then
   source=$1
 fi
 
+echo "Source: "$source
+
 if [[ ! -z $2 ]]; then
   target=$2
 fi
 
-if [[ ! -z $3 ]]; then
-  copyright="-artist=$3 -author=$3 -xmp:copyright=$3"
-fi
-
 # For testing purposes
-
 if [[ $source = 'test' ]]; then
   # Set output for testing
   target='test/tmp'
   # Cleanup prior testing results
+  echo "Removing prior test data..."
   rm -r $target
 fi
 
-exiftool -r -o $target'/nodate/'\
+echo "Target: "$target
+
+if [[ ! -z $3 ]]; then
+  copyright="-artist=$3 -author=$3 -xmp:copyright=$3"
+
+  echo "Copyright: "$copyright
+fi
+
+echo "Executing exiftool..."
+
+exiftool -r -o $target'/NODATE/'\
+ '-FileCreateDate<CreateDate'\
  '-filename<%f.%e'\
  '-filename<${CreateDate;DateFmt("%Y%m%d-%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
@@ -57,3 +72,6 @@ exiftool -r -o $target'/nodate/'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
  $source
+
+ echo "Finished processing"
+) 2>&1 | perl -ne 'print "[".localtime()."] $_"'
