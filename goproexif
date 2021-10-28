@@ -25,14 +25,35 @@ fi
 
 if [[ $source = 'test' ]]; then
   # Set output for testing
-  target='test/tmp/'
+  target='test/tmp'
   # Cleanup prior testing results
   rm -r $target
 fi
 
-exiftool -r -o . '-filename<${CreateDate;DateFmt("%Y%m%d-%H%M%S")}_${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}_%f.%e' \
- -m '-directory<'$target'${CreateDate;DateFmt("%Y-%m-%d")}' \
+exiftool -r -o $target'/nodate/'\
+ '-filename<%f.%e'\
+ '-filename<${CreateDate;DateFmt("%Y%m%d-%H%M%S")}_'\
+'${Model;s/\s/_/g;}_'\
+'${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+ '-directory<'$target'/${CreateDate;DateFmt("%Y-%m-%d")}'\
  $copyright \
- '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, Orientation: ${Orientation;}, ${Software;}, AutoRotation: ${AutoRotation;}, SceneCaptureType: ${SceneCaptureType;}, ProTune: ${ProTune;}, Sharpness: ${Sharpness;}, HDRSetting: ${HDRSetting;}, ProjectionType: ${ProjectionType;}, ExposureLockUsed: ${ExposureLockUsed;}, MeteringMode: ${MeteringMode;}, GainControl: ${GainControl;}, Contrast: ${Contrast;}, Saturation: ${Saturation;}, WhiteBalance: ${WhiteBalance;}, ImageStabilization: ${ElectronicImageStabilization;}' \
- -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;s/HERO9 Black/GoPro_Hero9/g;s/HERO8 Black/GoPro_Hero8/g' \
+ '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
+'${Software;}, '\
+'AutoRotation: ${AutoRotation;}, '\
+'Orientation: ${Orientation;}, '\
+'SceneCaptureType: ${SceneCaptureType;}, '\
+'ProTune: ${ProTune;}, '\
+'Sharpness: ${Sharpness;}, '\
+'ExposureLockUsed: ${ExposureLockUsed;}, '\
+'MeteringMode: ${MeteringMode;}, '\
+'GainControl: ${GainControl;}, '\
+'Contrast: ${Contrast;}, '\
+'Saturation: ${Saturation;}, '\
+'WhiteBalance: ${WhiteBalance;}, '\
+'HDRSetting: ${HDRSetting;}, '\
+'ProjectionType: ${ProjectionType;}, '\
+'ImageStabilization: ${ElectronicImageStabilization;}'\
+ -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+'s/HERO9 Black/GoPro_Hero9/g;'\
+'s/HERO8 Black/GoPro_Hero8/g'\
  $source
