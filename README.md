@@ -2,6 +2,8 @@
 ExifTool wrapper to process common Exif metadata from GoPro Media files for use
 in other Apps like Apple Photos.
 
+> This is currently early work in progress...
+
 Simple little zsh script developed for macOS to process GoPro media files from
 cameras like the Hero 8, Hero 9 and Hero 10 as well as the GoPro Max.
 
