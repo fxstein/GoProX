@@ -33,7 +33,8 @@ running number and a file extension.
 
 Here are some examples of GoPro Filenames:
 
-```GOPR0001.JPG
+```
+GOPR0001.JPG
 GH010008.MP4
 GX010408.MP4
 GS__3305.JPG
@@ -42,8 +43,11 @@ GS013331.360
 
 If you happen to leverage the GoPro+ Cloud it gets a lot weirder with things
 like
-```GPTempDownload.jpg
+
 ```
+GPTempDownload.jpg
+```
+
 for anything GoPro Quik touches and forwards to eg. Apple Photos.
 
 There are many problems with these filenames - many not unique to GoPro. First
@@ -64,7 +68,8 @@ allow you to sort and act on the filenames themselves.
 
 Lets take a look at the files names GoProExif creates:
 
-```20211010-090947_GoPro_Hero10_7678_GOPR0768.JPG
+```
+20211010-090947_GoPro_Hero10_7678_GOPR0768.JPG
 20160130-223238_GoPro_Max_6013_GS__1596.JPG
 20210615-110514_GoPro_Hero9_9650_GOPR1353.JPG
 20201231-054457_GoPro_Hero8_1659_GOPR0129.JPG
