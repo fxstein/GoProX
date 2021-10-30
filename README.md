@@ -1,6 +1,6 @@
 # GoProExif
 ExifTool wrapper to process common Exif metadata from GoPro Media files for use
-in other Apps like Apple Photos.
+in other macOS Apps like Apple Photos.
 
 > This is currently early work in progress...
 
@@ -8,8 +8,8 @@ Simple little zsh script developed for macOS to process GoPro media files from
 cameras like the Hero 8, Hero 9 and Hero 10 as well as the GoPro Max.
 
 It leverages the [exiftool](https://exiftool.org) by Phil Harvey to extract
-common GoPro metadata data in order to name and tag images and videos for
-further processing.
+common GoPro metadata in order to name and tag images and videos for further
+processing.
 
 Unfortunately many commonly used apps like Apple Photos ignore most of the
 important metadata, making it very hard for users to filter, sort or search for
@@ -33,21 +33,24 @@ running number and a file extension.
 
 Here are some examples of GoPro Filenames:
 
-`GOPR0001.JPG
+```GOPR0001.JPG
 GH010008.MP4
 GX010408.MP4
 GS__3305.JPG
-GS013331.360`
+GS013331.360
+```
 
 If you happen to leverage the GoPro+ Cloud it gets a lot weirder with things
-like `GPTempDownload.jpg` for anything GoPro Quik touches and forward to eg.
-Apple Photos.
+like
+```GPTempDownload.jpg
+```
+for anything GoPro Quik touches and forwards to eg. Apple Photos.
 
 There are many problems with these filenames - many not unique to GoPro. First
 of all they are very non descriptive. You might be able to deduct the camera
 model to some extend, but thats about it. No date/time in case that information
-gets lost somewhere a long the way. But also the fact that these names are
-created for a word where users ever only use a single camera at the same time.
+gets lost somewhere along the way. But also the fact that these names are
+created for a world where users ever only use a single camera at the same time.
 As all cameras start with 0001 for the first media and continuously count up,
 its only a question of time when you will run into naming conflicts with two or
 more cameras. That usually means one file from one camera will overwrite another
@@ -61,20 +64,21 @@ allow you to sort and act on the filenames themselves.
 
 Lets take a look at the files names GoProExif creates:
 
-`20211010-090947_GoPro_Hero10_7678_GOPR0768.JPG
+```20211010-090947_GoPro_Hero10_7678_GOPR0768.JPG
 20160130-223238_GoPro_Max_6013_GS__1596.JPG
 20210615-110514_GoPro_Hero9_9650_GOPR1353.JPG
 20201231-054457_GoPro_Hero8_1659_GOPR0129.JPG
 20210731-003746_GoPro_Hero9_4139_GH013340.MP4
-20211011-072108_GoPro_Max_6013_GS012830.360`
+20211011-072108_GoPro_Max_6013_GS012830.360
+```
 
 The first 8 digits are the original date when the photo was taken, followed by 6
-digits of the time, followed by the model of the camera. the for digits after
-that are the last for digits of the cameras serial number - to allow you to find
-all the media from a particular camera. Especially important if you find out
-after the fact that a setting was wrong in one of your cameras (Like when you
-find a 2016 date for GoPro Max media). Finally the original filename and
-extension is added.
+digits of the time, followed by the model of the camera. The for digits after
+that are the last four digits of the cameras serial number - to allow you to
+find all the media from a particular camera. Especially important if you find
+out after the fact that a setting was wrong in one of your cameras (Like when
+you find a 2016 date for GoPro Max media). Finally the original filename and
+extension are being added.
 
 Right there is a wealth of information that helps with a lot of issues and even
 software bugs in the likes of Apple Photos that for example messes up the date &
@@ -94,18 +98,18 @@ information available inside the Exif metadata that macOS or Apple Photos keep
 intact but ignore and not even display, unless you use Preview on a particular
 file to inspect the metadata.
 
-Apple photos really only gives you Title, Caption and Tags to work with to store
+Apple Photos really only gives you Title, Caption and Tags to work with to store
 additional information aside from the most basic metadata.
 
 This is where GoProExif performs a little metadata shuffle to make at least some
 of the attributes searchable from within Apple Photos.
 
 Several of the low cardinality Exif fields are getting converted to a list of
-tags. That list Apple Photo converts to its own tags when importing the media.
+tags. That list Apple Photos converts to its own tags when importing the media.
 
 Here is a list of tags that are being created by GoProExif:
 
-`CameraModel_4digitSN
+```CameraModel_4digitSN
 Orientation
 AutoRotation
 SceneCaptureType
@@ -120,14 +124,14 @@ Contrast
 Saturation
 WhiteBalance
 ImageStabilization
-`
+```
 
 These tags can be used inside of Apple Photos for various tasks, most
 importantly to create Smart Albums that key off one or more of them.
 
 ### Copyright information
 
-As you will capture more and more media with multiple GoPro cameras, its is
+As you will capture more and more media with multiple GoPro cameras, it is
 always a good idea to set the Artist/Author/Copyright fields in Exif.
 That way you keep a record of the files you have created.
 
@@ -149,7 +153,7 @@ it. The output will always be the date folder hierarchy at the destination
 folder.
 
 When re-run, existing target files are skipped but logged in the error log. That
-way are large or incremental processing job can be restarted as often as you
+way large or incremental processing job can be restarted as often as you
 like. This comes with some processing overhead for existing files but is
 generally very fast.
 
