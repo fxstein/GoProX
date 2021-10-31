@@ -29,6 +29,7 @@ fi
 if [[ $source = 'test' ]]; then
   # Set output for testing
   target='test/tmp'
+  
   # Cleanup prior testing results
   echo "Removing prior test data..."
   rm -r $target
@@ -47,7 +48,7 @@ echo "Executing exiftool..."
 exiftool -r -o $target'/NODATE/'\
  '-FileCreateDate<CreateDate'\
  '-filename<%f.%e'\
- '-filename<${CreateDate;DateFmt("%Y%m%d-%H%M%S")}_'\
+ '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
  '-directory<'$target'/${CreateDate;DateFmt("%Y-%m-%d")}'\
