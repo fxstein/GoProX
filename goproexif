@@ -1,49 +1,151 @@
 #!/bin/zsh
 
-# $1 Source directory tree processed recursively
-# $2 Target directory (best on another physical disk for performance)
-# $3 copyright/author string
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2021 by Oliver Ratzesberger
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
+__author__='Oliver Ratzesberger <https://github.com/fxstein>'
+__copyright__='Copyright (C) 2021 Oliver Ratzesberger'
+__license__='MIT'
+__version__='0.1dev'
+__github__='https://github.com/fxstein/GoProExif'
+__this__=$(basename $0)
+
+banner="$__this__ v$__version__
+$__copyright__
+License: $__license__
+$__github__
+"
+
+help_text="This is the help text ..."
+
+# Various defaults
+default_config="~/.goproexif"
+default_source="."
+default_target="."
+default_copyright=""
+default_timeformat='%Y-%m-%d %H:%M:%S'
+
+timestamp_pre='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
+timestamp_post='] ", localtime'"'"
+default_output='tee'
+
+# Initializing...
+config=$default_config
+source=$default_source
+target=$default_target
+copyright=$default_copyright
+output=$default_output
+test=false
+
+# Parse options
+declare -A opts
+zparseopts -D -E -F -A opts - \
+            h -help \
+            s: -source: \
+            t: -target: \
+            c: -copyright: \
+            i -import \
+            p -process \
+            -setup \
+            -config: \
+            -time:: \
+            -test \
+	          || exit 1
+
+# remove first -- or -
+end_opts=$@[(i)(--|-)]
+set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
+
+#debug printf 'flag %s: %s\n' "${(kv@)opts}"
+#debug echo "argv: $@"
+
+for key val in "${(kv@)opts}"; do
+  case $key in
+    --config)
+      config=$val
+    ;;
+    -c|--copyright)
+      copyright="-artist=$val -author=$val -xmp:copyright=$val"
+    ;;
+    -h|--help)
+      echo $banner
+      echo $help_text
+      exit 1
+    ;;
+    -i|--import)
+      # Perform import tasks
+    ;;
+    -p|--process)
+      # Perform process tasks
+    ;;
+    --setup)
+      # Perform setup tasks
+    ;;
+    -s|--source)
+      source=$val
+    ;;
+    -t|--target)
+      target=$val
+    ;;
+    --test)
+      test=true
+    ;;
+    --time)
+      if [[ ! -z $val ]]; then
+        timeformat=$val
+      else
+        timeformat=$default_timeformat
+      fi
+      output=$timestamp_pre$timeformat$timestamp_post
+    ;;
+  esac
+done
+
+# so we can timestamp the output
 (
-echo "GoProExif"
-echo "Copyright © Oliver Ratzesberger 2021"
-echo "MIT License"
-echo "https://github.com/fxstein/GoProExif"
-echo ""
+echo $banner
 
-source='.'
-target='.'
-copyright=''
-
-if [[ ! -z $1 ]]; then
-  source=$1
+# only works if the exiftool is installed
+if (( ${+commands[exiftool]} )); then
+    which exiftool && exiftool -ver
+else
+    echo "Please install exiftool first, run:"
+    echo "brew install exiftool"
+    exit 1
 fi
 
 echo "Source: "$source
+echo "Target: "$target
+echo "Copyright: "$copyright
 
-if [[ ! -z $2 ]]; then
-  target=$2
-fi
-
-# For testing purposes
-if [[ $source = 'test' ]]; then
-  # Set output for testing
-  target='test/tmp'
-  
+if [ "$test" = true ]; then
   # Cleanup prior testing results
   echo "Removing prior test data..."
+  # TODO: very dangerous...
   rm -r $target
 fi
 
-echo "Target: "$target
-
-if [[ ! -z $3 ]]; then
-  copyright="-artist=$3 -author=$3 -xmp:copyright=$3"
-
-  echo "Copyright: "$copyright
-fi
-
-echo "Executing exiftool..."
+# exit 1
 
 exiftool -r -o $target'/NODATE/'\
  '-FileCreateDate<CreateDate'\
@@ -51,7 +153,7 @@ exiftool -r -o $target'/NODATE/'\
  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
- '-directory<'$target'/${CreateDate;DateFmt("%Y-%m-%d")}'\
+ '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
  $copyright \
  '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
 '${Software;}, '\
@@ -74,5 +176,5 @@ exiftool -r -o $target'/NODATE/'\
 's/HERO8 Black/GoPro_Hero8/g'\
  $source
 
- echo "Finished processing"
-) 2>&1 | perl -ne 'print "[".localtime()."] $_"'
+ echo "Finished exiftool processing"
+) 2>&1 | eval ${output}
