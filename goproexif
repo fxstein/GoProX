@@ -26,7 +26,7 @@
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2021 Oliver Ratzesberger'
 __license__='MIT'
-__version__='0.1dev'
+__version__='0.2dev'
 __github__='https://github.com/fxstein/GoProExif'
 __this__=$(basename $0)
 
@@ -80,7 +80,6 @@ function _debug()
 
 function _help()
 {
-  echo $BANNER
   echo $HELP_TEXT
 }
 
@@ -96,16 +95,22 @@ function _import_media()
   echo "Target: "$target
 
   exiftool -r -o $target'/NODATE/'\
- '-FileCreateDate<CreateDate'\
- '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
+  '-FileCreateDate<CreateDate'\
+  '-filename<NODATE_NOMODEL_NOSERIAL_%f.%e'\
+  '-filename<NODATE_NOMODEL_'\
+'${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+  '-filename<NODATE_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
- '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
- --ext lrv --ext thm --ext .\
- -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
+'${Model;s/\s/_/g;}_'\
+'${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
+  --ext lrv --ext thm --ext .\
+  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
- $source
+  $source
 
   echo "Finished media import"
 }
@@ -118,9 +123,10 @@ function _process_media()
   echo "Copyright: "$copyright
 
   exiftool -r -o $target'/NODATE/'\
- '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
- $copyright \
- '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
+  '-FileCreateDate<CreateDate'\
+  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
+  $copyright \
+  '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
 '${Software;}, '\
 'AutoRotation: ${AutoRotation;}, '\
 'Orientation: ${Orientation;}, '\
@@ -136,10 +142,10 @@ function _process_media()
 'HDRSetting: ${HDRSetting;}, '\
 'ProjectionType: ${ProjectionType;}, '\
 'ImageStabilization: ${ElectronicImageStabilization;}'\
- -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
- $source
+  $source
 
   echo "Finished media processing"
 }
@@ -202,6 +208,8 @@ for key val in "${(kv@)opts}"; do
     ;;
     --test)
       test=true
+      # Also timestamp when testing --time output
+      output=$TIMESTAMP_PRE$DEFAULT_TIMEFORMAT$TIMESTAMP_POST
     ;;
     --time)
       if [[ ! -z $val ]]; then
@@ -214,37 +222,17 @@ for key val in "${(kv@)opts}"; do
   esac
 done
 
- printf 'flag %s: %s\n' "${(kv@)opts}"
- echo "argv: $@"
-
- if [ "$test" = true ]; then
-   echo "Removing prior test data..."
-   rm -r "./test/imported"
-   rm -r "./test/processed"
-
-   echo "Setting up test structure..."
-   mkdir "./test/imported"
-   mkdir "./test/processed"
-
-   source="./test/originals"
-   target="./test/imported"
-   _import_media
-   source="./test/imported"
-   target="./test/processed"
-   _process_media
-   exit 0
- fi
-
- if [ -z $target ]; then
-   # Empty Target
-   echo "Missing target."
-   _help
-   exit 1
- fi
-
 # so we can timestamp the output
 (
 echo $BANNER
+
+if [ -z $target ] && [ "$test" != true ]; then
+  # Empty Target
+  echo "Missing target."
+  echo "Specifying target via -t: or --target: is mandatory.\n"
+  _help
+  exit 1
+fi
 
 # only works if the exiftool is installed
 if (( ${+commands[exiftool]} )); then
@@ -258,6 +246,28 @@ fi
 if [ "$setup" = true ]; then
   # Setup system...
   _setup
+  exit 0
+fi
+
+if [ "$test" = true ]; then
+  echo "Removing prior test data..."
+  rm -r "./test/imported"
+  rm -r "./test/processed"
+
+  echo "Setting up test structure..."
+  mkdir "./test/imported"
+  mkdir "./test/processed"
+
+  source="./test/originals"
+  target="./test/imported"
+  _import_media
+
+  testcopy="This is a Test Copyright"
+  copyright="-artist=$testcopy -author=$testcopy -xmp:copyright=$testcopy"
+
+  source="./test/imported"
+  target="./test/processed"
+  _process_media
   exit 0
 fi
 
