@@ -30,129 +30,94 @@ __version__='0.1dev'
 __github__='https://github.com/fxstein/GoProExif'
 __this__=$(basename $0)
 
-banner="$__this__ v$__version__
+readonly BANNER="$__this__ v$__version__
 $__copyright__
 License: $__license__
 $__github__
 "
-
-help_text="This is the help text ..."
+readonly HELP_TEXT="Available Options:
+-h --help
+-s: --source:
+-t: --target:
+-c: --copyright:
+-i --import
+-p --process
+--config:
+--debug
+--setup
+--time::
+--test
+"
 
 # Various defaults
-default_config="~/.goproexif"
-default_source="."
-default_target="."
-default_copyright=""
-default_timeformat='%Y-%m-%d %H:%M:%S'
+readonly DEFAULT_CONFIG="~/.goproexif"
+readonly DEFAULT_SOURCE="."
+readonly DEFAULT_TARGET=""
+readonly DEFAULT_COPYRIGHT=""
+readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
 
-timestamp_pre='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
-timestamp_post='] ", localtime'"'"
-default_output='tee'
+readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
+readonly TIMESTAMP_POST='] ", localtime'"'"
+readonly DEFAULT_OUTPUT='tee'
 
 # Initializing...
-config=$default_config
-source=$default_source
-target=$default_target
-copyright=$default_copyright
-output=$default_output
+config=$DEFAULT_CONFIG
+source=$DEFAULT_SOURCE
+target=$DEFAULT_TARGET
+copyright=$DEFAULT_COPYRIGHT
+output=$DEFAULT_OUTPUT
 test=false
+setup=false
+debug=false
+import=false
+process=false
 
-# Parse options
-declare -A opts
-zparseopts -D -E -F -A opts - \
-            h -help \
-            s: -source: \
-            t: -target: \
-            c: -copyright: \
-            i -import \
-            p -process \
-            -setup \
-            -config: \
-            -time:: \
-            -test \
-	          || exit 1
+function _debug()
+{
+  # DOES NOT work on eg args listing
+  #[ "$debug" = true ] &&  $@
+}
 
-# remove first -- or -
-end_opts=$@[(i)(--|-)]
-set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
+function _help()
+{
+  echo $BANNER
+  echo $HELP_TEXT
+}
 
-#debug printf 'flag %s: %s\n' "${(kv@)opts}"
-#debug echo "argv: $@"
+function _setup()
+{
+  # TODO: Implement some form of default settings setup
+}
 
-for key val in "${(kv@)opts}"; do
-  case $key in
-    --config)
-      config=$val
-    ;;
-    -c|--copyright)
-      copyright="-artist=$val -author=$val -xmp:copyright=$val"
-    ;;
-    -h|--help)
-      echo $banner
-      echo $help_text
-      exit 1
-    ;;
-    -i|--import)
-      # Perform import tasks
-    ;;
-    -p|--process)
-      # Perform process tasks
-    ;;
-    --setup)
-      # Perform setup tasks
-    ;;
-    -s|--source)
-      source=$val
-    ;;
-    -t|--target)
-      target=$val
-    ;;
-    --test)
-      test=true
-    ;;
-    --time)
-      if [[ ! -z $val ]]; then
-        timeformat=$val
-      else
-        timeformat=$default_timeformat
-      fi
-      output=$timestamp_pre$timeformat$timestamp_post
-    ;;
-  esac
-done
+function _import_media()
+{
+  echo "Starting media import..."
+  echo "Source: "$source
+  echo "Target: "$target
 
-# so we can timestamp the output
-(
-echo $banner
-
-# only works if the exiftool is installed
-if (( ${+commands[exiftool]} )); then
-    which exiftool && exiftool -ver
-else
-    echo "Please install exiftool first, run:"
-    echo "brew install exiftool"
-    exit 1
-fi
-
-echo "Source: "$source
-echo "Target: "$target
-echo "Copyright: "$copyright
-
-if [ "$test" = true ]; then
-  # Cleanup prior testing results
-  echo "Removing prior test data..."
-  # TODO: very dangerous...
-  rm -r $target
-fi
-
-# exit 1
-
-exiftool -r -o $target'/NODATE/'\
+  exiftool -r -o $target'/NODATE/'\
  '-FileCreateDate<CreateDate'\
  '-filename<%f.%e'\
  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+ '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
+ -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+'s/HERO9 Black/GoPro_Hero9/g;'\
+'s/HERO8 Black/GoPro_Hero8/g'\
+ $source
+
+  echo "Finished media import"
+}
+
+function _process_media()
+{
+  echo "Starting media processing..."
+  echo "Source: "$source
+  echo "Target: "$target
+  echo "Copyright: "$copyright
+
+  exiftool -r -o $target'/NODATE/'\
  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
  $copyright \
  '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
@@ -176,5 +141,141 @@ exiftool -r -o $target'/NODATE/'\
 's/HERO8 Black/GoPro_Hero8/g'\
  $source
 
- echo "Finished exiftool processing"
+  echo "Finished media processing"
+}
+
+# Parse options
+declare -A opts
+zparseopts -D -E -F -A opts - \
+            h -help \
+            s: -source: \
+            t: -target: \
+            c: -copyright: \
+            i -import \
+            p -process \
+            -config: \
+            -debug \
+            -setup \
+            -time:: \
+            -test \
+	          || exit 1
+
+# remove first -- or -
+end_opts=$@[(i)(--|-)]
+set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
+
+for key val in "${(kv@)opts}"; do
+  case $key in
+    --config)
+      config=$val
+    ;;
+    -c|--copyright)
+      copyright="-artist=$val -author=$val -xmp:copyright=$val"
+    ;;
+    --debug)
+      # Turn on debug output
+      debug=true
+      # DEBUG output only works AFTER parameter processing has been completed
+      # For manual script wide override set the $debug variable to true
+    ;;
+    -h|--help)
+      _help
+      exit 1
+    ;;
+    -i|--import)
+      # Perform import tasks
+      import=true
+    ;;
+    -p|--process)
+      # Perform process tasks
+      process=true
+    ;;
+    --setup)
+      # Perform setup tasks
+      setup=true
+    ;;
+    -s|--source)
+      source=$val
+    ;;
+    -t|--target)
+      target=$val
+    ;;
+    --test)
+      test=true
+    ;;
+    --time)
+      if [[ ! -z $val ]]; then
+        timeformat=$val
+      else
+        timeformat=$DEFAULT_TIMEFORMAT
+      fi
+      output=$TIMESTAMP_PRE$timeformat$TIMESTAMP_POST
+    ;;
+  esac
+done
+
+ printf 'flag %s: %s\n' "${(kv@)opts}"
+ echo "argv: $@"
+
+ if [ "$test" = true ]; then
+   echo "Removing prior test data..."
+   rm -r "./test/imported"
+   rm -r "./test/processed"
+
+   echo "Setting up test structure..."
+   mkdir "./test/imported"
+   mkdir "./test/processed"
+
+   source="./test/originals"
+   target="./test/imported"
+   _import_media
+   source="./test/imported"
+   target="./test/processed"
+   _process_media
+   exit 0
+ fi
+
+ if [ -z $target ]; then
+   # Empty Target
+   echo "Missing target."
+   _help
+   exit 0
+ fi
+
+# so we can timestamp the output
+(
+echo $BANNER
+
+# only works if the exiftool is installed
+if (( ${+commands[exiftool]} )); then
+    which exiftool && exiftool -ver
+else
+    echo "Please install exiftool first, run:"
+    echo "brew install exiftool"
+    exit 1
+fi
+
+if [ "$setup" = true ]; then
+  # Setup system...
+  _setup
+  exit 0
+fi
+
+
+if [ "$test" = true ]; then
+  # Cleanup prior testing results
+  echo "Removing prior test data..."
+  # TODO: very dangerous... MUST be changed
+  rm -r $target
+fi
+
+exit 1
+
+# Execute exiftool transformation
+if [ "$import" = true ]; then
+  _import_media
+elif [ "$process" = true ]; then
+  _process_media
+fi
+
 ) 2>&1 | eval ${output}
