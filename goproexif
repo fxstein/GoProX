@@ -261,16 +261,6 @@ if [ "$setup" = true ]; then
   exit 0
 fi
 
-
-if [ "$test" = true ]; then
-  # Cleanup prior testing results
-  echo "Removing prior test data..."
-  # TODO: very dangerous... MUST be changed
-  rm -r $target
-fi
-
-exit 1
-
 # Execute exiftool transformation
 if [ "$import" = true ]; then
   _import_media
