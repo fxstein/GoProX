@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
-__copyright__='Copyright (C) 2021 Oliver Ratzesberger'
+__copyright__='Copyright (C) 2022 Oliver Ratzesberger'
 __license__='MIT'
 __version__='0.2dev'
 __github__='https://github.com/fxstein/GoProExif'
@@ -95,6 +95,7 @@ function _import_media()
   echo "Target: "$target
 
   exiftool -r -o $target'/NODATE/'\
+  '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<NODATE_NOMODEL_NOSERIAL_%f.%e'\
   '-filename<NODATE_NOMODEL_'\
@@ -123,6 +124,7 @@ function _process_media()
   echo "Copyright: "$copyright
 
   exiftool -r -o $target'/NODATE/'\
+  '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
   $copyright \
