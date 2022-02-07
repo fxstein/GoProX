@@ -97,15 +97,11 @@ function _import_media()
   exiftool -r -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
-  '-filename<NODATE_NOMODEL_NOSERIAL_%f.%e'\
-  '-filename<NODATE_NOMODEL_'\
-'${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
-  '-filename<NODATE_'\
-'${Model;s/\s/_/g;}_'\
-'${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+  '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
+  '-directory<'$target'/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
   --ext lrv --ext thm --ext .\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
@@ -126,6 +122,7 @@ function _process_media()
   exiftool -r -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
+  '-directory<'$target'/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
   $copyright \
   '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
