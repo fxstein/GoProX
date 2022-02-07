@@ -97,11 +97,11 @@ function _import_media()
 
   exiftool -r -o $target'/NODATE/'\
  '-FileCreateDate<CreateDate'\
- '-filename<%f.%e'\
  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
+ --ext lrv --ext thm --ext .\
  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
