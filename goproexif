@@ -239,7 +239,7 @@ done
    # Empty Target
    echo "Missing target."
    _help
-   exit 0
+   exit 1
  fi
 
 # so we can timestamp the output
