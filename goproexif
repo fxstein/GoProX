@@ -109,7 +109,7 @@ function _import_media()
   _info "Source: "$source
   _info "Target: "$target
 
-  exiftool -r -o $target'/NODATE/'\
+  exiftool -r -progress -q -q -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
@@ -135,7 +135,7 @@ function _process_media()
   _info "Target: "$target
   _info "Copyright: "$copyright
 
-  exiftool -r -o $target'/NODATE/'\
+  exiftool -r -progress -q -q -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-directory<'$target'/${FileCreateDate;DateFmt("%Y%m%d")}'\
