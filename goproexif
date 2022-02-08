@@ -50,7 +50,7 @@ readonly HELP_TEXT="Available Options:
 "
 
 # Various defaults
-readonly DEFAULT_CONFIG="~/.goproexif"
+readonly DEFAULT_CONFIG=~/.goproexif
 readonly DEFAULT_SOURCE="."
 readonly DEFAULT_TARGET=""
 readonly DEFAULT_COPYRIGHT=""
@@ -100,7 +100,29 @@ function _help()
 
 function _setup()
 {
-  # TODO: Implement some form of default settings setup
+  # check if file exists
+  if [[ -f "$config" ]]; then
+    _info "Existing $config file."
+    timestamp=`date +%s`
+    backup=$config.bak.$timestamp
+    _info "Creating backup: $backup"
+    mv $config $backup
+  fi
+  touch $config
+
+  if [ $? -ne 0 ]
+  then
+    _error "Unable to create config file: $config"
+    exit(1)
+  fi
+
+  _info "Target: "$target
+  _info "Copyright: "$copyright
+
+  _info "Writing config file: $config"
+  echo "target="$target>>$config
+  echo "copyright="$copyright>>$config
+  _info "Config saved as $config"
 }
 
 function _import_media()
