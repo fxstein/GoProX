@@ -116,12 +116,14 @@ function _setup()
     exit(1)
   fi
 
+  _info "Source: "$source
   _info "Target: "$target
   _info "Copyright: "$copyright
 
   _info "Writing config file: $config"
+  echo "source="$source>>$config
   echo "target="$target>>$config
-  echo "copyright="$copyright>>$config
+  echo "copyright=\""$copyright"\"">>$config
   _info "Config saved as $config"
 }
 
@@ -268,6 +270,11 @@ done
 echo $fg[green]$BANNER$reset_color
 
 # Check if we have a config file to work with
+if [[ -f "$config" ]]; then
+  _info "Loading config file: $config"
+  tail $config
+  source $config
+fi
 
 if [ -z $target ] && [ "$test" != true ]; then
   # Empty Target
