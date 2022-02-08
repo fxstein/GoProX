@@ -289,6 +289,16 @@ if [ "$test" = true ]; then
   source="./test/imported"
   target="./test/processed"
   _process_media
+
+  _info "Comparing test output..."
+  git diff --quiet ./test/ || {
+    # changes detected
+    _error "Test failed!"
+    echo $fg[red]
+    git diff --stat ./test/
+    exit 1
+  }
+  _info "Testing successful!"
   exit 0
 fi
 
