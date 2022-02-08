@@ -285,6 +285,7 @@ if [ -z $target ] && [ "$test" != true ]; then
 fi
 
 # only works if the exiftool is installed
+_info "Validating exiftool..."
 if (( ${+commands[exiftool]} )); then
     which exiftool && exiftool -ver -v
 else
@@ -300,6 +301,7 @@ if [ "$setup" = true ]; then
 fi
 
 if [ "$test" = true ]; then
+  _info "TESTING - Performing tests..."
   _info "Removing prior test data..."
   rm -r "./test/imported"
   rm -r "./test/processed"
@@ -327,7 +329,7 @@ if [ "$test" = true ]; then
     git diff --stat ./test/
     exit 1
   }
-  _info "Testing successful!"
+  _info "TESTING successful!"
   exit 0
 fi
 
