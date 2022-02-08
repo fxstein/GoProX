@@ -72,6 +72,21 @@ debug=false
 import=false
 process=false
 
+funtion _info()
+{
+  echo $fg[green]"Info: "$1 $2$reset_color
+}
+
+funtion _warning()
+{
+  echo $fg[yellow]"Warning: "$1 $2$reset_color
+}
+
+funtion _error()
+{
+  >&2 echo $fg[red]"Error: "$1 $2$reset_color
+}
+
 function _debug()
 {
   # DOES NOT work on eg args listing
@@ -90,9 +105,9 @@ function _setup()
 
 function _import_media()
 {
-  echo "Starting media import..."
-  echo "Source: "$source
-  echo "Target: "$target
+  _info "Starting media import..."
+  _info "Source: "$source
+  _info "Target: "$target
 
   exiftool -r -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
@@ -109,15 +124,16 @@ function _import_media()
 's/HERO8 Black/GoPro_Hero8/g'\
   $source
 
-  echo "Finished media import"
+  _info "Finished media import"
+
 }
 
 function _process_media()
 {
-  echo "Starting media processing..."
-  echo "Source: "$source
-  echo "Target: "$target
-  echo "Copyright: "$copyright
+  _info "Starting media processing..."
+  _info "Source: "$source
+  _info "Target: "$target
+  _info "Copyright: "$copyright
 
   exiftool -r -o $target'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
@@ -146,8 +162,12 @@ function _process_media()
 's/HERO8 Black/GoPro_Hero8/g'\
   $source
 
-  echo "Finished media processing"
+  _info "Finished media processing"
 }
+
+# Enable color output
+autoload colors
+colors
 
 # Parse options
 declare -A opts
@@ -223,12 +243,14 @@ done
 
 # so we can timestamp the output
 (
-echo $BANNER
+echo $fg[green]$BANNER$reset_color
+
+# Check if we have a config file to work with
 
 if [ -z $target ] && [ "$test" != true ]; then
   # Empty Target
-  echo "Missing target."
-  echo "Specifying target via -t: or --target: is mandatory.\n"
+  _error "ERROR: Missing target."
+  _warning "Specifying target via -t: or --target: is mandatory.\n"
   _help
   exit 1
 fi
@@ -237,8 +259,8 @@ fi
 if (( ${+commands[exiftool]} )); then
     which exiftool && exiftool -ver
 else
-    echo "Please install exiftool first, run:"
-    echo "brew install exiftool"
+    _error "ERROR: Please install exiftool first, run:"
+    _warning "brew install exiftool"
     exit 1
 fi
 
@@ -249,11 +271,11 @@ if [ "$setup" = true ]; then
 fi
 
 if [ "$test" = true ]; then
-  echo "Removing prior test data..."
+  _info "Removing prior test data..."
   rm -r "./test/imported"
   rm -r "./test/processed"
 
-  echo "Setting up test structure..."
+  _info "Setting up test structure..."
   mkdir "./test/imported"
   mkdir "./test/processed"
 
