@@ -71,6 +71,9 @@ setup=false
 debug=false
 import=false
 process=false
+sourceopt=""
+targetopt=""
+copyrightopt=""
 
 funtion _info()
 {
@@ -91,6 +94,7 @@ function _debug()
 {
   # DOES NOT work on eg args listing
   #[ "$debug" = true ] &&  $@
+  echo $fg[blue]"Debug: "$1 $2$reset_color
 }
 
 function _help()
@@ -122,26 +126,27 @@ function _setup()
 
   _info "Writing config file: $config"
   echo "source="$source>>$config
-  echo "target="$target>>$config
+  echo "target=\""$target"\"">>$config
   echo "copyright=\""$copyright"\"">>$config
   _info "Config saved as $config"
 }
 
 function _import_media()
 {
+  importdir=$target/imported
   _info "Starting media import..."
   _info "Source: "$source
-  _info "Target: "$target
+  _info "Target: "$importdir
 
-  exiftool -r -progress -q -q -o $target'/NODATE/'\
+  exiftool -r -progress -q -q -o $importdir'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
-  '-directory<'$target'/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'$importdir'/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'$importdir'/${CreateDate;DateFmt("%Y%m%d")}'\
   --ext lrv --ext thm --ext .\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
@@ -154,17 +159,23 @@ function _import_media()
 
 function _process_media()
 {
+  importdir=$target/imported
+  processdir=$target/processed
   _info "Starting media processing..."
-  _info "Source: "$source
-  _info "Target: "$target
-  _info "Copyright: "$copyright
+  _info "Source: "$importdir
+  _info "Target: "$processdir
 
-  exiftool -r -progress -q -q -o $target'/NODATE/'\
+  if [[ -v copyright ]]; then
+    _info "Copyright: "$copyright
+    copystring="-artist=$copyright -author=$copyright -xmp:copyright=$copyright"
+  fi
+
+  exiftool -r -progress -q -q -o $processdir'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
-  '-directory<'$target'/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'$target'/${CreateDate;DateFmt("%Y%m%d")}'\
-  $copyright \
+  '-directory<'$processdir'/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'$processdir'/${CreateDate;DateFmt("%Y%m%d")}'\
+  $copystring \
   '-IPTC:Keywords<${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
 '${Software;}, '\
 'AutoRotation: ${AutoRotation;}, '\
@@ -184,7 +195,7 @@ function _process_media()
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
-  $source
+  $importdir
 
   _info "Finished media processing"
 }
@@ -219,7 +230,8 @@ for key val in "${(kv@)opts}"; do
       config=$val
     ;;
     -c|--copyright)
-      copyright="-artist=$val -author=$val -xmp:copyright=$val"
+      copyrightopt=$val
+      #"-artist=$val -author=$val -xmp:copyright=$val"
     ;;
     --debug)
       # Turn on debug output
@@ -244,10 +256,10 @@ for key val in "${(kv@)opts}"; do
       setup=true
     ;;
     -s|--source)
-      source=$val
+      sourceopt=$val
     ;;
     -t|--target)
-      target=$val
+      targetopt=$val
     ;;
     --test)
       test=true
@@ -269,6 +281,7 @@ done
 (
 echo $fg[green]$BANNER$reset_color
 
+# Load config file first
 # Check if we have a config file to work with
 if [[ -f "$config" ]]; then
   _info "Loading config file: $config"
@@ -276,9 +289,31 @@ if [[ -f "$config" ]]; then
   source $config
 fi
 
+_debug "SourceOpt: $sourceopt"
+_debug "TargetOpt: $targetopt"
+_debug "CopyrightOpt: $copyrightopt"
+
+# Now override any parameters that were specified
+if [[ -n $sourceopt ]]; then
+  source=$sourceopt
+fi
+
+if [[ -n $targetopt ]]; then
+  target=$targetopt
+fi
+
+if [[ -n $copyrightopt ]]; then
+  copyright=$copyrightopt
+fi
+
+_debug "Source: $source"
+_debug "Target: $target"
+_debug "Copyright: $copyright"
+
+# Target is a mandatory config setting or parameter
 if [ -z $target ] && [ "$test" != true ]; then
   # Empty Target
-  _error "ERROR: Missing target."
+  _error "ERROR: Missing target!"
   _warning "Specifying target via -t: or --target: is mandatory.\n"
   _help
   exit 1
@@ -295,7 +330,7 @@ else
 fi
 
 if [ "$setup" = true ]; then
-  # Setup system...
+  # Setup config file for current user
   _setup
   exit 0
 fi
@@ -311,14 +346,10 @@ if [ "$test" = true ]; then
   mkdir "./test/processed"
 
   source="./test/originals"
-  target="./test/imported"
+  target="./test"
   _import_media
 
-  testcopy="This is a Test Copyright"
-  copyright="-artist=$testcopy -author=$testcopy -xmp:copyright=$testcopy"
-
-  source="./test/imported"
-  target="./test/processed"
+  copyright="This is a Test Copyright"
   _process_media
 
   _info "Comparing test output..."
