@@ -257,7 +257,7 @@ fi
 
 # only works if the exiftool is installed
 if (( ${+commands[exiftool]} )); then
-    which exiftool && exiftool -ver
+    which exiftool && exiftool -ver -v
 else
     _error "ERROR: Please install exiftool first, run:"
     _warning "brew install exiftool"
