@@ -145,11 +145,13 @@ function _import_media()
   '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
+'${Model;s/\s/_/g;}_%f.%e'\
+  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
   '-directory<'"${importdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${importdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
-  --ext lrv --ext thm --ext .\
+  --ext lrv --ext thm --ext xmp --ext .\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
