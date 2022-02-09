@@ -375,7 +375,8 @@ fi
 # Execute exiftool transformation
 if [ "$import" = true ]; then
   _import_media
-elif [ "$process" = true ]; then
+fi
+if [ "$process" = true ]; then
   _process_media
 fi
 
