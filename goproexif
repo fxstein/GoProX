@@ -143,6 +143,7 @@ function _import_media()
   '-FileCreateDate<CreateDate'\
   '-filename<${FileName}'\
   '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
+  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
