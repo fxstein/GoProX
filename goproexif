@@ -141,6 +141,7 @@ function _import_media()
   exiftool -r -progress -q -q -o "${importdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
+  '-filename<${FileName}'\
   '-filename<${FileCreateDate;DateFmt("%Y%m%d%H%M%S")}_NODATA_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
@@ -180,6 +181,7 @@ function _process_media()
   exiftool -r -F -progress -q -q -sep ", " -o "${processdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
+  '-filename<P_${FileName}'\
   '-directory<'"${processdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${processdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
