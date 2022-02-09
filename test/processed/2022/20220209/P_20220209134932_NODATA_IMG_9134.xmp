@@ -1,0 +1,40 @@
+<x:xmpmeta xmlns:x='adobe:ns:meta/' x:xmptk='Image::ExifTool 12.30'>
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+ <rdf:Description rdf:about=''
+  xmlns:exif='http://ns.adobe.com/exif/1.0/'>
+  <exif:GPSAltitude>0.0</exif:GPSAltitude>
+  <exif:GPSAltitudeRef>0</exif:GPSAltitudeRef>
+  <exif:GPSHPositioningError>3.5571920000000001</exif:GPSHPositioningError>
+  <exif:GPSImgDirection>0.0</exif:GPSImgDirection>
+  <exif:GPSImgDirectionRef>T</exif:GPSImgDirectionRef>
+  <exif:GPSLatitude>45.453299999999999</exif:GPSLatitude>
+  <exif:GPSLatitudeRef>N</exif:GPSLatitudeRef>
+  <exif:GPSLongitude>12.358599999999999</exif:GPSLongitude>
+  <exif:GPSLongitudeRef>E</exif:GPSLongitudeRef>
+  <exif:GPSSpeed>0.0</exif:GPSSpeed>
+  <exif:GPSSpeedRef>K</exif:GPSSpeedRef>
+  <exif:GPSTimeStamp>2021-08-25T11:16:49Z</exif:GPSTimeStamp>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:pdf='http://ns.adobe.com/pdf/1.3/'>
+  <pdf:Author>This is a Test Copyright</pdf:Author>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:photoshop='http://ns.adobe.com/photoshop/1.0/'>
+  <photoshop:DateCreated>2021-08-25T13:16:49+02:00</photoshop:DateCreated>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:tiff='http://ns.adobe.com/tiff/1.0/'>
+  <tiff:Artist>This is a Test Copyright</tiff:Artist>
+  <tiff:Copyright>
+   <rdf:Alt>
+    <rdf:li xml:lang='x-default'>This is a Test Copyright</rdf:li>
+   </rdf:Alt>
+  </tiff:Copyright>
+ </rdf:Description>
+</rdf:RDF>
+</x:xmpmeta>
