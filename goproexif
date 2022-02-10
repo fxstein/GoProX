@@ -181,6 +181,7 @@ function _process_media()
 # 'ProjectionType: ${ProjectionType;}, '\
 # 'ImageStabilization: ${ElectronicImageStabilization;}'\
 
+# exiftool -r -F -progress -q -q -sep ", " -o "${processdir}"'/NODATE/'\
   exiftool -r -F -progress -q -q -sep ", " -o "${processdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
@@ -190,6 +191,14 @@ function _process_media()
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
+  -Quicktime:Make-=\
+  -Quicktime:Make='GoPro'\
+  -Quicktime:Model-=\
+  -Quicktime:Model='${Model;s/\s/_/g;}'\
+  '-Keywords<Camera: ${Model;s/\s/_/g;}, Software: ${Software;} '\
+  '-xmp:subject<Camera: ${Model;s/\s/_/g;}, Software: ${Software;} '\
+  '-IPTC:Keywords<Camera: ${Model;s/\s/_/g;} '\
+  '-IPTC:Keywords<Camera: ${Model;s/\s/_/g;}, Software: ${Software;} '\
   '-IPTC:Keywords<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}, '\
 'Software: ${Software;}, '\
 'AutoRotation: ${AutoRotation;}, '\
@@ -202,7 +211,7 @@ function _process_media()
 'Contrast: ${Contrast;}, '\
 'Saturation: ${Saturation;}, '\
 'WhiteBalance: ${WhiteBalance;}, '\
-'HDRSetting: ${HDRSetting;}, '\
+'HDRSetting: ${HDRSetting;} '\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
