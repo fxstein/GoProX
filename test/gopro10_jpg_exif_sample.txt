@@ -1,0 +1,125 @@
+ExifTool Version Number         : 12.30
+File Name                       : GOPR2320.JPG
+Directory                       : .
+File Size                       : 6.6 MiB
+File Modification Date/Time     : 2022:02:06 14:55:57-08:00
+File Access Date/Time           : 2022:02:07 01:39:47-08:00
+File Inode Change Date/Time     : 2022:02:07 01:38:14-08:00
+File Permissions                : -rwxrwxrwx
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+Exif Byte Order                 : Big-endian (Motorola, MM)
+Image Description               : DCIM\100GOPRO\GOPR2320.JPG
+Make                            : GoPro
+Orientation                     : Horizontal (normal)
+X Resolution                    : 72
+Y Resolution                    : 72
+Resolution Unit                 : inches
+Software                        : H21.01.01.10.00
+Modify Date                     : 2022:02:06 14:55:56
+Y Cb Cr Positioning             : Centered
+Exposure Time                   : 1/1737
+F Number                        : 2.5
+Exposure Program                : Program AE
+ISO                             : 100
+Exif Version                    : 0221
+Date/Time Original              : 2022:02:06 14:55:56
+Create Date                     : 2022:02:06 14:55:56
+Sub Sec Time                    : 1110
+Sub Sec Time Original           : 1110
+Sub Sec Time Digitized          : 1110
+Components Configuration        : Y, Cb, Cr, -
+Compressed Bits Per Pixel       : 0.004
+Shutter Speed Value             : 1/2048
+Aperture Value                  : 2.4
+Max Aperture Value              : 2.4
+Subject Distance                : 0 m
+Metering Mode                   : Average
+Light Source                    : Daylight
+Flash                           : No flash function
+Focal Length                    : 3.0 mm
+Warning                         : [minor] Unrecognized MakerNotes
+Flashpix Version                : ....
+Color Space                     : Unknown (0)
+Exif Image Width                : 5568
+Exif Image Height               : 4176
+Interoperability Index          : R98 - DCF basic file (sRGB)
+Interoperability Version        : 0100
+Exposure Index                  : 1.066730489
+Sensing Method                  : One-chip color area
+File Source                     : Digital Camera
+Scene Type                      : Directly photographed
+Custom Rendered                 : Normal
+Exposure Mode                   : Auto
+Digital Zoom Ratio              : 1
+Focal Length In 35mm Format     : 15 mm
+Scene Capture Type              : Landscape
+Gain Control                    : None
+Contrast                        : Normal
+Saturation                      : Normal
+Device Setting Description      : (Binary data 4 bytes, use -b option to extract)
+Subject Distance Range          : Unknown
+Serial Number                   : C3461324698034
+GPS Latitude Ref                : North
+GPS Longitude Ref               : West
+GPS Altitude Ref                : Above Sea Level
+GPS Time Stamp                  : 22:55:57
+GPS Date Stamp                  : 2022:02:06
+Compression                     : JPEG (old-style)
+Thumbnail Offset                : 44032
+Thumbnail Length                : 18488
+MPF Version                     : 0100
+Number Of Images                : 2
+MP Image Flags                  : Dependent child image
+MP Image Format                 : JPEG
+MP Image Type                   : Large Thumbnail (VGA equivalent)
+MP Image Length                 : 365110
+MP Image Start                  : 6606296
+Dependent Image 1 Entry Number  : 0
+Dependent Image 2 Entry Number  : 0
+Image UID List                  : (Binary data 66 bytes, use -b option to extract)
+Total Frames                    : 1
+Device Name                     : Global Settings
+Metadata Version                : 8.1.4
+Firmware Version                : H21.01.01.10.00
+Camera Serial Number            : C3461324698034
+Camera Model Name               : HERO10 Black
+Auto Rotation                   : Up
+Digital Zoom                    : No
+Pro Tune                        : On
+White Balance                   : AUTO
+Sharpness                       : MED
+Color Mode                      : GOPRO
+Auto ISO Max                    : 3200
+Auto ISO Min                    : 100
+Exposure Compensation           : 0.0
+Rate                            : 1
+Photo Resolution                : 20MP_N
+HDR Setting                     : S_HDR
+Image Width                     : 5568
+Image Height                    : 4176
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:2 (2 1)
+Aperture                        : 2.5
+Image Size                      : 5568x4176
+Megapixels                      : 23.3
+Scale Factor To 35 mm Equivalent: 5.0
+Shutter Speed                   : 1/1737
+Create Date                     : 2022:02:06 14:55:56.1110
+Date/Time Original              : 2022:02:06 14:55:56.1110
+Modify Date                     : 2022:02:06 14:55:56.1110
+Thumbnail Image                 : (Binary data 18488 bytes, use -b option to extract)
+GPS Altitude                    : 1115.8 m Above Sea Level
+GPS Date/Time                   : 2022:02:06 22:55:57Z
+GPS Latitude                    : 33 deg 15' 32.30" N
+GPS Longitude                   : 116 deg 35' 39.06" W
+Preview Image                   : (Binary data 365110 bytes, use -b option to extract)
+Circle Of Confusion             : 0.006 mm
+Field Of View                   : 100.4 deg
+Focal Length                    : 3.0 mm (35 mm equivalent: 15.0 mm)
+GPS Position                    : 33 deg 15' 32.30" N, 116 deg 35' 39.06" W
+Hyperfocal Distance             : 0.60 m
+Light Value                     : 13.4

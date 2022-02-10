@@ -1,0 +1,106 @@
+ExifTool Version Number         : 12.30
+File Name                       : GX012304.MP4
+Directory                       : .
+File Size                       : 8.8 MiB
+File Modification Date/Time     : 2022:02:06 14:34:28-08:00
+File Access Date/Time           : 2022:02:07 01:43:14-08:00
+File Inode Change Date/Time     : 2022:02:07 01:42:13-08:00
+File Permissions                : -rwxrwxrwx
+File Type                       : MP4
+File Type Extension             : mp4
+MIME Type                       : video/mp4
+Major Brand                     : MP4 v1 [ISO 14496-1:ch13]
+Minor Version                   : 2013.10.18
+Compatible Brands               : mp41
+Media Data Size                 : 9222472
+Media Data Offset               : 36
+Movie Header Version            : 0
+Create Date                     : 2022:02:06 14:34:27
+Modify Date                     : 2022:02:06 14:34:27
+Time Scale                      : 60000
+Duration                        : 1.07 s
+Preferred Rate                  : 1
+Preferred Volume                : 100.00%
+Preview Time                    : 0 s
+Preview Duration                : 0 s
+Poster Time                     : 0 s
+Selection Time                  : 0 s
+Selection Duration              : 0 s
+Current Time                    : 0 s
+Next Track ID                   : 5
+GPS Coordinates                 : 33 deg 15' 32.04" N, 116 deg 35' 53.52" W
+Lens Serial Number              : LKO1072402400033
+Camera Serial Number Hash       : 595795a8b9cd5e0e2007c4302722bdc7
+Metadata Version                : 8.1.4
+Firmware Version                : H21.01.01.10.00
+Camera Serial Number            : C3461324698034
+Camera Model Name               : HERO10 Black
+Auto Rotation                   : Up
+Digital Zoom                    : No
+Pro Tune                        : On
+White Balance                   : AUTO
+Sharpness                       : MED
+Color Mode                      : NATURAL
+Auto ISO Max                    : 1600
+Auto ISO Min                    : 100
+Exposure Compensation           : 0.0
+Rate                            :
+Field Of View                   : Unknown (N)
+Electronic Image Stabilization  : HS Boost
+Audio Setting                   : AUTO
+Device Name                     : Highlights
+Track Header Version            : 0
+Track Create Date               : 2022:02:06 14:34:27
+Track Modify Date               : 2022:02:06 14:34:27
+Track ID                        : 1
+Track Duration                  : 1.07 s
+Track Layer                     : 0
+Track Volume                    : 0.00%
+Image Width                     : 3840
+Image Height                    : 2160
+Graphics Mode                   : srcCopy
+Op Color                        : 0 0 0
+Compressor ID                   : hvc1
+Source Image Width              : 3840
+Source Image Height             : 2160
+X Resolution                    : 72
+Y Resolution                    : 72
+Compressor Name                 : GoPro H.265 encoder
+Bit Depth                       : 24
+Video Frame Rate                : 59.94
+Time Code                       : 3
+Balance                         : 0
+Audio Format                    : mp4a
+Audio Channels                  : 2
+Audio Bits Per Sample           : 24
+Audio Sample Rate               : 48000
+Text Font                       : Unknown (21)
+Text Face                       : Plain
+Text Size                       : 10
+Text Color                      : 0 0 0
+Background Color                : 65535 65535 65535
+Font Name                       : Helvetica
+Other Format                    : tmcd
+Matrix Structure                : 1 0 0 0 1 0 0 0 1
+Media Header Version            : 0
+Media Create Date               : 2022:02:06 14:34:27
+Media Modify Date               : 2022:02:06 14:34:27
+Media Time Scale                : 1000
+Media Duration                  : 1.07 s
+Handler Class                   : Media Handler
+Handler Type                    : NRT Metadata
+Handler Description             : GoPro MET
+Gen Media Version               : 0
+Gen Flags                       : 0 0 0
+Gen Graphics Mode               : srcCopy
+Gen Op Color                    : 0 0 0
+Gen Balance                     : 0
+Meta Format                     : gpmd
+Warning                         : [minor] The ExtractEmbedded option may find more tags in the media data
+Image Size                      : 3840x2160
+Megapixels                      : 8.3
+Avg Bitrate                     : 69.1 Mbps
+GPS Latitude                    : 33 deg 15' 32.04" N
+GPS Longitude                   : 116 deg 35' 53.52" W
+Rotation                        : 0
+GPS Position                    : 33 deg 15' 32.04" N, 116 deg 35' 53.52" W

@@ -1,0 +1,92 @@
+ExifTool Version Number         : 12.30
+File Name                       : IMG_9055.MOV
+Directory                       : .
+File Size                       : 70 MiB
+File Modification Date/Time     : 2021:10:03 22:51:20-07:00
+File Access Date/Time           : 2022:02:09 14:05:23-08:00
+File Inode Change Date/Time     : 2022:02:09 13:38:49-08:00
+File Permissions                : -rw-------
+File Type                       : MOV
+File Type Extension             : mov
+MIME Type                       : video/quicktime
+Major Brand                     : Apple QuickTime (.MOV/QT)
+Minor Version                   : 0.0.0
+Compatible Brands               : qt
+Media Data Size                 : 73784748
+Media Data Offset               : 36
+Movie Header Version            : 0
+Create Date                     : 2021:08:25 09:19:17
+Modify Date                     : 2021:08:25 09:19:29
+Time Scale                      : 600
+Duration                        : 11.13 s
+Preferred Rate                  : 1
+Preferred Volume                : 100.00%
+Preview Time                    : 0 s
+Preview Duration                : 0 s
+Poster Time                     : 0 s
+Selection Time                  : 0 s
+Selection Duration              : 0 s
+Current Time                    : 0 s
+Next Track ID                   : 6
+Track Header Version            : 0
+Track Create Date               : 2021:08:25 09:19:17
+Track Modify Date               : 2021:08:25 09:19:29
+Track ID                        : 1
+Track Duration                  : 11.13 s
+Track Layer                     : 0
+Track Volume                    : 0.00%
+Image Width                     : 3840
+Image Height                    : 2160
+Clean Aperture Dimensions       : 3840x2160
+Production Aperture Dimensions  : 3840x2160
+Encoded Pixels Dimensions       : 3840x2160
+Graphics Mode                   : ditherCopy
+Op Color                        : 32768 32768 32768
+Compressor ID                   : hvc1
+Source Image Width              : 3840
+Source Image Height             : 2160
+X Resolution                    : 72
+Y Resolution                    : 72
+Compressor Name                 : HEVC
+Bit Depth                       : 24
+Video Frame Rate                : 59.991
+Balance                         : 0
+Audio Format                    : mp4a
+Audio Channels                  : 2
+Audio Bits Per Sample           : 16
+Audio Sample Rate               : 44100
+Purchase File Format            : mp4a
+Warning                         : [minor] The ExtractEmbedded option may find more tags in the media data
+Matrix Structure                : 1 0 0 0 1 0 0 0 1
+Content Describes               : Track 1
+Media Header Version            : 0
+Media Create Date               : 2021:08:25 09:19:17
+Media Modify Date               : 2021:08:25 09:19:29
+Media Time Scale                : 600
+Media Duration                  : 11.13 s
+Media Language Code             : und
+Gen Media Version               : 0
+Gen Flags                       : 0 0 0
+Gen Graphics Mode               : ditherCopy
+Gen Op Color                    : 32768 32768 32768
+Gen Balance                     : 0
+Handler Class                   : Data Handler
+Handler Vendor ID               : Apple
+Handler Description             : Core Media Data Handler
+Meta Format                     : mebx
+Handler Type                    : Metadata Tags
+Location Accuracy Horizontal    : 106.286485
+GPS Coordinates                 : 45 deg 26' 52.44" N, 12 deg 20' 24.00" E, 3.517 m Above Sea Level
+Make                            : Apple
+Model                           : iPhone 12 Pro Max
+Software                        : 14.6
+Creation Date                   : 2021:08:25 11:19:17+02:00
+Image Size                      : 3840x2160
+Megapixels                      : 8.3
+Avg Bitrate                     : 53 Mbps
+GPS Altitude                    : 3.517 m
+GPS Altitude Ref                : Above Sea Level
+GPS Latitude                    : 45 deg 26' 52.44" N
+GPS Longitude                   : 12 deg 20' 24.00" E
+Rotation                        : 0
+GPS Position                    : 45 deg 26' 52.44" N, 12 deg 20' 24.00" E
