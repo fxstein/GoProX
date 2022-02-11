@@ -42,6 +42,7 @@ readonly HELP_TEXT="Available Options:
 -c: --copyright:
 -i --import
 -p --process
+-a --archive
 --config:
 --debug
 --setup
@@ -224,6 +225,32 @@ function _process_media()
   _info "Finished media processing"
 }
 
+
+function _archive_media()
+{
+  archivedir=$target/archive
+  _info "Starting media archive..."
+  _info "Source: "$source
+  _info "Target: "$archivedir
+
+  # Find first image file to get camera model and serial
+  firstmedia=$(find -E . -regex '.*\.(JPG|MP4|360)' | head -n 1)
+  _info "First Media: "$firstmedia
+
+  camera=$(exiftool -Model -s -s -s "${firstmedia}"\
+  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+'s/HERO9 Black/GoPro_Hero9/g;'\
+'s/HERO8 Black/GoPro_Hero8/g')
+
+  serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
+
+
+  _info "Camera: "$camera
+  _info "Serial: "$serial
+
+  _info "Finished media archive"
+}
+
 # Enable color output
 autoload colors
 colors
@@ -237,6 +264,7 @@ zparseopts -D -E -F -A opts - \
             c: -copyright: \
             i -import \
             p -process \
+            a -archive \
             -config: \
             -debug \
             -setup \
@@ -274,6 +302,10 @@ for key val in "${(kv@)opts}"; do
     -p|--process)
       # Perform process tasks
       process=true
+    ;;
+    -a|--archive)
+      # Perform archive tasks
+      archive=true
     ;;
     --setup)
       # Perform setup tasks
@@ -394,6 +426,9 @@ if [ "$import" = true ]; then
 fi
 if [ "$process" = true ]; then
   _process_media
+fi
+if [ "$archive" = true ]; then
+  _archive_media
 fi
 
 ) 2>&1 | eval ${output}
