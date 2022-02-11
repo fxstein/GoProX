@@ -237,16 +237,29 @@ function _archive_media()
   firstmedia=$(find -E . -regex '.*\.(JPG|MP4|360)' | head -n 1)
   _info "First Media: "$firstmedia
 
+  # Camera model name
   camera=$(exiftool -Model -s -s -s "${firstmedia}"\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g')
 
+  # Last 4 digits of serial number
   serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
-
+  timestamp=$(date +%Y%m%d%H%M%S)
 
   _info "Camera: "$camera
-  _info "Serial: "$serial
+  _info "Serial: "${serial:(-4)}
+  _info "Time: "$timestamp
+
+  archivename=${timestamp}_${camera}_${serial:(-4)}
+
+  _info "Archive: "$archivename
+
+  tar --totals -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
+    # Archive failed
+    _error "Archive creation failed!"
+    exit 1
+  }
 
   _info "Finished media archive"
 }
