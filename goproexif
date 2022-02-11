@@ -194,8 +194,8 @@ function _process_media()
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_${FileName}'\
-  '-directory<'"${processdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'"${processdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir}"'/${FileType}/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir}"'/${FileType}/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
