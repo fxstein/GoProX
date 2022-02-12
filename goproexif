@@ -288,9 +288,9 @@ function _clean_media()
     fi
   else
     _error "Cannot verify that ${source} is a GoPro storage device"
+    _error "Missing $source/MISC/version.txt"
     _error "Run options --archive and --clean together"
     exit 1
-
   fi
 
   _info "Finished cleanup tasks"
