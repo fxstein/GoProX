@@ -272,42 +272,26 @@ function _clean_media()
   _info "Cleaning Source Media..."
   _info "Source: "$source
 
-  # Find first image file to get camera model and serial
-  firstmedia=$(find -E . -regex '.*\.(JPG|MP4|360)' | head -n 1)
-  _info "First Media: "$firstmedia
-
-  # Camera model name
-  camera=$(exiftool -Model -s -s -s "${firstmedia}"\
-  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
-'s/HERO9 Black/GoPro_Hero9/g;'\
-'s/HERO8 Black/GoPro_Hero8/g')
-
-  # Last 4 digits of serial number
-  serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
-  timestamp=$(date +%Y%m%d%H%M%S)
-
-  _info "Camera: "$camera
-  _info "Serial: "${serial:(-4)}
-  _info "Time: "$timestamp
-
-  # Only proceed if we just finished archiving this media
-  if [ "$archive" = true ]; then
-    rm -rf $source/* || {
-      # Cleanup failed
-      _error "Cleaning ${source} failed!"
+  # Check if this is a GoPro storage card
+  if [[ -f "$source/MISC/version.txt" ]]; then
+    # Only proceed if we just finished archiving this media
+    if [ "$archive" = true ]; then
+      rm -rfv $source/DCIM $source/mdb* || {
+        # Cleanup failed
+        _error "Cleaning ${source} failed!"
+        exit 1
+      }
+    else
+      _error "Will not clean ${source} without prior archive"
+      _error "Run options --archive and --clean together"
       exit 1
-    }
+    fi
   else
-    _error "Will not clean ${source} without prior archive"
+    _error "Cannot verify that ${source} is a GoPro storage device"
     _error "Run options --archive and --clean together"
     exit 1
-  fi
 
-  tar --totals -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
-    # Archive failed
-    _error "Archive creation failed!"
-    exit 1
-  }
+  fi
 
   _info "Finished cleanup tasks"
 }
@@ -443,6 +427,7 @@ if [ -z $target ] && [ "$test" != true ]; then
   exit 1
 fi
 
+# Dependencies TODO: Move to dedicated function
 # only works if the exiftool is installed
 _info "Validating exiftool..."
 if (( ${+commands[exiftool]} )); then
@@ -450,6 +435,14 @@ if (( ${+commands[exiftool]} )); then
 else
     _error "ERROR: Please install exiftool first, run:"
     _warning "brew install exiftool"
+    exit 1
+fi
+_info "Validating jq..."
+if (( ${+commands[jq]} )); then
+    which jq && jq --version
+else
+    _error "ERROR: Please install jq first, run:"
+    _warning "brew install jq"
     exit 1
 fi
 
