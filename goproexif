@@ -336,13 +336,15 @@ function _firmware()
     _debug "Latest version: " ${latestversion}
 
     if [[ $latestversion > $version ]]; then
-      _info "New firmware available: ${version} >> ${latestversion}"
-      _info "Transferring newer firmware to ${source}"
+      _warning "New firmware available: ${version} >> ${latestversion}"
+      _warning "Transferring newer firmware to ${source}"
       unzip -u "${latestfirmware}"/UPDATE.zip -d "${source}/UPDATE" || {
         # Unzip failed
         _error "Unzip copy of firmware ${latestfirmware}/UPDATE.zip to ${source}/UPDATE failed!"
         exit 1
       }
+      _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
+
     else
       _info "Camera ${camera} has the latest firmware: ${latestversion}"
     fi
@@ -353,7 +355,7 @@ function _firmware()
     exit 1
   fi
 
-  _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
+  _info "Finished firmware check."
 }
 
 
