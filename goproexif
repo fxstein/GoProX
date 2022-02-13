@@ -47,6 +47,7 @@ readonly HELP_TEXT="Available Options:
 --config:
 --debug
 --setup
+--firmware
 --time::
 --test
 "
@@ -62,6 +63,10 @@ readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
 
+readonly GOPROEXIF=$(which ${__this__})
+readonly REALGOPROEXIF=$(readlink $GOPROEXIF)
+readonly GOPROEXIF_HOME=$(dirname $REALGOPROEXIF)
+
 # Initializing...
 config=$DEFAULT_CONFIG
 source=$DEFAULT_SOURCE
@@ -75,6 +80,7 @@ import=false
 process=false
 archive=false
 clean=false
+firmware=false
 sourceopt=""
 targetopt=""
 copyrightopt=""
@@ -289,13 +295,66 @@ function _clean_media()
   else
     _error "Cannot verify that ${source} is a GoPro storage device"
     _error "Missing $source/MISC/version.txt"
-    _error "Run options --archive and --clean together"
     exit 1
   fi
 
   _info "Finished cleanup tasks"
 }
 
+function _firmware()
+{
+  _info "Installing firmware upgrade..."
+  _info "Source: "$source
+
+  # Check if this is a GoPro storage card
+  if [[ -f "$source/MISC/version.txt" ]]; then
+
+    # Extract camera model and firmware version
+    # Due to some broken version.txt files for some models and firmware versions
+    # we have to apply a rather complicated looking fix: remove comma from the
+    # end of the second to last line in the file:
+    # sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt
+    # Otherwise we could simply cat
+    # camera=$(cat MISC/version.txt | jq '."camera type"')
+    # camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq '."camera type"')
+    camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq -r '."camera type"')
+    version=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq -r '."firmware version"')
+
+    _info "Camera detected: ${camera}"
+    _info "Existing firmware version: ${version}"
+
+    # Get the latest firmware for the device
+
+    _debug "GoProExif home: $GOPROEXIF_HOME"
+    firmwarebase="${GOPROEXIF_HOME}/firmware/${camera}"
+    _debug "Firmware base: $firmwarebase"
+
+    latestfirmware=(${firmwarebase}/*([-1]))
+    _debug "Latest firmware: " ${latestfirmware}
+
+    latestversion=(${latestfirmware:t})
+    _debug "Latest version: " ${latestversion}
+
+    if [[ $latestversion > $version ]]; then
+      _info "New firmware available: ${version} >> ${latestversion}"
+      _info "Transferring newer firmware to ${source}"
+      unzip -u "${latestfirmware}"/UPDATE.zip -d "${source}/UPDATE" || {
+        # Unzip failed
+        _error "Unzip copy of firmware ${latestfirmware}/UPDATE.zip to ${source}/UPDATE failed!"
+        exit 1
+      }
+    else
+      _info "Camera ${camera} has the latest firmware: ${latestversion}"
+    fi
+
+  else
+    _error "Cannot verify that ${source} is a GoPro storage device"
+    _error "Missing $source/MISC/version.txt"
+    exit 1
+  fi
+
+  _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
+}
 
 
 # Enable color output
@@ -316,6 +375,7 @@ zparseopts -D -E -F -A opts - \
             -config: \
             -debug \
             -setup \
+            -firmware \
             -time:: \
             -test \
 	          || exit 1
@@ -362,6 +422,10 @@ for key val in "${(kv@)opts}"; do
     --setup)
       # Perform setup tasks
       setup=true
+    ;;
+    --firmware)
+      # setup firmware upgrade
+    firmware=true
     ;;
     -s|--source)
       sourceopt=$val
@@ -481,18 +545,21 @@ if [ "$test" = true ]; then
   exit 0
 fi
 
-# Execute exiftool transformation
+# Execute in order: archive, import, process, clean, firmware
+if [ "$archive" = true ]; then
+  _archive_media
+fi
 if [ "$import" = true ]; then
   _import_media
 fi
 if [ "$process" = true ]; then
   _process_media
 fi
-if [ "$archive" = true ]; then
-  _archive_media
-fi
 if [ "$clean" = true ]; then
   _clean_media
+fi
+if [ "$firmware" = true ]; then
+  _firmware
 fi
 
 ) 2>&1 | eval ${output}
