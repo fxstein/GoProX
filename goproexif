@@ -206,8 +206,10 @@ function _process_media()
     _debug "exiftool time filter: ${timefilter}"
   else
     _info "Process dir ${processdir} is empty. Processing all files from ${importdir}"
-    timefilter=""
+    timefilter="1"
   fi
+
+  # set -x
 
 # The following keywords and tags are being created and added in order to
 # make our image files exif data accessible inside of Apple Photos and other
