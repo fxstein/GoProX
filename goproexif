@@ -179,11 +179,34 @@ function _process_media()
   _info "Source: "$importdir
   _info "Target: "$processdir
 
-  if [[ -v copyright ]]; then
+  if [[ -n $copyright ]]; then
     _info "Copyright: "$copyright
     artist="-artist="${copyright}
     author="-author="${copyright}
     xmpcopyright="-xmp:copyright="${copyright}
+  fi
+
+  # Only process files that have changed since we last ran
+  # TODO: Needs to be hardened for various edge cases
+  # Right now this will skip files if eg a single manual edit happens in the
+  # processed tree or a processing run gets aborted.
+
+  # Get the latest modification date in the processdir
+  # zsh -c 'zmodload zsh/stat; stat +mtime -- **/*(.om[1])'
+  # -if '${FileModifyDate;DateFmt("%s")} gt '"\"$(stat -f %m temp)"\"...
+  zmodload zsh/stat
+  lastprocess=$(stat +mtime -- ${processdir}/**/*(.om[1]))
+  _debug "Latest process timestamp: ${lastprocess}"
+
+  lastimport=$(stat +mtime -- ${importdir}/**/*(.om[1]))
+  _debug "Latest import timestamp: ${lastimport}"
+
+  if [[ -n $lastprocess ]]; then
+    timefilter='${FileModifyDate;DateFmt("%s")} gt '${lastprocess}
+    _debug "exiftool time filter: ${timefilter}"
+  else
+    _info "Process dir ${processdir} is empty. Processing all files from ${importdir}"
+    timefilter=""
   fi
 
 # The following keywords and tags are being created and added in order to
@@ -201,6 +224,7 @@ function _process_media()
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  -if4 "${timefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_${FileName}'\
