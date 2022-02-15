@@ -26,7 +26,7 @@
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2022 Oliver Ratzesberger'
 __license__='MIT'
-__version__='0.2dev'
+__version__='0.3dev'
 __github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
@@ -41,7 +41,7 @@ readonly HELP_TEXT="Available Options:
 -t: --target:
 -c: --copyright:
 -i --import
--p --process
+-p: --process:
 -a --archive
 --clean
 --config:
@@ -83,6 +83,7 @@ clean=false
 firmware=false
 sourceopt=""
 targetopt=""
+processopt=""
 copyrightopt=""
 
 funtion _info()
@@ -178,6 +179,7 @@ function _process_media()
   _info "Starting media processing..."
   _info "Source: "$importdir
   _info "Target: "$processdir
+  _info "Process option: "$processopt
 
   if [[ -n $copyright ]]; then
     _info "Copyright: "$copyright
@@ -194,14 +196,16 @@ function _process_media()
   # Get the latest modification date in the processdir
   # zsh -c 'zmodload zsh/stat; stat +mtime -- **/*(.om[1])'
   # -if '${FileModifyDate;DateFmt("%s")} gt '"\"$(stat -f %m temp)"\"...
-  zmodload zsh/stat
   lastprocess=$(stat +mtime -- ${processdir}/**/*(.om[1]))
   _debug "Latest process timestamp: ${lastprocess}"
 
   lastimport=$(stat +mtime -- ${importdir}/**/*(.om[1]))
   _debug "Latest import timestamp: ${lastimport}"
 
-  if [[ -n $lastprocess ]]; then
+  if [[ $processopt == "all" ]]; then
+    _info "Requested processing: ${processopt}. Processing all files from ${importdir}"
+    timefilter="1"
+  elif [[ -n $lastprocess ]]; then
     timefilter='${FileModifyDate;DateFmt("%s")} gt '${lastprocess}
     _debug "exiftool time filter: ${timefilter}"
   else
@@ -389,6 +393,10 @@ function _firmware()
 autoload colors
 colors
 
+# enable built in stat
+zmodload zsh/stat
+
+
 # Parse options
 declare -A opts
 zparseopts -D -E -F -A opts - \
@@ -397,7 +405,7 @@ zparseopts -D -E -F -A opts - \
             t: -target: \
             c: -copyright: \
             i -import \
-            p -process \
+            p: -process: \
             a -archive \
             -clean \
             -config: \
@@ -438,6 +446,10 @@ for key val in "${(kv@)opts}"; do
     -p|--process)
       # Perform process tasks
       process=true
+      # support for processing overrides
+      # optional paremeter: all ((re)process all files), nd (n days of past
+      # imports from now - eg 7d: process past 7 days of imported media)
+      processopt=$val
     ;;
     -a|--archive)
       # Perform archive tasks
