@@ -38,7 +38,7 @@ $__github__
 readonly HELP_TEXT="Available Options:
 -h --help
 -s: --source:
--t: --target:
+-l: --library:
 -c: --copyright:
 -i --import
 -p: --process:[all|val[ymwdHMS]]
@@ -55,7 +55,7 @@ readonly HELP_TEXT="Available Options:
 # Various defaults
 readonly DEFAULT_CONFIG=~/.goprox
 readonly DEFAULT_SOURCE="."
-readonly DEFAULT_TARGET=""
+readonly DEFAULT_LIBRARY=""
 readonly DEFAULT_COPYRIGHT=""
 readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
 
@@ -70,7 +70,7 @@ readonly GOPROX_HOME=$(dirname $REALGOPROX)
 # Initializing...
 config=$DEFAULT_CONFIG
 source=$DEFAULT_SOURCE
-target=$DEFAULT_TARGET
+library=$DEFAULT_LIBRARY
 copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 test=false
@@ -82,7 +82,7 @@ archive=false
 clean=false
 firmware=false
 sourceopt=""
-targetopt=""
+libraryopt=""
 processopt=""
 copyrightopt=""
 
@@ -132,22 +132,22 @@ function _setup()
   fi
 
   _info "Source: "$source
-  _info "Target: "$target
+  _info "Library: "$library
   _info "Copyright: "$copyright
 
   _info "Writing config file: $config"
   echo "source="$source>>$config
-  echo "target=\""$target"\"">>$config
+  echo "library=\""$library"\"">>$config
   echo "copyright=\""$copyright"\"">>$config
   _info "Config saved as $config"
 }
 
 function _import_media()
 {
-  importdir=$target/imported
+  importdir=$library/imported
   _info "Starting media import..."
   _info "Source: "$source
-  _info "Target: "$importdir
+  _info "Library: "$importdir
 
   exiftool -r -progress -q -q -o "${importdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
@@ -174,11 +174,11 @@ function _import_media()
 
 function _process_media()
 {
-  importdir=$target/imported
-  processdir=$target/processed
+  importdir=$library/imported
+  processdir=$library/processed
   _info "Starting media processing..."
   _info "Source: "$importdir
-  _info "Target: "$processdir
+  _info "Library: "$processdir
   _info "Process option: "$processopt
 
   if [[ -n $copyright ]]; then
@@ -278,10 +278,10 @@ function _process_media()
 
 function _archive_media()
 {
-  archivedir=$target/archive
+  archivedir=$library/archive
   _info "Starting media archive..."
   _info "Source: "$source
-  _info "Target: "$archivedir
+  _info "Library: "$archivedir
 
   # Find first image file to get camera model and serial
   firstmedia=$(find -E . -regex '.*\.(JPG|MP4|360)' | head -n 1)
@@ -413,7 +413,7 @@ declare -A opts
 zparseopts -D -E -F -A opts - \
             h -help \
             s: -source: \
-            t: -target: \
+            t: -library: \
             c: -copyright: \
             i -import \
             p: -process: \
@@ -481,8 +481,8 @@ for key val in "${(kv@)opts}"; do
     -s|--source)
       sourceopt=$val
     ;;
-    -t|--target)
-      targetopt=$val
+    -l|--library)
+      libraryopt=$val
     ;;
     --test)
       test=true
@@ -513,7 +513,7 @@ if [[ -f "$config" ]]; then
 fi
 
 _debug "SourceOpt: $sourceopt"
-_debug "TargetOpt: $targetopt"
+_debug "LibraryOpt: $libraryopt"
 _debug "CopyrightOpt: $copyrightopt"
 
 # Now override any parameters that were specified
@@ -521,8 +521,8 @@ if [[ -n $sourceopt ]]; then
   source=$sourceopt
 fi
 
-if [[ -n $targetopt ]]; then
-  target=$targetopt
+if [[ -n $libraryopt ]]; then
+  library=$libraryopt
 fi
 
 if [[ -n $copyrightopt ]]; then
@@ -530,14 +530,14 @@ if [[ -n $copyrightopt ]]; then
 fi
 
 _debug "Source: $source"
-_debug "Target: $target"
+_debug "Library: $library"
 _debug "Copyright: $copyright"
 
-# Target is a mandatory config setting or parameter
-if [ -z $target ] && [ "$test" != true ]; then
-  # Empty Target
-  _error "ERROR: Missing target!"
-  _warning "Specifying target via -t: or --target: is mandatory.\n"
+# Library is a mandatory config setting or parameter
+if [ -z $library ] && [ "$test" != true ]; then
+  # Empty Library
+  _error "ERROR: Missing library!"
+  _warning "Specifying library via -l: or --library: is mandatory.\n"
   _help
   exit 1
 fi
@@ -578,7 +578,7 @@ if [ "$test" = true ]; then
   mkdir "./test/processed"
 
   source="./test/originals"
-  target="./test"
+  library="./test"
   _import_media
 
   copyright="This is a Test Copyright"
