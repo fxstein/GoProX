@@ -1,6 +1,6 @@
-# GoProExif
-ExifTool wrapper to process common Exif metadata from GoPro Media files for use
-in other macOS Apps like Apple Photos.
+# GoProX
+
+This missing GoPro workflow and data manager for macOS.
 
 > This is currently early work in progress...
 

@@ -27,7 +27,7 @@ __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2022 Oliver Ratzesberger'
 __license__='MIT'
 __version__='0.2dev'
-__github__='https://github.com/fxstein/GoProExif'
+__github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
 readonly BANNER="$__this__ v$__version__
@@ -53,7 +53,7 @@ readonly HELP_TEXT="Available Options:
 "
 
 # Various defaults
-readonly DEFAULT_CONFIG=~/.goproexif
+readonly DEFAULT_CONFIG=~/.goprox
 readonly DEFAULT_SOURCE="."
 readonly DEFAULT_TARGET=""
 readonly DEFAULT_COPYRIGHT=""
@@ -63,9 +63,9 @@ readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
 
-readonly GOPROEXIF=$(which ${__this__})
-readonly REALGOPROEXIF=$(readlink $GOPROEXIF)
-readonly GOPROEXIF_HOME=$(dirname $REALGOPROEXIF)
+readonly GOPROX=$(which ${__this__})
+readonly REALGOPROX=$(readlink $GOPROX)
+readonly GOPROX_HOME=$(dirname $REALGOPROX)
 
 # Initializing...
 config=$DEFAULT_CONFIG
@@ -351,8 +351,8 @@ function _firmware()
 
     # Get the latest firmware for the device
 
-    _debug "GoProExif home: $GOPROEXIF_HOME"
-    firmwarebase="${GOPROEXIF_HOME}/firmware/${camera}"
+    _debug "GoProX home: $GOPROX_HOME"
+    firmwarebase="${GOPROX_HOME}/firmware/${camera}"
     _debug "Firmware base: $firmwarebase"
 
     latestfirmware=(${firmwarebase}/*([-1]))
