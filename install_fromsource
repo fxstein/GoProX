@@ -29,4 +29,4 @@
 #
 
 cwd=$(pwd)
-ln -s $cwd/goproexif /usr/local/bin
+ln -s $cwd/goprox /usr/local/bin
