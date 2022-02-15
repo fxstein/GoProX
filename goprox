@@ -41,7 +41,7 @@ readonly HELP_TEXT="Available Options:
 -t: --target:
 -c: --copyright:
 -i --import
--p: --process:
+-p: --process:[all|val[ymwdHMS]]
 -a --archive
 --clean
 --config:
@@ -205,6 +205,17 @@ function _process_media()
   if [[ $processopt == "all" ]]; then
     _info "Requested processing: ${processopt}. Processing all files from ${importdir}"
     timefilter="1"
+  elif [[ $processopt == *(y|m|w|d|H|M|S) ]]; then
+    _info " Processing the past ${processopt} of media files."
+
+    deltadate=$(date -v-${processopt} +%s)
+    _debug "Delta date: ${deltadate}"
+
+    timefilter='${FileCreateDate;DateFmt("%s")} gt '${deltadate}
+    _debug "exiftool time filter: ${timefilter}"
+  elif [[ -n $processopt ]]; then
+    _error "Unknown processing option: ${processopt} specified."
+    exit 1
   elif [[ -n $lastprocess ]]; then
     timefilter='${FileModifyDate;DateFmt("%s")} gt '${lastprocess}
     _debug "exiftool time filter: ${timefilter}"
