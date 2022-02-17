@@ -60,6 +60,7 @@ readonly DEFAULT_SOURCE="."
 readonly DEFAULT_LIBRARY=""
 readonly DEFAULT_COPYRIGHT=""
 readonly DEFAULT_GEONAMESACCT=""
+readonly DEFAULT_GEONAMESFILE="geonames.json"
 readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
 
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
@@ -75,6 +76,7 @@ config=$DEFAULT_CONFIG
 source=$DEFAULT_SOURCE
 library=$DEFAULT_LIBRARY
 geonamesacct=$DEFAULT_GEONAMESACCT
+geonamesfile=$DEFAULT_GEONAMESFILE
 copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 test=false
@@ -300,7 +302,7 @@ function _geonames_media()
   n=0
   for d in ${importdir}/**/; do # all sub directories of import
     if [[ $d =~ .*/[0-9]{8} ]]; then # only those that match an 8 digit date
-      if [[ ! -f "$d"timezone.json ]]; then
+      if [[ ! -f "${d}${geonamesfile}" ]]; then
         _info "Proessing "$d
         ((n++))
 
@@ -309,10 +311,17 @@ function _geonames_media()
         _info "First file: "$files[1]
 
         # Get GPS info from file
-        exiftool -n "$files[1]"
+        gpsdata=$(exiftool -n -p 'date=${GPSDateStamp;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$files[1]")
+        _debug "GPS Data: "$gpsdata
 
-        exit 1
+        geonamesdata=$(curl -s 'http://api.geonames.org/timezoneJSON?'${gpsdata}'&username='${geonamesacct})
+        _debug "GeoNames Data: "$geonamesdata
+        _info "Writing GeoNames file: ${d}${geonamesfile}"
 
+        echo $geonamesdata>${d}${geonamesfile}
+
+        # Delay subsequent geonames calls to stay within free geonames account limits
+        sleep 2
       fi
     fi
   done
