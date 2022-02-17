@@ -3,8 +3,8 @@
 The missing GoPro workflow and data manager for macOS.
 For those with one or more GoPro cameras. When using these  action cameras on
 a regular basis, the limitations of the GoPro ecosystem quickly become very 
-limiting. GoPro is focusing on their mobile app experience and has pretty much 
-abandoned larger scale usecases. 
+limiting. GoPro is focusing on their mobile app experience and not much development 
+is directed towards the macOS. 
 GoProX is geared at focusing on semi professionals or prosumers that simple need
 more from their devices. 
 
