@@ -42,9 +42,11 @@ readonly HELP_TEXT="Available Options:
 -c: --copyright:
 -i --import
 -p:: --process::[all|val[ymwdHMS]]
+-t:: --timeshift::
 -a --archive
 --clean
 --config:
+--geonames::
 --debug
 --setup
 --firmware
@@ -57,6 +59,7 @@ readonly DEFAULT_CONFIG=~/.goprox
 readonly DEFAULT_SOURCE="."
 readonly DEFAULT_LIBRARY=""
 readonly DEFAULT_COPYRIGHT=""
+readonly DEFAULT_GEONAMESACCT=""
 readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
 
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
@@ -71,6 +74,7 @@ readonly GOPROX_HOME=$(dirname $REALGOPROX)
 config=$DEFAULT_CONFIG
 source=$DEFAULT_SOURCE
 library=$DEFAULT_LIBRARY
+geonamesacct=$DEFAULT_GEONAMESACCT
 copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 test=false
@@ -78,6 +82,7 @@ setup=false
 debug=false
 import=false
 process=false
+geonames=false
 archive=false
 clean=false
 firmware=false
@@ -85,6 +90,7 @@ sourceopt=""
 libraryopt=""
 processopt=""
 copyrightopt=""
+geonamesopt=""
 
 funtion _info()
 {
@@ -134,11 +140,13 @@ function _setup()
   _info "Source: "$source
   _info "Library: "$library
   _info "Copyright: "$copyright
+  _info "GeoNamesAcct: "$geonamesacct
 
   _info "Writing config file: $config"
   echo "source="$source>>$config
   echo "library=\""$library"\"">>$config
   echo "copyright=\""$copyright"\"">>$config
+  echo "geonamesacct=\""$geonamesacct"\"">>$config
   _info "Config saved as $config"
 }
 
@@ -177,8 +185,8 @@ function _process_media()
   importdir=$library/imported
   processdir=$library/processed
   _info "Starting media processing..."
-  _info "Source: "$importdir
-  _info "Library: "$processdir
+  _info "ImportDir: "$importdir
+  _info "ProcessDir: "$processdir
   _info "Process option: "$processopt
 
   if [[ -n $copyright ]]; then
@@ -273,6 +281,58 @@ function _process_media()
   "${importdir}"
 
   _info "Finished media processing"
+}
+
+function _geonames_media()
+{
+  importdir=$library/imported
+
+  _info "Starting GeoNames processing..."
+  _info "Library: "$library
+  _info "ImportDir: "$importdir
+  _info "GeoNames account: "$geonamesacct
+
+  # Debugging...
+  # set -x
+
+  # case independent globing
+  unsetopt CASE_GLOB
+  n=0
+  for d in ${importdir}/**/; do # all sub directories of import
+    if [[ $d =~ .*/[0-9]{8} ]]; then # only those that match an 8 digit date
+      if [[ ! -f "$d"timezone.json ]]; then
+        _info "Proessing "$d
+        ((n++))
+
+        # All media files in current directory
+        files=( "$d"*.{JPG,MP4,360,JPEG,HEIC}(N) )
+        _info "First file: "$files[1]
+
+        # Get GPS info from file
+        exiftool -n "$files[1]"
+
+        exit 1
+
+      fi
+    fi
+  done
+
+  _info "$n directories processed."
+
+  # curl 'http://api.geonames.org/timezoneJSON?date=2021-10-05&lat=47.01&lng=10.2&username=youruser'
+  # {"sunrise":"2022-02-17 07:20","lng":10.2,"countryCode":"AT","gmtOffset":1,"rawOffset":1,"sunset":"2022-02-17 17:46","timezoneId":"Europe/Vienna","dstOffset":2,"dates":[{"date":"2021-10-05","sunrise":"2021-10-05 07:23","sunset":"2021-10-05 18:50"}],"countryName":"Austria","time":"2022-02-17 02:07","lat":47.01}
+
+  _info "Finished GeoNames processing"
+}
+
+function _timeshift_media()
+{
+
+
+
+  # curl 'http://api.geonames.org/timezoneJSON?date=2021-10-05&lat=47.01&lng=10.2&username=youruser'
+  # {"sunrise":"2022-02-17 07:20","lng":10.2,"countryCode":"AT","gmtOffset":1,"rawOffset":1,"sunset":"2022-02-17 17:46","timezoneId":"Europe/Vienna","dstOffset":2,"dates":[{"date":"2021-10-05","sunrise":"2021-10-05 07:23","sunset":"2021-10-05 18:50"}],"countryName":"Austria","time":"2022-02-17 02:07","lat":47.01}
+
 }
 
 
@@ -413,12 +473,14 @@ declare -A opts
 zparseopts -D -E -F -A opts - \
             h -help \
             s: -source: \
-            t: -library: \
+            l: -library: \
             c: -copyright: \
             i -import \
             p:: -process:: \
+            t:: -timeshift:: \
             a -archive \
             -clean \
+            -geonames:: \
             -config: \
             -debug \
             -setup \
@@ -462,6 +524,13 @@ for key val in "${(kv@)opts}"; do
       # imports from now - eg 7d: process past 7 days of imported media)
       processopt=$val
     ;;
+    -t|--timeshift)
+      # Perform process tasks
+      timeshift=true
+      # support for processing overrides
+      # TODO: Implement variants like GPS and manual TZ
+      timeshiftopt=$val
+    ;;
     -a|--archive)
       # Perform archive tasks
       archive=true
@@ -469,6 +538,10 @@ for key val in "${(kv@)opts}"; do
     --clean)
       # Perform archive tasks
       clean=true
+    ;;
+    --geonames)
+      geonames=true
+      geonamesopt=$val
     ;;
     --setup)
       # Perform setup tasks
@@ -515,6 +588,7 @@ fi
 _debug "SourceOpt: $sourceopt"
 _debug "LibraryOpt: $libraryopt"
 _debug "CopyrightOpt: $copyrightopt"
+_debug "GeonamesOpt: $geonamesopt"
 
 # Now override any parameters that were specified
 if [[ -n $sourceopt ]]; then
@@ -529,15 +603,21 @@ if [[ -n $copyrightopt ]]; then
   copyright=$copyrightopt
 fi
 
+if [[ -n $geonamesopt ]]; then
+  geonamesacct=$geonamesopt
+fi
+
 _debug "Source: $source"
 _debug "Library: $library"
 _debug "Copyright: $copyright"
+_debug "GeonamesAcct: $geonamesacct"
 
 # Library is a mandatory config setting or parameter
 if [ -z $library ] && [ "$test" != true ]; then
   # Empty Library
   _error "ERROR: Missing library!"
-  _warning "Specifying library via -l: or --library: is mandatory.\n"
+  _warning "Specifying library via -l: or --library: is mandatory."
+  _warning "Or define in your ${config}.\n"
   _help
   exit 1
 fi
@@ -605,6 +685,9 @@ if [ "$import" = true ]; then
 fi
 if [ "$process" = true ]; then
   _process_media
+fi
+if [ "$geonames" = true ]; then
+  _geonames_media
 fi
 if [ "$clean" = true ]; then
   _clean_media
