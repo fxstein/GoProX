@@ -62,7 +62,7 @@ readonly DEFAULT_COPYRIGHT=""
 readonly DEFAULT_GEONAMESACCT=""
 readonly DEFAULT_GEONAMESFILE="geonames.json"
 readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
-
+readonly DEFAULT_FILETYPES="JPG|MP4|360|JPEG|HEIC"
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
@@ -79,6 +79,7 @@ geonamesacct=$DEFAULT_GEONAMESACCT
 geonamesfile=$DEFAULT_GEONAMESFILE
 copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
+filetypes=$DEFAULT_FILETYPES
 test=false
 setup=false
 debug=false
@@ -299,37 +300,52 @@ function _geonames_media()
 
   # case independent globing
   unsetopt CASE_GLOB
-  n=0
+  ndir=0
+  ngeo=0
   for d in ${importdir}/**/; do # all sub directories of import
     if [[ $d =~ .*/[0-9]{8} ]]; then # only those that match an 8 digit date
       if [[ ! -f "${d}${geonamesfile}" ]]; then
-        _info "Proessing "$d
-        ((n++))
+        _info "Processing "$d
+        ((ndir++))
 
-        # All media files in current directory
-        files=( "$d"*.{JPG,MP4,360,JPEG,HEIC}(N) )
-        _info "First file: "$files[1]
+        # Find first media file with valid gps exif data
+        _debug "Filetypes: "$filetypes
 
-        # Get GPS info from file
-        gpsdata=$(exiftool -n -p 'date=${GPSDateStamp;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$files[1]")
-        _debug "GPS Data: "$gpsdata
+        # for file in "$d"*.(JPG|MP4|360|JPEG|HEIC)(N); do
+        for file in "$d"*.($~filetypes)(N); do
+          _info "Media file: "$file
 
-        geonamesdata=$(curl -s 'http://api.geonames.org/timezoneJSON?'${gpsdata}'&username='${geonamesacct})
-        _debug "GeoNames Data: "$geonamesdata
-        _info "Writing GeoNames file: ${d}${geonamesfile}"
+          # Get GPS info from file
+          gpsdata=$(exiftool -n -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file")
+          _debug "GPS Data: "$gpsdata
 
-        echo $geonamesdata>${d}${geonamesfile}
+          # Check if gpsdata is empty = no match for the simplified GPS tag search
+          if [[ -z $gpsdata ]]; then
+            gpsdata=$(exiftool -n -ee -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file" | head -n 1)
+            _debug "Extended GPS Data: "$gpsdata
+          fi
 
-        # Delay subsequent geonames calls to stay within free geonames account limits
-        sleep 2
+          if [[ -n $gpsdata ]]; then
+            geonamesdata=$(curl -s 'http://api.geonames.org/timezoneJSON?'${gpsdata}'&username='${geonamesacct})
+            _debug "GeoNames Data: "$geonamesdata
+            _info "Writing GeoNames file: ${d}${geonamesfile}"
+
+            # Add our current file as reference
+            echo $geonamesdata | jq ". + {reference: \"${file}\"}">${d}${geonamesfile}
+            ((ngeo++))
+
+            # Delay subsequent geonames calls to stay within free geonames account limits
+            sleep 2
+
+            break
+          fi
+        done
       fi
     fi
   done
 
-  _info "$n directories processed."
-
-  # curl 'http://api.geonames.org/timezoneJSON?date=2021-10-05&lat=47.01&lng=10.2&username=youruser'
-  # {"sunrise":"2022-02-17 07:20","lng":10.2,"countryCode":"AT","gmtOffset":1,"rawOffset":1,"sunset":"2022-02-17 17:46","timezoneId":"Europe/Vienna","dstOffset":2,"dates":[{"date":"2021-10-05","sunrise":"2021-10-05 07:23","sunset":"2021-10-05 18:50"}],"countryName":"Austria","time":"2022-02-17 02:07","lat":47.01}
+  _info "$ndir directories processed."
+  _info "$ngeo GeoNames files created."
 
   _info "Finished GeoNames processing"
 }
@@ -338,9 +354,6 @@ function _timeshift_media()
 {
 
 
-
-  # curl 'http://api.geonames.org/timezoneJSON?date=2021-10-05&lat=47.01&lng=10.2&username=youruser'
-  # {"sunrise":"2022-02-17 07:20","lng":10.2,"countryCode":"AT","gmtOffset":1,"rawOffset":1,"sunset":"2022-02-17 17:46","timezoneId":"Europe/Vienna","dstOffset":2,"dates":[{"date":"2021-10-05","sunrise":"2021-10-05 07:23","sunset":"2021-10-05 18:50"}],"countryName":"Austria","time":"2022-02-17 02:07","lat":47.01}
 
 }
 
