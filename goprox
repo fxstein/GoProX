@@ -316,12 +316,14 @@ function _geonames_media()
           _info "Media file: "$file
 
           # Get GPS info from file
-          gpsdata=$(exiftool -n -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file")
+          gpsdata=$(exiftool -n -q -q \
+                    -p 'date=${CreateDate;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude'\
+                    -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file" | head -n 1)
           _debug "GPS Data: "$gpsdata
 
           # Check if gpsdata is empty = no match for the simplified GPS tag search
           if [[ -z $gpsdata ]]; then
-            gpsdata=$(exiftool -n -ee -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file" | head -n 1)
+            gpsdata=$(exiftool -n -ee -q -q -p 'date=${GPSDateTime;DateFmt("%Y-%m-%d")}&lat=$gpslatitude&lng=$gpslongitude' "$file" | head -n 1)
             _debug "Extended GPS Data: "$gpsdata
           fi
 
