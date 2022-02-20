@@ -176,6 +176,7 @@ function _import_media()
   --ext lrv --ext thm --ext xmp --ext .\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
+'s/GoPro Max/GoPro_Max/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
   "${source}"
 
@@ -261,6 +262,7 @@ function _process_media()
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
+  '-Subject<${Make;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}'\
   '-Subject+<Software: ${Software;}'\
@@ -280,6 +282,7 @@ function _process_media()
   '-Subject+<ImageStabilization: ${ElectronicImageStabilization;}'\
   -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
+'s/GoPro Max/GoPro_Max/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
   "${importdir}"
 
