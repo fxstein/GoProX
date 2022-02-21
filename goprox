@@ -261,6 +261,11 @@ function _process_media()
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
+  '-ExifIFD:LensMake-='\
+  '-ExifIFD:LensMake<${Make;}'\
+  '-ExifIFD:LensModel-='\
+  '-ExifIFD:LensModel<${Make;}'\
+  '-ExifIFD:LensModel<${Make;} - ${ExifIFD:FocalLength;} f/${ExifIFD:FNumber}'\
   '-Subject<Make: ${Make;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}'\
