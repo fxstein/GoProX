@@ -181,7 +181,6 @@ function _import_media()
   "${source}"
 
   _info "Finished media import"
-
 }
 
 function _process_media()
@@ -262,7 +261,7 @@ function _process_media()
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
-  '-Subject<${Make;s/\s/_/g;}'\
+  '-Subject<Make: ${Make;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}'\
   '-Subject+<Software: ${Software;}'\
