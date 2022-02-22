@@ -1,11 +1,12 @@
 # GoProX
 
 The missing GoPro workflow and data manager for macOS.
-For those with one or more GoPro cameras. When using these  action cameras on
+
+For those with one or more GoPro cameras. When using these action cameras on
 a regular basis, the limitations of the GoPro ecosystem quickly become very
-limiting. GoPro is focusing on their mobile app experience and not much development
-is directed towards the macOS.
-GoProX is geared at focusing on semi professionals or prosumers that simple need
+obvious. GoPro is focusing their efforts on their mobile app experience and not 
+much development is directed towards macOS.
+GoProX is geared towards (semi-) professionals and prosumers that simply need
 more from their devices.
 
 GoProX is based on a data first approach to importing, processing and maintaining
@@ -15,7 +16,7 @@ developed and tested with GoPro Hero8, Hero9, Hero10 and GoPro Max.
 Once installed and setup GoProX maintains a file system based media library that
 is organized by time, camera types and media file types. The main goal is to
 maintain all file details from the original to the processed items, even if media
-files are further being processed in various apps including
+files are further being processed in various apps including e.g.
 [Apple Photos](https://www.apple.com/ios/photos/) or
 [Blackmagic DaVinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve/).
 
@@ -39,7 +40,7 @@ GoProX supports `--geonames` lookups for gps based timezone information,
 `--firmware` checks and upgrades, `--archive` of raw media into compressed
 archives before `--import` and `--process` tasks are being applied, a `--clean`
 task to remove processed media from storage devices as well as a `--timeshift`
-tasks that makes it possible to bulk change the date and time information of
+task that makes it possible to bulk change the date and time information of
 media files. It also makes it easy to apply default `--copyright` tags to all
 processed media.
 Default options can be set using the `--setup` tasks and settings are being
@@ -89,18 +90,18 @@ like
 GPTempDownload.jpg
 ```
 
-for anything GoPro Quik touches and forwards to eg. Apple Photos.
+for anything GoPro Quik touches and forwards to e.g. Apple Photos.
 
 There are many problems with these filenames - many not unique to GoPro. First
-of all they are very non descriptive. You might be able to deduct the camera
+of all they are very non-descriptive. You might be able to deduct the camera
 model to some extend, but thats about it. No date/time in case that information
 gets lost somewhere along the way. But also the fact that these names are
-created for a world where users ever only use a single camera at the same time.
-As all cameras start with 0001 for the first media and continuously count up,
+created for a world where users only ever use a single camera at the same time.
+As all cameras start with `0001` for the first media and continuously count up,
 its only a question of time when you will run into naming conflicts with two or
 more cameras. That usually means one file from one camera will overwrite another
 file from another camera. And depending on usage each individual camera will
-eventually in some cases even regularly restart at 0001.
+eventually in some cases even regularly restart at `0001`.
 
 So instead of very complicated folder structures to keep images from colliding
 with each other, GoProX creates more sophisticated filenames that allow you to
@@ -132,9 +133,11 @@ software bugs in the likes of Apple Photos that for example messes up the date &
 time for imported MP4 files. As the filename is kept along with the images and
 videos it gives you a very simple way to double check what is going on.
 
-.360 videos from the GoPro Max are listed here as well but cannot be imported
-directly into the likes of Apple Photos. You will need GoPro Player on the Mac
-or GoPro Quik on iOS to process them for further consumption.
+.360 videos from the GoPro Max listed here cannot be imported directly into the 
+likes of Apple Photos. You will need GoPro Player on the Mac or GoPro Quik on iOS
+to process them for further consumption. Alternatively they can be used as mp4
+files and processed in platforms like DaVinci Resolve or Adobe Premier with proper
+plugins installed.
 
 The `--process` option further refines the filenames and also adds and rewrites
 embedded metadata. All file extensions are normalized to lowercase extensions
