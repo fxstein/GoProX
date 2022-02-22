@@ -26,7 +26,7 @@ ever growing libraries of media.
 GoProX performs a few simple tasks that will make your life with GoPro
 media on Apple platforms a lot easier.
 
-First it renames the files as part of `import` and `process` tasks. This is an
+First it renames the files as part of `--import` and `--process` tasks. This is an
 often overlooked step that will lead to loss of some of the most basic metadata
 over time. Especially when files get exported, copied or moved, things like
 original date & time, source of the original image can get lost easily, creating
@@ -35,11 +35,18 @@ issue down the line.
 It then adds additional tags and keywords into the processed media files to make
 searching, filtering and corrections a lot easier.
 
-GoProX supports `geonames` lookups for gps based timezone information, `firmware`
-checks and upgrades, `archive` of raw media into compressed archives before
-`import` and `process` tasks are being applied, a `clean` task to remove processed
-media from storage devices as well as a `timeshift` tasks that makes it possible
-to bulk change the date and time information of media files.  
+GoProX supports `--geonames` lookups for gps based timezone information,
+`--firmware` checks and upgrades, `--archive` of raw media into compressed
+archives before `--import` and `--process` tasks are being applied, a `--clean`
+task to remove processed media from storage devices as well as a `--timeshift`
+tasks that makes it possible to bulk change the date and time information of
+media files. It also makes it easy to apply default `--copyright` tags to all
+processed media.
+Default options can be set using the `--setup` tasks and settings are being
+stored in the users home directory in `~.goprox`.
+
+For developers GoProX comes with a small set of test data from various cameras
+that allows for testing and validation of changes with the `--test` option. 
 
 ## Disclaimer & Credits
 
@@ -58,7 +65,7 @@ to perform gps based geocode lookups of timezones and related data.
 
 ## Filenames
 
-### The GoPro Mess
+### The Filenames Mess
 
 GoPro uses various different file-naming conventions in its cameras. There is no
 clean structure and for most cases you get some sort of prefix followed by a
