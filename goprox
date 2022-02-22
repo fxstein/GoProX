@@ -26,7 +26,7 @@
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2022 Oliver Ratzesberger'
 __license__='MIT'
-__version__='0.5dev'
+__version__='00.05.dev'
 __github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
@@ -266,6 +266,7 @@ function _process_media()
   '-ExifIFD:LensModel-='\
   '-ExifIFD:LensModel<${Make;}'\
   '-ExifIFD:LensModel<${Make;} - ${ExifIFD:FocalLength;} f/${ExifIFD:FNumber}'\
+  '-Subject=GoProX: '"${__version__}"\
   '-Subject<Make: ${Make;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}'\
   '-Subject<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}'\
