@@ -398,7 +398,7 @@ function _archive_media()
 
   _info "Archive: "$archivename
 
-  tar --totals -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
+  tar --totals --exclude='.Spotlight-V100' -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
     # Archive failed
     _error "Archive creation failed!"
     exit 1
