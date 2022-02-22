@@ -100,7 +100,7 @@ sort and act on the filenames themselves.
 
 ### A better way to name files
 
-Lets take a look at the files names GoProExif creates on `import`:
+Lets take a look at the files names GoProX creates on `import`:
 
 ```
 20211010090947_GoPro_Hero10_7678_GOPR0768.JPG
@@ -160,13 +160,13 @@ file to inspect the metadata.
 Apple Photos really only gives you Title, Caption and Tags to work with to store
 additional information aside from the most basic metadata.
 
-This is where GoProExif performs a little metadata shuffle to make at least some
+This is where GoProX performs a little metadata shuffle to make at least some
 of the attributes searchable from within Apple Photos.
 
 Several of the low cardinality Exif fields are getting converted to a list of
 tags. That list Apple Photos converts to its own tags when importing the media.
 
-Here is a list of tags that are being created by GoProExif:
+Here is a list of tags that are being created by GoProX:
 
 ```CameraModel_4digitSN
 Orientation
@@ -199,7 +199,7 @@ That way you keep a record of the files you have created.
 All of this needs to be part of a simple workflow that captures and stores the
 original media as well as the processed files.
 
-GoProExif will most likely only be one step in your process and as been designed
+GoProX will most likely only be one step in your process and as been designed
 to recursively walk the source tree and process all media files in its
 structure. It does not matter if the source images are in a single folder or
 organized by date, camera or whatever subject you choose.
