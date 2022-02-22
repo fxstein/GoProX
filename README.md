@@ -44,9 +44,10 @@ media files. It also makes it easy to apply default `--copyright` tags to all
 processed media.
 Default options can be set using the `--setup` tasks and settings are being
 stored in the users home directory in `~.goprox`.
+The output can be timestamped via the `--time` option to log long running tasks.
 
 For developers GoProX comes with a small set of test data from various cameras
-that allows for testing and validation of changes with the `--test` option. 
+that allows for testing and validation of changes with the `--test` option.
 
 ## Disclaimer & Credits
 
@@ -107,7 +108,7 @@ sort and act on the filenames themselves.
 
 ### A better way to name files
 
-Lets take a look at the files names GoProX creates on `import`:
+Lets take a look at the files names GoProX creates on `--import`:
 
 ```
 20211010090947_GoPro_Hero10_7678_GOPR0768.JPG
@@ -135,9 +136,9 @@ videos it gives you a very simple way to double check what is going on.
 directly into the likes of Apple Photos. You will need GoPro Player on the Mac
 or GoPro Quik on iOS to process them for further consumption.
 
-The after initial `import` the `process` option further refines the filenames
-and also adds and rewrites the embedded metadata. All file extensions are
-normalized to lowercase extensions and the files are sorted by main file type.
+The `--process` option further refines the filenames and also adds and rewrites
+embedded metadata. All file extensions are normalized to lowercase extensions
+and the files are sorted by main file type.
 As part of that process `.360` files become `.mp4` files that are otherwise
 identical to the GoPro `.360` format but can now be handled by most downstream
 applications.
@@ -155,7 +156,7 @@ P_20210627102316_GoPro_Hero9_0021_GH013156.mp4
 P_20211015084940_GoPro_Max_6013_GS013292.mp4
 ```    
 
-## Exif data
+## Exif & Metadata
 
 ### Tags
 
@@ -175,25 +176,32 @@ tags. That list Apple Photos converts to its own tags when importing the media.
 
 Here is a list of tags that are being created by GoProX:
 
-```CameraModel_4digitSN
-Orientation
-AutoRotation
-SceneCaptureType
-ProTune
-Sharpness
-HDRSetting
-ProjectionType
-ExposureLockUsed
-MeteringMode
-GainControl
-Contrast
-Saturation
-WhiteBalance
-ImageStabilization
+```GoProX: version
+Make: ...
+Camera: ...
+Camera: ... ....
+Software: ...
+AutoRotation: ...
+Orientation: ...
+SceneCaptureType: ...
+ProTune: ...
+Sharpness: ...
+MeteringMode: ...
+GainControl: ...
+Contrast: ...
+Saturation: ...
+WhiteBalance: ...
+HDRSetting: ...
+ExposureLockUsed: ...
+ProjectionType: ...
+ImageStabilization: ...
 ```
 
 These tags can be used inside of Apple Photos for various tasks, most
 importantly to create Smart Albums that key off one or more of them.
+
+
+
 
 ### Copyright information
 
