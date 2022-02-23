@@ -66,6 +66,7 @@ readonly DEFAULT_FILETYPES="JPG|MP4|360|JPEG|HEIC"
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
+readonly DEFAULT_LOGLEVEL=1 #debug:0; info:1; warn:2; error:3
 
 readonly GOPROX=$(which ${__this__})
 readonly REALGOPROX=$(readlink $GOPROX)
@@ -80,6 +81,7 @@ geonamesfile=$DEFAULT_GEONAMESFILE
 copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 filetypes=$DEFAULT_FILETYPES
+loglevel=$DEFAULT_LOGLEVEL
 test=false
 setup=false
 debug=false
@@ -95,26 +97,24 @@ processopt=""
 copyrightopt=""
 geonamesopt=""
 
-funtion _info()
-{
-  echo $fg[green]"Info: "$1 $2$reset_color
-}
-
-funtion _warning()
-{
-  echo $fg[yellow]"Warning: "$1 $2$reset_color
-}
-
-funtion _error()
-{
-  >&2 echo $fg[red]"Error: "$1 $2$reset_color
-}
-
 function _debug()
 {
-  # DOES NOT work on eg args listing
-  #[ "$debug" = true ] &&  $@
-  echo $fg[blue]"Debug: "$1 $2$reset_color
+  [[ $loglevel -le 0 ]] && echo $fg[blue]"Debug: "$1 $2$reset_color
+}
+
+function _info()
+{
+  [[ $loglevel -le 1 ]] && echo $fg[green]"Info: "$1 $2$reset_color
+}
+
+function _warning()
+{
+  [[ $loglevel -le 2 ]] && echo $fg[yellow]"Warning: "$1 $2$reset_color
+}
+
+function _error()
+{
+  [[ $loglevel -le 3 ]] && >&2 echo $fg[red]"Error: "$1 $2$reset_color
 }
 
 function _help()
@@ -235,8 +235,6 @@ function _process_media()
     timefilter="1"
   fi
 
-  # set -x
-
 # The following keywords and tags are being created and added in order to
 # make our image files exif data accessible inside of Apple Photos and other
 # Applications. By turning them into tags inside of Photos, they can be used
@@ -244,11 +242,45 @@ function _process_media()
 # Not every camera model and firmware supports all of these tags, hence the
 # incremental additions that allow missing data to be ommited without error.
 
+  exififd=()
+  exififd+=('-ExifIFD:LensMake-=')
+  exififd+=('-ExifIFD:LensMake<${Make;}')
+  exififd+=('-ExifIFD:LensModel-=')
+  exififd+=('-ExifIFD:LensModel<${Make;}')
+  exififd+=('-ExifIFD:LensModel<${Make;} - ${ExifIFD:FocalLength;} f/${ExifIFD:FNumber}')
+
+  subject=()
+  subject+=('-Subject=GoProX: '${__version__})
+  subject+=('-Subject+<Make: ${Make;s/\s/_/g;}')
+  subject+=('-Subject+<Camera: ${Model;s/\s/_/g;}')
+  subject+=('-Subject+<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}')
+  subject+=('-Subject+<Software: ${Software;}')
+  subject+=('-Subject+<AutoRotation: ${AutoRotation;}')
+  subject+=('-Subject+<Orientation: ${Orientation;}')
+  subject+=('-Subject+<SceneCaptureType: ${SceneCaptureType;}')
+  subject+=('-Subject+<ProTune: ${ProTune;}')
+  subject+=('-Subject+<Sharpness: ${Sharpness;}')
+  subject+=('-Subject+<MeteringMode: ${MeteringMode;}')
+  subject+=('-Subject+<GainControl: ${GainControl;}')
+  subject+=('-Subject+<Contrast: ${Contrast;}')
+  subject+=('-Subject+<Saturation: ${Saturation;}')
+  subject+=('-Subject+<WhiteBalance: ${WhiteBalance;}')
+  subject+=('-Subject+<HDRSetting: ${HDRSetting;}')
+  subject+=('-Subject+<ExposureLockUsed: ${ExposureLockUsed;}')
+  subject+=('-Subject+<ProjectionType: ${ProjectionType;}')
+  subject+=('-Subject+<ImageStabilization: ${ElectronicImageStabilization;}')
+
+  api=()
+  api+=('Filter=s/HERO10 Black/GoPro_Hero10/g;')
+  api+=('s/HERO9 Black/GoPro_Hero9/g;')
+  api+=('s/GoPro Max/GoPro_Max/g;')
+  api+=('s/HERO8 Black/GoPro_Hero8/g')
+
 # Inspect raw GPS data:
 # exiftool -s -a '-gps*' -n -G FILE
 #
 # TODO: Fix broken GPS data for GoPro MP4 file
-# GPS Tag exmaple:   -QuickTime:GPSCoordinates#='52.372821 4.893702 0'\
+# GPS Tag example:   -QuickTime:GPSCoordinates#='52.372821 4.893702 0'\
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -261,34 +293,9 @@ function _process_media()
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
-  '-ExifIFD:LensMake-='\
-  '-ExifIFD:LensMake<${Make;}'\
-  '-ExifIFD:LensModel-='\
-  '-ExifIFD:LensModel<${Make;}'\
-  '-ExifIFD:LensModel<${Make;} - ${ExifIFD:FocalLength;} f/${ExifIFD:FNumber}'\
-  '-Subject=GoProX: '"${__version__}"\
-  '-Subject<Make: ${Make;s/\s/_/g;}'\
-  '-Subject<Camera: ${Model;s/\s/_/g;}'\
-  '-Subject<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}'\
-  '-Subject+<Software: ${Software;}'\
-  '-Subject+<AutoRotation: ${AutoRotation;}'\
-  '-Subject+<Orientation: ${Orientation;}'\
-  '-Subject+<SceneCaptureType: ${SceneCaptureType;}'\
-  '-Subject+<ProTune: ${ProTune;}'\
-  '-Subject+<Sharpness: ${Sharpness;}'\
-  '-Subject+<MeteringMode: ${MeteringMode;}'\
-  '-Subject+<GainControl: ${GainControl;}'\
-  '-Subject+<Contrast: ${Contrast;}'\
-  '-Subject+<Saturation: ${Saturation;}'\
-  '-Subject+<WhiteBalance: ${WhiteBalance;}'\
-  '-Subject+<HDRSetting: ${HDRSetting;}'\
-  '-Subject+<ExposureLockUsed: ${ExposureLockUsed;}'\
-  '-Subject+<ProjectionType: ${ProjectionType;}'\
-  '-Subject+<ImageStabilization: ${ElectronicImageStabilization;}'\
-  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
-'s/HERO9 Black/GoPro_Hero9/g;'\
-'s/GoPro Max/GoPro_Max/g;'\
-'s/HERO8 Black/GoPro_Hero8/g'\
+  "${exififd[@]}"\
+  "${subject[@]}"\
+  -api "${api}"\
   "${importdir}"
 
   _info "Finished media processing"
@@ -302,9 +309,6 @@ function _geonames_media()
   _info "Library: "$library
   _info "ImportDir: "$importdir
   _info "GeoNames account: "$geonamesacct
-
-  # Debugging...
-  # set -x
 
   # case independent globing
   unsetopt CASE_GLOB
@@ -605,6 +609,11 @@ for key val in "${(kv@)opts}"; do
     ;;
   esac
 done
+
+if [ "$debug" = true ]; then
+  loglevel=0
+  set -x
+fi
 
 # so we can timestamp the output
 (
