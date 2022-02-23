@@ -235,12 +235,12 @@ function _process_media()
     timefilter="1"
   fi
 
-# The following keywords and tags are being created and added in order to
-# make our image files exif data accessible inside of Apple Photos and other
-# Applications. By turning them into tags inside of Photos, they can be used
-# to filter, sort or setup smart albums.
-# Not every camera model and firmware supports all of these tags, hence the
-# incremental additions that allow missing data to be ommited without error.
+  # The following keywords and tags are being created and added in order to
+  # make our image files exif data accessible inside of Apple Photos and other
+  # Applications. By turning them into tags inside of Photos, they can be used
+  # to filter, sort or setup smart albums.
+  # Not every camera model and firmware supports all of these tags, hence the
+  # incremental additions that allow missing data to be ommited without error.
 
   exififd=()
   exififd+=('-ExifIFD:LensMake-=')
@@ -270,11 +270,13 @@ function _process_media()
   subject+=('-Subject+<ProjectionType: ${ProjectionType;}')
   subject+=('-Subject+<ImageStabilization: ${ElectronicImageStabilization;}')
 
+  # The api filter is used to rename camera models globally
+
   api=()
   api+=('Filter=s/HERO10 Black/GoPro_Hero10/g;')
   api+=('s/HERO9 Black/GoPro_Hero9/g;')
-  api+=('s/GoPro Max/GoPro_Max/g;')
-  api+=('s/HERO8 Black/GoPro_Hero8/g')
+  api+=('s/HERO8 Black/GoPro_Hero8/g;')
+  api+=('s/GoPro Max/GoPro_Max/g')
 
 # Inspect raw GPS data:
 # exiftool -s -a '-gps*' -n -G FILE
