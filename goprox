@@ -278,11 +278,14 @@ function _process_media()
   api+=('s/HERO8 Black/GoPro_Hero8/g;')
   api+=('s/GoPro Max/GoPro_Max/g')
 
-# Inspect raw GPS data:
-# exiftool -s -a '-gps*' -n -G FILE
-#
-# TODO: Fix broken GPS data for GoPro MP4 file
-# GPS Tag example:   -QuickTime:GPSCoordinates#='52.372821 4.893702 0'\
+  # Inspect raw GPS data:
+  # exiftool -s -a '-gps*' -n -G FILE
+  #
+  # TODO: Fix broken GPS data for GoPro MP4 file
+  # GPS Tag example:   -QuickTime:GPSCoordinates#='52.372821 4.893702 0'
+
+  # First pass - exlude mp4 and 360 files
+  _info "First pass: 1/3 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -297,6 +300,49 @@ function _process_media()
   "${xmpcopyright}"\
   "${exififd[@]}"\
   "${subject[@]}"\
+  --ext mp4 --ext 360\
+  -api "${api}"\
+  "${importdir}"
+
+  # Second pass - only mp4 files
+  # Need to apply differnt logic for various tags
+  _info "Second pass: 2/3 - Only mp4 files"
+
+# exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  -if4 "${timefilter}"\
+  '-FileCreateDate<FileCreateDate'\
+  '-FileCreateDate<CreateDate'\
+  '-filename<P_%f.${FileTypeExtension}'\
+  '-directory<'"${processdir}"'/${FileType}/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir}"'/${FileType}/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  "${artist}"\
+  "${author}"\
+  "${xmpcopyright}"\
+  "${exififd[@]}"\
+  "${subject[@]}"\
+  -ext mp4\
+  -api "${api}"\
+  "${importdir}"
+
+  # Third pass - only 360 files
+  # Need to apply differnt logic for various tags and sort into 360 subtree
+  _info "Third pass: 3/3 - Only 360 files"
+
+  # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  -if4 "${timefilter}"\
+  '-FileCreateDate<FileCreateDate'\
+  '-FileCreateDate<CreateDate'\
+  '-filename<P_%f.%e'\
+  '-directory<'"${processdir}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  "${artist}"\
+  "${author}"\
+  "${xmpcopyright}"\
+  "${exififd[@]}"\
+  "${subject[@]}"\
+  -ext 360\
   -api "${api}"\
   "${importdir}"
 
