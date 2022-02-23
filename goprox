@@ -249,6 +249,13 @@ function _process_media()
   exififd+=('-ExifIFD:LensModel<${Make;}')
   exififd+=('-ExifIFD:LensModel<${Make;} - ${ExifIFD:FocalLength;} f/${ExifIFD:FNumber}')
 
+  # GPS keys needed for Apple Photos to recognize the location of a video
+  gpsdata=()
+  gpsdata+=('-Keys:GPSCoordinates-=')
+  gpsdata+=('-Keys:GPSCoordinates<${GPSLatitude;}, ${GPSLongitude;}, 0')
+  # gpsdata+=('-Userdata:GPSCoordinates="40.6892, -74.0445, 0"')
+  # gpsdata+=('-Itemlist:GPSCoordinates="40.6892, -74.0445, 0"')
+
   subject=()
   subject+=('-Subject=GoProX: '${__version__})
   subject+=('-Subject+<Make: ${Make;s/\s/_/g;}')
@@ -321,6 +328,7 @@ function _process_media()
   "${xmpcopyright}"\
   "${exififd[@]}"\
   "${subject[@]}"\
+  "${gpsdata[@]}"\
   -ext mp4\
   -api "${api}"\
   "${importdir}"
@@ -329,7 +337,7 @@ function _process_media()
   # Need to apply differnt logic for various tags and sort into 360 subtree
   _info "Third pass: 3/3 - Only 360 files"
 
-  # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+# exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${timefilter}"\
   '-FileCreateDate<FileCreateDate'\
@@ -342,6 +350,7 @@ function _process_media()
   "${xmpcopyright}"\
   "${exififd[@]}"\
   "${subject[@]}"\
+  "${gpsdata[@]}"\
   -ext 360\
   -api "${api}"\
   "${importdir}"
