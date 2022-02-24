@@ -262,6 +262,46 @@ function _process_media()
   # Add tags for Apple Photos
   local taglist=()
 
+  # HERO 10 jpg examples:
+  # [GoPro]         DeviceName                      : Global Settings
+  # [GoPro]         MetadataVersion                 : 8 1 4
+  # [GoPro]         FirmwareVersion                 : H21.01.01.10.00
+  # [GoPro]         CameraSerialNumber              : C3461324698034
+  # [GoPro]         Model                           : HERO10 Black
+  # [GoPro]         AutoRotation                    : U
+  # [GoPro]         DigitalZoom                     : N
+  # [GoPro]         ProTune                         : Y
+  # [GoPro]         WhiteBalance                    : AUTO
+  # [GoPro]         Sharpness                       : MED
+  # [GoPro]         ColorMode                       : GOPRO
+  # [GoPro]         AutoISOMax                      : 3200
+  # [GoPro]         AutoISOMin                      : 100
+  # [GoPro]         ExposureCompensation            : 0.0
+  # [GoPro]         Rate                            : 1
+  # [GoPro]         PhotoResolution                 : 20MP_N
+  # [GoPro]         HDRSetting                      : S_HDR
+
+  # HERO 10 mp4 example:
+  # [GoPro]         DeviceName                      : Global Settings
+  # [GoPro]         MetadataVersion                 : 8 1 4
+  # [GoPro]         FirmwareVersion                 : H21.01.01.10.00
+  # [GoPro]         CameraSerialNumber              : C3461324698034
+  # [GoPro]         Model                           : HERO10 Black
+  # [GoPro]         AutoRotation                    : U
+  # [GoPro]         DigitalZoom                     : N
+  # [GoPro]         ProTune                         : Y
+  # [GoPro]         WhiteBalance                    : AUTO
+  # [GoPro]         Sharpness                       : MED
+  # [GoPro]         ColorMode                       : NATURAL
+  # [GoPro]         AutoISOMax                      : 1600
+  # [GoPro]         AutoISOMin                      : 100
+  # [GoPro]         ExposureCompensation            : 0.0
+  # [GoPro]         Rate                            :
+  # [GoPro]         FieldOfView                     : N
+  # [GoPro]         ElectronicImageStabilization    : HS Boost
+  # [GoPro]         AudioSetting                    : AUTO
+  # [GoPro]         DeviceName                      : Highlights
+
   function _create_tag_list()
   {
     taglist+=('-'$1'=GoProX: '${__version__})
@@ -271,18 +311,27 @@ function _process_media()
     taglist+=('-'$1'+<Software: ${Software;}')
     taglist+=('-'$1'+<AutoRotation: ${AutoRotation;}')
     taglist+=('-'$1'+<Orientation: ${Orientation;}')
+    taglist+=('-'$1'+<DigitalZoom: ${DigitalZoom;}')
     taglist+=('-'$1'+<SceneCaptureType: ${SceneCaptureType;}')
     taglist+=('-'$1'+<ProTune: ${ProTune;}')
     taglist+=('-'$1'+<Sharpness: ${Sharpness;}')
+    taglist+=('-'$1'+<ColorMode: ${ColorMode;}')
+    taglist+=('-'$1'+<AutoISOMax: ${AutoISOMax;}')
+    taglist+=('-'$1'+<AutoISOMin: ${AutoISOMin;}')
     taglist+=('-'$1'+<MeteringMode: ${MeteringMode;}')
     taglist+=('-'$1'+<GainControl: ${GainControl;}')
     taglist+=('-'$1'+<Contrast: ${Contrast;}')
     taglist+=('-'$1'+<Saturation: ${Saturation;}')
     taglist+=('-'$1'+<WhiteBalance: ${WhiteBalance;}')
+    taglist+=('-'$1'+<PhotoResolution: ${PhotoResolution;}')
     taglist+=('-'$1'+<HDRSetting: ${HDRSetting;}')
+    taglist+=('-'$1'+<ExposureCompensation: ${ExposureCompensation;}')
+    taglist+=('-'$1'+<FieldOfView: ${FieldOfView;}')
+    taglist+=('-'$1'+<FieldOfView: ${FieldOfView;}')
     taglist+=('-'$1'+<ExposureLockUsed: ${ExposureLockUsed;}')
     taglist+=('-'$1'+<ProjectionType: ${ProjectionType;}')
     taglist+=('-'$1'+<ImageStabilization: ${ElectronicImageStabilization;}')
+    taglist+=('-'$1'+<AudioSetting: ${AudioSetting;}')
   }
 
   # Now populate tag lists...
@@ -305,9 +354,6 @@ function _process_media()
   # To consider adding for timeshift functionality...
   # 0x882a	TimeZoneOffset	int16s[n]	ExifIFD	(1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate)
   # 0x9011	OffsetTimeOriginal	string	ExifIFD	(time zone for DateTimeOriginal)
-  # 0x9286	UserComment	undef	ExifIFD
-
-
 
   # First pass - exlude mp4 and 360 files
   _info "First pass: 1/3 - All files but mp4 and 360"
