@@ -340,11 +340,11 @@ function _process_media()
 
 
   # The api filter is used to rename camera models globally
-  local api=()
-  api+=('Filter=s/HERO10 Black/GoPro_Hero10/g;')
-  api+=('s/HERO9 Black/GoPro_Hero9/g;')
-  api+=('s/HERO8 Black/GoPro_Hero8/g;')
-  api+=('s/GoPro Max/GoPro_Max/g')
+  local apifilter=()
+  apifilter+=('Filter=s/HERO10 Black/GoPro_Hero10/g;')
+  apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
+  apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
+  apifilter+=('s/GoPro Max/GoPro_Max/g')
 
   # Additional data...
   #
@@ -373,7 +373,7 @@ function _process_media()
   "${taglist[@]}"\
   "${xmpdata[@]}"\
   --ext mp4 --ext 360\
-  -api "${api}"\
+  -api "${apifilter}"\
   -api largefilesupport=1\
   "${importdir}"
 
@@ -397,7 +397,7 @@ function _process_media()
   "${gpsdata[@]}"\
   "${xmpdata[@]}"\
   -ext mp4\
-  -api "${api}"\
+  -api "${apifilter}"\
   -api largefilesupport=1\
   "${importdir}"
 
@@ -424,7 +424,7 @@ function _process_media()
   "${gpsdata[@]}"\
   "${xmpdata[@]}"\
   -ext 360\
-  -api "${api}"\
+  -api "${apifilter}"\
   -api largefilesupport=1\
   "${importdir}"
 
