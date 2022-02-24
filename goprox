@@ -374,6 +374,7 @@ function _process_media()
   "${xmpdata[@]}"\
   --ext mp4 --ext 360\
   -api "${api}"\
+  -api largefilesupport=1\
   "${importdir}"
 
   # Second pass - only mp4 files
@@ -397,6 +398,7 @@ function _process_media()
   "${xmpdata[@]}"\
   -ext mp4\
   -api "${api}"\
+  -api largefilesupport=1\
   "${importdir}"
 
   # Third pass - only 360 files
@@ -423,6 +425,7 @@ function _process_media()
   "${xmpdata[@]}"\
   -ext 360\
   -api "${api}"\
+  -api largefilesupport=1\
   "${importdir}"
 
   _info "Finished media processing"
