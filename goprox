@@ -831,6 +831,14 @@ else
     _warning "brew install jq"
     exit 1
 fi
+_info "Validating tag..."
+if (( ${+commands[tag]} )); then
+    which tag && tag --version
+else
+    _error "ERROR: Please install tag first, run:"
+    _warning "brew install tag"
+    exit 1
+fi
 
 if [ "$setup" = true ]; then
   # Setup config file for current user
