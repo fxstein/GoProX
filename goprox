@@ -122,6 +122,42 @@ function _help()
   echo $HELP_TEXT
 }
 
+function _validate_dependencies()
+{
+  # only works if the exiftool is installed
+  _info "Validating exiftool..."
+  if (( ${+commands[exiftool]} )); then
+      which exiftool
+      if [[ "$debug" = true ]]; then
+        exiftool -ver -v
+      else
+        exiftool -ver
+      fi
+  else
+      _error "ERROR: Please install exiftool first, run:"
+      _warning "brew install exiftool"
+      exit 1
+  fi
+  # jq is needed to parse and write json data
+  _info "Validating jq..."
+  if (( ${+commands[jq]} )); then
+      which jq && jq --version
+  else
+      _error "ERROR: Please install jq first, run:"
+      _warning "brew install jq"
+      exit 1
+  fi
+  # tag is needed to write macOS tags
+  _info "Validating tag..."
+  if (( ${+commands[tag]} )); then
+      which tag && tag --version
+  else
+      _error "ERROR: Please install tag first, run:"
+      _warning "brew install tag"
+      exit 1
+  fi
+}
+
 function _setup()
 {
   # check if file exists
@@ -762,6 +798,9 @@ fi
 (
 echo $fg[green]$BANNER$reset_color
 
+# Check if all required dependencies are installed
+_validate_dependencies
+
 # Load config file first
 # Check if we have a config file to work with
 if [[ -f "$config" ]]; then
@@ -805,39 +844,6 @@ if [ -z $library ] && [ "$test" != true ]; then
   _warning "Or define in your ${config}.\n"
   _help
   exit 1
-fi
-
-# Dependencies TODO: Move to dedicated function
-# only works if the exiftool is installed
-_info "Validating exiftool..."
-if (( ${+commands[exiftool]} )); then
-    which exiftool
-    if [[ "$debug" = true ]]; then
-      exiftool -ver -v
-    else
-      exiftool -ver
-    fi
-
-else
-    _error "ERROR: Please install exiftool first, run:"
-    _warning "brew install exiftool"
-    exit 1
-fi
-_info "Validating jq..."
-if (( ${+commands[jq]} )); then
-    which jq && jq --version
-else
-    _error "ERROR: Please install jq first, run:"
-    _warning "brew install jq"
-    exit 1
-fi
-_info "Validating tag..."
-if (( ${+commands[tag]} )); then
-    which tag && tag --version
-else
-    _error "ERROR: Please install tag first, run:"
-    _warning "brew install tag"
-    exit 1
 fi
 
 if [ "$setup" = true ]; then
