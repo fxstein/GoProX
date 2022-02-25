@@ -337,7 +337,16 @@ function _process_media()
   # Now populate tag lists...
   _create_tag_list 'XMP:Subject'
   _create_tag_list 'IPTC:Keywords'
+  # _create_tag_list 'ItemList:Keyword'
+  # _create_tag_list 'Quicktime:Keywords'
 
+  # Additional Quicktime tags for movies
+  local quicktimedata=()
+  quicktimedata+=('-Keys:Make<${Make;}')
+  quicktimedata+=('-Keys:Model<${Model;}')
+  # quicktimedata+=('-Keys:Information=My Information')
+  # quicktimedata+=('-Keys:Description=My Description')
+  # quicktimedata+=('-Keys:Keywords="GoProX:'${__version__}'","Make:MyGoPro"')
 
   # The api filter is used to rename camera models globally
   local apifilter=()
@@ -395,10 +404,12 @@ function _process_media()
   "${exififd[@]}"\
   "${taglist[@]}"\
   "${gpsdata[@]}"\
+  "${quicktimedata[@]}"\
   "${xmpdata[@]}"\
   -ext mp4\
   -api "${apifilter}"\
   -api largefilesupport=1\
+  -api QuickTimeHandler=1\
   "${importdir}"
 
   # Third pass - only 360 files
@@ -422,10 +433,12 @@ function _process_media()
   "${exififd[@]}"\
   "${taglist[@]}"\
   "${gpsdata[@]}"\
+  "${quicktimedata[@]}"\
   "${xmpdata[@]}"\
   -ext 360\
   -api "${apifilter}"\
   -api largefilesupport=1\
+  -api QuickTimeHandler=1\
   "${importdir}"
 
   _info "Finished media processing"
