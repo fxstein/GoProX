@@ -796,7 +796,7 @@ fi
 
 # so we can timestamp the output
 (
-echo $fg[green]$BANNER$reset_color
+_info $BANNER
 
 # Check if all required dependencies are installed
 _validate_dependencies
