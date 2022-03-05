@@ -205,6 +205,8 @@ function _import_media()
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_%f.%e'\
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
+'${Encoder;s/\s/_/g;}_%f.%e'\
+  '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
   '-directory<'"${importdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
