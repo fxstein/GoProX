@@ -1,4 +1,4 @@
-test export-ignore
+test/** export-ignore
 install_fromsource export-ignore
 test/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 test/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
