@@ -1,2 +1,2 @@
-test export-ignore
+test/** export-ignore
 install_fromsource export-ignore
