@@ -609,7 +609,7 @@ function _clean_media()
           exit 1
         }
       fi
-      for xfile in $source/mdb*; do
+      for xfile in $source/mdb*(N); do
         _debug "Removing $xfile"
         rm -rfv $xfile || {
           # Cleanup failed
