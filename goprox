@@ -601,11 +601,20 @@ function _clean_media()
   if [[ -f "$source/MISC/version.txt" ]]; then
     # Only proceed if we just finished archiving this media
     if [ "$archive" = true ]; then
-      rm -rfv $source/DCIM $source/mdb* || {
-        # Cleanup failed
-        _error "Cleaning ${source} failed!"
-        exit 1
-      }
+      if [ -e "$source/DCIM" ]; then
+        rm -rfv $source/DCIM || {
+          # Cleanup failed
+          _error "Cleaning ${source} failed!"
+          exit 1
+        }
+      fi
+      if [ -e "$source/mdb*" ]; then
+        rm -rfv $source/DCIM || {
+          # Cleanup failed
+          _error "Cleaning ${source} failed!"
+          exit 1
+        }
+      fi  
     else
       _error "Will not clean ${source} without prior archive"
       _error "Run options --archive and --clean together"
