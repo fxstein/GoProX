@@ -1,2 +1,0 @@
-- name: Generate Release Hashes
-  uses: MCJack123/ghaction-Generate-Release-Hashes@v2
