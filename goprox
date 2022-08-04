@@ -342,7 +342,10 @@ function _process_media()
 
   function _create_tag_list()
   {
-    taglist+=('-'$1'=GoProX: '${__version__})
+    # exlude goprox version tag when testing to avoid changed files due to version numbering
+    if [ "$test" != true ]; then
+      taglist+=('-'$1'=GoProX: '${__version__})
+    fi
     taglist+=('-'$1'+<Make: ${Make;s/\s/_/g;}')
     taglist+=('-'$1'+<Camera: ${Model;s/\s/_/g;}')
     taglist+=('-'$1'+<Camera: ${Model;s/\s/_/g;}_${CameraSerialNumber;$_=substr($_,-4);}')
