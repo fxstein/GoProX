@@ -345,6 +345,7 @@ endorsed by GoPro Inc.
 GoProX is not related to Apple Inc, Blackmagic Design Pty Ltd or any other
 products or platforms referred to as part of the description or documentation of 
 the tool unless explicitly stated.
+
 GoProX leverages the [exiftool](https://exiftool.org) by Phil Harvey to extract
 common GoPro metadata to name and tag images and videos for further processing.
 
