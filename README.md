@@ -17,20 +17,31 @@ developed and tested with GoPro Hero8, Hero9, Hero10 and GoPro Max.
 The most common way to install `goprox` is via home-brew.
 
 To install goprox simply type
-`brew install fxstein/fxstein/goprox`
+
+```
+brew install fxstein/fxstein/goprox
+```
 
 Alternatively, you can add the fxstein tap manually before installing goprox
-`brew tap fxstein/fxstein`
-and install via
-`brew install goprox` 
+
+```
+brew tap fxstein/fxstein
+brew install goprox
+```
 
 ### Setup
 To simplify repeat usage of `goprox` it supports saving its configuration in `~/.goprox`.
-To create this configurations file, simply execute `goprox` with its `--setup` option
-`goprox --setup --library "/mylibrary/dir" --source "." --copyright "My Name"`
+To create this configurations file, simply execute `goprox` with its `--setup` option:
 
-You can also create alternate configuration files by specifying the `--config` option
-`goprox --config "myotherconfig" --setup --library "/myotherlibrary" --source "." --copyright "My Other Name"`
+```
+goprox --setup --library "/mylibrary/dir" --source "." --copyright "My Name"
+```
+
+You can also create alternate configuration files by specifying the `--config` option:
+
+```
+goprox --config "myotherconfig" --setup --library "/myotherlibrary" --source "." --copyright "My Other Name"
+```
 
 All subsequent runs of `goprox` will by default leverage the setting stored in `~/.goprox`
 unless the `--config` option is specified with an alternate configuration file.
