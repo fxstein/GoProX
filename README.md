@@ -46,6 +46,10 @@ goprox --config "myotherconfig" --setup --library "/myotherlibrary" --source "."
 All subsequent runs of `goprox` will by default leverage the setting stored in `~/.goprox`
 unless the `--config` option is specified with an alternate configuration file.
 
+The `--setup` option can be rerun as often as desired to change the settings stored in `~/.goprox`.
+Whenever `--setup` detects a prior configuration it creates a backup copy named like 
+`.goprox.bak.1657302965`. The configuration file is a simple text file that is sourced in `goprox`.
+
 ## Usage
 
 Once installed and set up GoProX maintains a file system based media library that
@@ -82,20 +86,69 @@ that allows for testing and validation of changes with the `--test` option.
 
 ## Examples
 
+```
+goprox --import
+```
+The `--import` option will read from `source` (default to the current directory `.`) and 
+import all media files into `library\imported`
+This is best used for importing media files from the path of a mounted media card. To do 
+so insert the microSD card of your camera into a reader attached to your Mac. Open Finder 
+to see the mounted card, right-click it and select `New Terminal at Folder`. This will 
+open a new zsh terminal at the mounted card folder. 
 
+```
+goprox --archive
+```
+The `--archive` option will create a full archive of the `source` folder as a tarball inside
+`library\archive` named like `20220802215621_GoPro_Hero10_2442.tar.gz`. This is useful to
+preserve the full content of the SD card before making any changes to it. 
 
-## Disclaimer & Credits
+```
+goprox --archive --import --clean
+```
+All the options can be performed in a single pass. In this example `goprox` will first
+create a new `archive` of the `source`, then import all the media files contained on the
+`source` and finally remove all media files from the `source`. The `--clean` option will 
+only execute when combined with either `--archive` or `--import` or both to avoid 
+accidental deletion of media files. 
 
-GoProX is not related to GoPro Inc or its products. It is not supported nor
-endorsed by GoPro Inc.
-GoProX is not related to Apple Inc, Blackmagic Design Pty Ltd or any other
-products or platforms referred to as part of the description or documentation of 
-the tool unless explicitly stated.
-GoProX leverages the [exiftool](https://exiftool.org) by Phil Harvey to extract
-common GoPro metadata to name and tag images and videos for further processing.
+```
+goprox --import --time
+```
+Adding the `--time` option creates a timestamped output of the `goprox` run to aid in logging
+for long-running tasks that import or process thousands of media files.
+All output of `goprox` is getting timestamped like 
 
-GoProX leverages the [GeoNames](https://www.geonames.org) database by Marc Wick
-to perform GPS-based geocode lookups of timezones and related data.
+`[2022-08-04 12:15:09] Info: goprox v00.08.08`
+
+```
+goprox --archive --import --clean --time --firmware
+```
+This example combines the most commonly used features for any import of media files directly
+from the camera's sd card.
+`--archive` created a full tarball of the content 
+`--import` imports all media files into the `library`
+`--clean` removed all media files from the sd card upon successful completion of the `--archive` and `--import` tasks
+`--time` timestamps all `goprox` output
+`--fimware` checks the sd-card for the current firmware version of the camera and if necessary
+installs the latest firmware onto the card for an automatic upgrade next time the camera is 
+booted up. For this to function properly sd-card of different cameras should not be mixed. 
+
+It is recommended to perform as many `import` tasks as you have cameras with new footage.
+Multiple camera sd-card can be imported simultaneously if a multi-card reader is available.
+
+```
+goprox --process --time
+```
+The `--process` option takes unmodified imported media files and rewrites them with enhanced
+metadata. This is where `goprox` inserts tags and flags into the media files that are then picked
+up by the likes of Apple Photos. By default, `process` will look for newly imported media files 
+since the last `process` run. 
+Alternatively, `all` or any valid time window can be specified `*[0-9](y|m|w|d|H|M|S)`
+For example: `goprox` --process 30d` will process the past 30d while `goprox --process all` will 
+process all imported media files. Caution should be used when reprocessing older media files as the
+content of a file will change with a newer version of `goprox` as any change in metadata will lead 
+to a modified file. 
 
 ## Filenames
 
@@ -280,3 +333,16 @@ than 20% CPU utilization.
 I tried to keep the tool as simple as possible. This undoubtedly will come with
 limitations for certain use-cases. Feel free to drop me a line or a PR with
 enhancements.
+
+## Credits & Disclaimers
+
+GoProX is not related to GoPro Inc or its products. It is not supported nor
+endorsed by GoPro Inc.
+GoProX is not related to Apple Inc, Blackmagic Design Pty Ltd or any other
+products or platforms referred to as part of the description or documentation of 
+the tool unless explicitly stated.
+GoProX leverages the [exiftool](https://exiftool.org) by Phil Harvey to extract
+common GoPro metadata to name and tag images and videos for further processing.
+
+GoProX leverages the [GeoNames](https://www.geonames.org) database by Marc Wick
+to perform GPS-based geocode lookups of timezones and related data.
