@@ -322,6 +322,18 @@ generally very fast.
 If you want to reprocess certain files, simply delete them at the destination
 folder and rerun the process.   
 
+## Supported GoPro Models
+
+`goprox` is actively being developed and tested with the following cameras:
+
+* GoPro Hero 8 (HD8.01.02.51.00)
+* GoPro Hero 9 (HD9.01.01.72.00)
+* GoPro Hero 10 (H21.01.01.46.00)
+* GoPro Max (H19.03.02.00.00)
+* GoPro The Remote (GP.REMOTE.FW.01.02.00)
+
+Most functionality should work with older GoPro models as well, just the `--firmware` option is limited to these models.
+
 ## Performance
 
 The [exiftool](https://exiftool.org) has phenomenal capabilities and if you let
