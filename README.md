@@ -126,13 +126,13 @@ goprox --archive --import --clean --time --firmware
 ```
 This example combines the most commonly used features for any import of media files directly
 from the camera's sd card.
-`--archive` created a full tarball of the content 
+`--archive` creates a full tarball of the content 
 `--import` imports all media files into the `library`
-`--clean` removed all media files from the sd card upon successful completion of the `--archive` and `--import` tasks
+`--clean` removes all media files from the sd card upon successful completion of the `--archive` and `--import` tasks
 `--time` timestamps all `goprox` output
 `--fimware` checks the sd-card for the current firmware version of the camera and if necessary
 installs the latest firmware onto the card for an automatic upgrade next time the camera is 
-booted up. For this to function properly sd-card of different cameras should not be mixed. 
+booted up. For this to function properly sd-cards of different cameras should not be mixed. 
 
 It is recommended to perform as many `import` tasks as you have cameras with new footage.
 Multiple camera sd-card can be imported simultaneously if a multi-card reader is available.
@@ -144,8 +144,8 @@ The `--process` option takes unmodified imported media files and rewrites them w
 metadata. This is where `goprox` inserts tags and flags into the media files that are then picked
 up by the likes of Apple Photos. By default, `process` will look for newly imported media files 
 since the last `process` run. 
-Alternatively, `all` or any valid time window can be specified `*[0-9](y|m|w|d|H|M|S)`
-For example: `goprox` --process 30d` will process the past 30d while `goprox --process all` will 
+Alternatively, `all` or any valid time window can be specified `*[0-9](y|m|w|d|H|M|S)` 
+For example `goprox --process 30d` will process the past 30d while `goprox --process all` will 
 process all imported media files. Caution should be used when reprocessing older media files as the
 content of a file will change with a newer version of `goprox` as any change in metadata will lead 
 to a modified file. 
