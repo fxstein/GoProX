@@ -1,4 +1,11 @@
 # exclude .gitignore and similar from the generated tarball
 .git*           export-ignore
 # exclude test files
-test export-ignore
+test            export-ignore
+# exclude other development files
+install*        export-ignore
+# exlude outdated firmware
+HD8.01.02.50.00 export-ignore
+HD9.01.01.60.00 export-ignore
+H21.01.01.30.00 export-ignore
+H21.01.01.42.00 export-ignore
