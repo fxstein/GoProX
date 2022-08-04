@@ -1,5 +1,9 @@
 # GoProX
 
+![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/fxstein/goprox?include_prereleases)
+![GitHub](https://img.shields.io/github/license/fxstein/goprox)
+![GitHub top language](https://img.shields.io/github/languages/top/fxstein/goprox)
+
 The missing GoPro workflow and data manager for macOS.
 
 For those with one or more GoPro cameras. When using these action cameras regularly, the
