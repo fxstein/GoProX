@@ -117,6 +117,14 @@ only execute when combined with either `--archive` or `--import` or both to avoi
 accidental deletion of media files. 
 
 ```
+goprox --firmware
+```
+The `--firmware` option will check the camera model and current firmware version of the sd card
+currently mounted and will upgrade it to the latest GoPro firmware for your model if a newer 
+one exists. Simply put the sd card back into the camera and on the next boot up the camera will 
+upgrade itself. 
+
+```
 goprox --import --time
 ```
 Adding the `--time` option creates a timestamped output of the `goprox` run to aid in logging
