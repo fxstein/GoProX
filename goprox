@@ -69,7 +69,7 @@ readonly DEFAULT_OUTPUT='tee'
 readonly DEFAULT_LOGLEVEL=1 #debug:0; info:1; warn:2; error:3
 
 readonly GOPROX=$(which ${__this__})
-readonly REALGOPROX=$(readlink $GOPROX)
+readonly REALGOPROX=$(readlink -f $GOPROX)
 readonly GOPROX_HOME=$(dirname $REALGOPROX)
 
 # Initializing...
