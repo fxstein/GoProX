@@ -4,6 +4,7 @@
 test            export-ignore
 # exclude other development files
 install*        export-ignore
+uninstall*      export-ignore
 # exlude outdated firmware
 HD8.01.02.50.00 export-ignore
 HD9.01.01.60.00 export-ignore
