@@ -24,8 +24,8 @@
 # SOFTWARE.
 
 #
-# Most simplistic setup for GoProExif for developer use
-# Adds goproexif to /usr/local/bin for easy access from source
+# Most simplistic setup for GoProX for developer use
+# Adds goprox to /usr/local/bin for easy access from source
 #
 
 cwd=$(pwd)
