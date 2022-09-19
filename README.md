@@ -342,10 +342,12 @@ folder and rerun the process.
 * GoPro Hero 8 (HD8.01.02.51.00)
 * GoPro Hero 9 (HD9.01.01.72.00)
 * GoPro Hero 10 (H21.01.01.46.00)
+* GoPro Hero 11 (H22.01.01.10.00)
 * GoPro Max (H19.03.02.00.00)
 * GoPro The Remote (GP.REMOTE.FW.01.02.00)
 
-Most functionality should work with older GoPro models as well, just the `--firmware` option is limited to these models.
+Most functionality should work with older GoPro models as well, just the `--firmware` and 
+`--firmware labs` options are limited to these models.
 
 ## Performance
 
