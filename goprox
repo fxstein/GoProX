@@ -49,7 +49,7 @@ readonly HELP_TEXT="Available Options:
 --geonames::
 --debug
 --setup
---firmware
+--firmware::[labs]
 --time::
 --test
 "
@@ -96,6 +96,7 @@ libraryopt=""
 processopt=""
 copyrightopt=""
 geonamesopt=""
+firmwareopt==""
 
 function _debug()
 {
@@ -659,7 +660,11 @@ function _firmware()
     # Get the latest firmware for the device
 
     _debug "GoProX home: $GOPROX_HOME"
-    firmwarebase="${GOPROX_HOME}/firmware/${camera}"
+    if [[ $firmwareopt == "labs" ]]; then
+      firmwarebase="${GOPROX_HOME}/firmware.labs/${camera}"
+    else
+      firmwarebase="${GOPROX_HOME}/firmware/${camera}"
+    fi
     _debug "Firmware base: $firmwarebase"
 
     latestfirmware=(${firmwarebase}/*([-1]))
@@ -668,12 +673,12 @@ function _firmware()
     latestversion=(${latestfirmware:t})
     _debug "Latest version: " ${latestversion}
 
-    if [[ $latestversion > $version ]]; then
+    if [[ $latestversion != $version ]]; then
       _warning "New firmware available: ${version} >> ${latestversion}"
       _warning "Transferring newer firmware to ${source}"
-      unzip -u "${latestfirmware}"/UPDATE.zip -d "${source}/UPDATE" || {
+      unzip -uj "${latestfirmware}"/*.zip -d "${source}/UPDATE" || {
         # Unzip failed
-        _error "Unzip copy of firmware ${latestfirmware}/UPDATE.zip to ${source}/UPDATE failed!"
+        _error "Unzip copy of firmware ${latestfirmware}/*.zip to ${source}/UPDATE failed!"
         exit 1
       }
       _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
@@ -716,7 +721,7 @@ zparseopts -D -E -F -A opts - \
             -config: \
             -debug \
             -setup \
-            -firmware \
+            -firmware:: \
             -time:: \
             -test \
 	          || exit 1
@@ -781,7 +786,10 @@ for key val in "${(kv@)opts}"; do
     ;;
     --firmware)
       # setup firmware upgrade
-    firmware=true
+      firmware=true
+      # optional paremeter: labs
+      # installs labs firmware for camera
+      firmwareopt=$val
     ;;
     -s|--source)
       sourceopt=$val
