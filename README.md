@@ -125,6 +125,10 @@ currently mounted and will upgrade it to the latest GoPro firmware for your mode
 one exists. Simply put the sd card back into the camera and on the next boot up the camera will 
 upgrade itself. 
 
+The `labs` modifier: `goprox --firmware labs` will perform the same check for the latest GoPro 
+Labs firmware version. Ommitting the `labs` modifier in a later firmware check will return the
+camera to the latest official firmware.
+
 ```
 goprox --import --time
 ```
