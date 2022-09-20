@@ -213,10 +213,11 @@ function _import_media()
   '-directory<'"${importdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${importdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   --ext lrv --ext thm --ext xmp --ext .\
-  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+  -api 'Filter=s/HERO11 Black/GoPro_Hero11/g;'\
+'s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
-'s/GoPro Max/GoPro_Max/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
+'s/GoPro Max/GoPro_Max/g;'\
   "${source}"
 
   _info "Finished media import"
@@ -392,7 +393,8 @@ function _process_media()
 
   # The api filter is used to rename camera models globally
   local apifilter=()
-  apifilter+=('Filter=s/HERO10 Black/GoPro_Hero10/g;')
+  apifilter+=('Filter=s/HERO11 Black/GoPro_Hero11/g;')
+  apifilter+=('s/HERO10 Black/GoPro_Hero10/g;')
   apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
   apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
   apifilter+=('s/GoPro Max/GoPro_Max/g')
@@ -571,9 +573,11 @@ function _archive_media()
 
   # Camera model name
   camera=$(exiftool -Model -s -s -s "${firstmedia}"\
-  -api 'Filter=s/HERO10 Black/GoPro_Hero10/g;'\
+  -api 'Filter=s/HERO11 Black/GoPro_Hero11/g;'\
+'s/HERO10 Black/GoPro_Hero10/g;'\
 's/HERO9 Black/GoPro_Hero9/g;'\
-'s/HERO8 Black/GoPro_Hero8/g')
+'s/HERO8 Black/GoPro_Hero8/g'\
+'s/GoPro Max/GoPro_Max/g;')
 
   # Last 4 digits of serial number
   serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
