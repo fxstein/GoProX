@@ -626,8 +626,8 @@ function _clean_media()
         }
       done
     else
-      _error "Will not clean ${source} without prior archive"
-      _error "Run options --archive and --clean together"
+      _error "Will not clean ${source} without prior archive or import"
+      _error "Run options --archive or --import and --clean together"
       exit 1
     fi
   else
