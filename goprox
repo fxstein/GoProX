@@ -568,7 +568,7 @@ function _archive_media()
   _info "Library: "$archivedir
 
   # Find first image file to get camera model and serial
-  firstmedia=$(find -E . -regex '.*\.(JPG|MP4|360)' | head -n 1)
+  firstmedia=$(find -E $source -regex '.*\.(JPG|MP4|360)' | head -n 1)
   _info "First Media: "$firstmedia
 
   # Camera model name
