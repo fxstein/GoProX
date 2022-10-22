@@ -97,6 +97,7 @@ processopt=""
 copyrightopt=""
 geonamesopt=""
 firmwareopt==""
+exiftoolstatus=0
 
 function _debug()
 {
@@ -218,7 +219,11 @@ function _import_media()
 's/HERO9 Black/GoPro_Hero9/g;'\
 's/HERO8 Black/GoPro_Hero8/g'\
 's/GoPro Max/GoPro_Max/g;'\
-  "${source}"
+  "${source}" || {
+    # exiftool reported one or more errors
+    exiftoolstatus=$?
+    _warning "exiftool reported one or more errors. Please check output."
+  }
 
   _info "Finished media import"
 }
@@ -428,7 +433,11 @@ function _process_media()
   --ext mp4 --ext 360\
   -api "${apifilter}"\
   -api largefilesupport=1\
-  "${importdir}"
+  "${importdir}" || {
+    # exiftool reported one or more errors
+    exiftoolstatus=$?
+    _warning "exiftool reported one or more errors. Please check output."
+  }
 
   # Second pass - only mp4 files
   # Need to apply differnt logic for various tags
@@ -454,7 +463,11 @@ function _process_media()
   -api "${apifilter}"\
   -api largefilesupport=1\
   -api QuickTimeHandler=1\
-  "${importdir}"
+  "${importdir}" || {
+    # exiftool reported one or more errors
+    exiftoolstatus=$?
+    _warning "exiftool reported one or more errors. Please check output."
+  }
 
   # Third pass - only 360 files
   # Need to apply differnt logic for various tags and sort into 360 subtree
@@ -483,7 +496,11 @@ function _process_media()
   -api "${apifilter}"\
   -api largefilesupport=1\
   -api QuickTimeHandler=1\
-  "${importdir}"
+  "${importdir}" || {
+    # exiftool reported one or more errors
+    exiftoolstatus=$?
+    _warning "exiftool reported one or more errors. Please check output."
+  }
 
   _info "Finished media processing"
 }
@@ -579,8 +596,19 @@ function _archive_media()
 's/HERO8 Black/GoPro_Hero8/g'\
 's/GoPro Max/GoPro_Max/g;')
 
+  # Check for exiftool errors
+  if (( $? )) then
+    _warning "exiftool: Unable to get camera model."
+  fi
+
   # Last 4 digits of serial number
   serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
+
+  # Check for exiftool errors
+  if (( $? )) then
+    _warning "exiftool: Unable to get camera serial number."
+  fi
+
   timestamp=$(date +%Y%m%d%H%M%S)
 
   _info "Camera: "$camera
@@ -609,6 +637,13 @@ function _clean_media()
   if [[ -f "$source/MISC/version.txt" ]]; then
     # Only proceed if we just finished archiving or importing this media
     if [ "$archive" = true ] || [ "$import" = true ]; then
+      # One more check to make sure any prior step did not result in an exiftool error
+      _debug "exiftool status: $exiftoolstatus"
+      if (( $exiftoolstatus )) then
+        _error "Will not clean ${source} due to exiftool error status: ${exiftoolstatus}"
+        _error "Please check output."
+        exit 1
+      fi
       if [ -e "$source/DCIM" ]; then
         _debug "Removing $source/DCIM"
         rm -rfv $source/DCIM || {
@@ -930,6 +965,11 @@ if [ "$clean" = true ]; then
 fi
 if [ "$firmware" = true ]; then
   _firmware
+fi
+
+_info "GoProx processing finished."
+if (( $exiftoolstatus )) then
+  _warning "exiftool reported one or more errors during this goprox run. Please check output."
 fi
 
 ) 2>&1 | eval ${output}
