@@ -608,7 +608,7 @@ function _clean_media()
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
     # Only proceed if we just finished archiving or importing this media
-    if [ "$archive" = true || "$import" = true ]; then
+    if [ "$archive" = true ] || [ "$import" = true ]; then
       if [ -e "$source/DCIM" ]; then
         _debug "Removing $source/DCIM"
         rm -rfv $source/DCIM || {
