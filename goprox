@@ -946,11 +946,14 @@ for key val in "${(kv@)opts}"; do
     ;;
     --time)
       if [[ ! -z $val ]]; then
-        timeformat=$val
+        # Need to validate incoming timeformat as it is being used in eval code
+        _dirtytimeformat=$val
+        # Only copy alphanumeric and a few date & time formatting characters
+        timeformat=${_dirtytimeformat//[^a-zA-Z0-9:%\-_ ]/}
       else
         timeformat=$DEFAULT_TIMEFORMAT
       fi
-      output=$TIMESTAMP_PRE$timeformat$TIMESTAMP_POST
+      output=$TIMESTAMP_PRE"$timeformat"$TIMESTAMP_POST
     ;;
   esac
 done
