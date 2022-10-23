@@ -96,13 +96,14 @@ libraryopt=""
 processopt=""
 copyrightopt=""
 geonamesopt=""
-firmwareopt==""
+firmwareopt=""
 exiftoolstatus=0
 validlibrary=false
 validarchive=false
 validimported=false
 validprocessed=false
 validdeleted=false
+tempdir=""
 
 function _debug()
 {
@@ -982,6 +983,36 @@ _debug "SourceOpt: $sourceopt"
 _debug "LibraryOpt: $libraryopt"
 _debug "CopyrightOpt: $copyrightopt"
 _debug "GeonamesOpt: $geonamesopt"
+
+# Check if source is a tar.gz file
+_sourcetype="${sourceopt#*.}"
+_debug "Source type: $_sourcetype"
+
+case $_sourcetype in
+  tar.gz)
+  # This is a gziped tar ball
+    _info "Source is $_sourcetype"
+
+  # Need to uncompress into a temp directory to proceed
+  tempdir=`mktemp -d /tmp/${__this__}.XXXXXX` || {
+      _error "Unable to create temp dir: $tempdir"
+      exit 1
+  }
+  # Make sure it gets removed on exit
+  trap 'rm -rf -- "$tempdir"' EXIT
+
+  _info "Temp dir: $tempdir" 
+
+  tar -xvf ${sourceopt} -C $tempdir || {
+    # Archive extraction failed
+    _error "Archive extraction failed!"
+    exit 1
+  }
+
+  # Now make temp dir the source of processing
+  sourceopt=$tempdir
+  ;;
+esac
 
 # Now override any parameters that were specified
 if [[ -n $sourceopt ]]; then
