@@ -991,8 +991,6 @@ _debug "Source type: $_sourcetype"
 case $_sourcetype in
   tar.gz)
   # This is a gziped tar ball
-    _info "Source is $_sourcetype"
-
   # Need to uncompress into a temp directory to proceed
   tempdir=`mktemp -d /tmp/${__this__}.XXXXXX` || {
       _error "Unable to create temp dir: $tempdir"
