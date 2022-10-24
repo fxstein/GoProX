@@ -55,6 +55,22 @@ The `--setup` option can be rerun as often as desired to change the settings sto
 Whenever `--setup` detects a prior configuration it creates a backup copy named like 
 `.goprox.bak.1657302965`. The configuration file is a simple text file that is sourced in `goprox`.
 
+As part of the setup, `goprox` will create a library skeleton unless the library already exists. 
+The default location is `~/goprox`, but placing the library on a dedicated storage device is highly 
+encouraged as the data volumes will be very significant. 
+
+This is the hierarchy of the `goprox` library:
+
+```
+goprox/ (named and placed as required)
+├── archive/
+├── imported/
+├── processed/
+└── deleted/
+```
+All subsequent runs of `goprox` will validate this storage hierarchy. See the storage hierarchy section
+for more details
+
 ## Usage
 
 Once installed and set up GoProX maintains a file system based media library that
@@ -302,9 +318,6 @@ ImageStabilization: ...
 These tags can be used inside of Apple Photos for various tasks, most
 importantly to create Smart Albums that key off one or more of them.
 
-
-
-
 ### Copyright information
 
 As you will capture more and more media with multiple GoPro cameras, it is
@@ -334,6 +347,190 @@ generally very fast.
 
 If you want to reprocess certain files, simply delete them at the destination
 folder and rerun the process.   
+
+## Storage hierarchy
+
+`goprox` is based on a simple file-based library structure for arching, importing, 
+and processing media files over time. By default, it creates the following structure on
+disk:
+
+```
+goprox/ (named and placed as required)
+├── archive/
+├── imported/
+├── processed/
+└── deleted/
+```
+
+Any of these first-level storage subtrees can be kept as directories or replaced by 
+links to different storage devices. This helps distribute storage requirements across 
+multiple devices but can be equally beneficial for processing performance. 
+
+The following example keeps `archive` and `deleted` on the main drive while pointing 
+`imported` and `processed` to different locations.
+
+```
+goprox/ (named and placed as required)
+├── archive/
+├── imported -> /Volumes/Office G-RAID/goprox/imported/
+├── processed -> /Volumes/Office G-RAID/goprox/processed/
+└── deleted/
+```
+
+To create this distributed structure, simply create another `goprox` library skeleton
+on any storage device of your choice (in this case `/Volumes/Office G-RAID/`) (only
+the portions of the structure you want to link to are required). For example:
+
+```
+/Volumes/Office G-RAID/goprox/ 
+├── imported
+├── processed
+```
+
+You could also consider putting `archive` on a dedicated low-cost storage device:
+
+```
+/Volumes/Office Dock/goprox/ 
+├── archive
+```
+
+Once created, head over to the main library, remove the empty directories (if you are 
+performing this as a migration see below) you would like to point to different 
+locations, and simple run:
+
+```
+ln -s /Volumes/Office\ G-RAID/goprox/imported/ imported
+ln -s /Volumes/Office\ G-RAID/goprox/processed/ processed
+```
+
+Once set up as required, `goprox` will be fully aware of the distributed nature of the
+library and will validate the structure every time you run it. As part of the 
+validation, it will check and warn of broken links and, if necessary, stop the execution 
+of operations that would require the portions of the library that are unreachable.
+
+This is necessary to avoid situations where external storage devices are not mounted
+or simply not available when on the road.
+
+Simple run `goprox` with no parameters to get the storage validation summary:
+
+```
+Info: Validating storage hierarchy... 
+Info: goprox library: /Users/xxxxxxx/goprox directory validated 
+Info: goprox archive: /Users/xxxxxxx/goprox/archive directory validated 
+Warning: goprox imported: /Users/xxxxxxx/goprox/imported is a broken link to /Volumes/Office G-RAID/goprox/imported/
+Warning: Make sure the storage device is mounted and the directory has not been moved. 
+Warning: goprox processed: /Users/xxxxxxx/goprox/processed is a broken link to /Volumes/Office G-RAID/goprox/processed/ 
+Warning: Make sure the storage device is mounted and the directory has not been moved. 
+Info: goprox deleted: /Users/xxxxxxx/goprox/deleted directory validated 
+Info: Finished storage hierarchy validation. 
+Info: GoProx processing finished. 
+```
+
+In this particular example, you can still perform `--archive`, `--firmware`, or `--clean` tasks
+but will see an error if you attempt `--import` or `--process`.
+
+### Inside the library
+
+Once you get started, you will see `goprox` fill the library's content with your
+GoPro media data. 
+
+Here is a sample summary of how `goprox` builts the tree inside the various components:
+
+```
+goprox/
+├── archive/
+│   ├── 20221015125658_GoPro_Hero10_8034.tar.gz
+│   ├── 20221015131037_GoPro Max_6013.tar.gz
+│   ├── 20221015103421_GoPro_Hero11_4632.tar.gz
+│   └── 20220713183316_GoPro_Hero9_0021.tar.gz
+├── imported/
+│   ├── 2021
+│   └── 2022
+│       ├── 20220520
+│       └── 20221013
+│           ├── 20221013084759_GoPro_Hero11_5131_G0294305.JPG
+│           ├── 20221013094220_GoPro_Hero10_4299_G0019484.JPG
+│           ├── 20221013153428_GoPro_Max_6013_GS016167.360
+│           └── geonames.json
+└── processed/
+    ├── JPEG
+    │   ├── 2021
+    │   └── 2022
+    │       ├── 20220520
+    │       └── 20221013
+    │           ├── P_20221013084759_GoPro_Hero11_5131_G0294305.JPG
+    │           └── P_20221013094220_GoPro_Hero10_4299_G0019484.JPG
+    ├── MP4
+    └── 360
+        ├── 2021
+        └── 2022
+            ├── 20220520
+            └── 20221013
+                └── P_20221013153428_GoPro_Max_6013_GS016167.360
+
+```
+
+`archive` is a flat directory with the individual sdcard image backups as `tar.gz`.
+These archives usually get migrated to long term storage (eg: AWS Glacier) or simply
+deleted after a while. When you get started with `goprox`, it is strongly
+recommended to perform archives as they are a simple, foolproof way to undo anything
+that could go wrong as you experiment with features and your workflow.
+`goprox` supports imports straight from an archive file. This allows you to rerun 
+any process from scratch without ever losing any data. The cost is an extra copy 
+of all the media.
+
+`imported` contains a structure by year and then by date to keep the hierarchy 
+manageable. Within a particular day, you will find all media `goprox` has imported.
+These dates are derived from when the media was created/shot and NOT when it was 
+imported. That information you can find in the modification dates of each file.
+`goprox` has a strict DO-NOT-OVERRIDE existing files policy. It only adds, never 
+replaces. If you want to rerun a particular day, delete those files within the tree
+and re-run the import from your archives. Be aware that the archive dates do not
+necessarily correspond with the individual file date. The archives are labeled by 
+the day and time the archive has been created. All media files inside of `imported`
+are unmodified but renamed. It is the exact media that came off your sdcard but
+intelligently named according to the files EXIF data.
+
+`processed` contains a further refined structure by file type, then year and date.
+This is done because, in many cases, JPEG, MP4, and 360 files go through different 
+workflows in post-production. For example, JPEGs might get imported into Apple Photos, 
+whereas MP4s get used by Blackmagic DaVinci or similar. 360s usually have
+to be processed by GoPro Player first before they can be used in cutting and editing.
+`processed` media files are rewritten with additional metadata that allows Apps
+to search, sort, and filter these files in new ways. To be able to distinguish
+`imported` from `processed` media, a `P_` prefix is added to all processed 
+media.
+
+`deleted` is currently a placeholder for future functionality to allow upstream 
+deletion propagation back into the goprox library. It will contain
+lists of files that have been deleted in upstream Apps like Apple Photos to remove
+those files retroactively from the `goprox` library. 
+
+### Performance considerations
+
+For extra performance, you could consider placing `imported` and `processed` on 
+different SSDs. Internal NVME drives can get up to 1.3GB/s transfer rates, while 
+external devices like Samsung's T7s max out at 600-700MB/s. The G-Raid can do 
+about 400MB/s in RAID 0 and 200MB/s in RAID 1.
+
+### Existing file migration
+
+If you need to migrate file structures from one device to another, it is highly 
+recommended to bypass Finder and use `cp` in archive mode to maximize copy performance 
+but also preserve owner, date & time as well as other attributes in your library.
+
+```
+cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox
+```
+
+This will safely copy all the contents of the source to the new target. It will skip 
+existing files (so you can re-run it in case of a failure) but it is important to 
+capture and review its output, particularly the error out. For long running migrations
+wrap in nohup:
+
+```
+nohup cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox 1>>goprox-cp-progress.log 2>>goprox-cp-errors.log 
+```
 
 ## Supported GoPro Models
 
