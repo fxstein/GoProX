@@ -14,3 +14,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
+  sha256:
+    name: sha256
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate sha256
+        run: curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v00.15.00.tar.gz" | shasum -a 256
