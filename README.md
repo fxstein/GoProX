@@ -7,10 +7,10 @@
 
 The missing GoPro workflow and data manager for macOS.
 
-For those with one or more GoPro cameras. When using these action cameras regularly, the
-limitations of the GoPro ecosystem quickly become very obvious. 
-GoPro is focusing its efforts on its mobile app experience and not 
-much development is directed toward macOS.
+For those with one or more GoPro cameras. When using these action cameras regularly, 
+the limitations of the GoPro ecosystem quickly become very obvious. 
+GoPro is focusing its efforts on its mobile app experience, and not much development 
+is directed toward macOS.
 GoProX is geared toward (semi-) professionals and prosumers that simply need
 more from their devices.
 GoProX is based on a data-first approach to importing, processing and maintaining
@@ -520,6 +520,8 @@ recommended to bypass Finder and use `cp` in archive mode to maximize copy perfo
 but also preserve owner, date & time as well as other attributes in your library.
 
 ```
+cp -RpPvn source target
+
 cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox
 ```
 
@@ -529,6 +531,8 @@ capture and review its output, particularly the error out. For long running migr
 wrap in nohup:
 
 ```
+nohup cp -RpPvn source target 1>>cp-progress.log 2>>cp-errors.log
+
 nohup cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox 1>>goprox-cp-progress.log 2>>goprox-cp-errors.log 
 ```
 
