@@ -111,11 +111,15 @@ that allows for testing and validation of changes with the `--test` option.
 goprox --import
 ```
 The `--import` option will read from `source` (default to the current directory `.`) and 
-import all media files into `library\imported`
+import all image and video media files into `library\imported`.
 This is best used for importing media files from the path of a mounted media card. To do 
-so insert the microSD card of your camera into a reader attached to your Mac. Open Finder 
+so, insert your camera's microSD card into a reader attached to your Mac. Open Finder 
 to see the mounted card, right-click it and select `New Terminal at Folder`. This will 
-open a new zsh terminal at the mounted card folder. 
+open a new zsh terminal at the mounted card folder.
+
+Alternatively `--import` can process a `tar.gz` archive directly. It will first untar
+the contents into a temp directory and then import from there. This is helpful when 
+re-importing previously archived sd card data
 
 ```
 goprox --archive
