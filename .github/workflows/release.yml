@@ -1,0 +1,16 @@
+name: goprox release action
+run-name: ${{ github.actor }} is publishing a release
+on:
+  release:
+    types: [published]
+jobs:
+  debug:
+    name: Debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump env
+        run: env | sort
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
