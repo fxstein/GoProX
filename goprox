@@ -1050,13 +1050,6 @@ if [ "$setup" = true ]; then
   exit 0
 fi
 
-# Before proceeding validate storage hierarchy
-# This is necesssary when dealing with linked sub directories located on 
-# separate storage devices like external SSDs or HDDs. When those devices
-# are not mounted, links to them still exist but are none operational.
-# Depending on processing options, various steps might become impossible.
-_validate_storage
-
 if [ "$test" = true ]; then
   _info "TESTING - Performing tests..."
   _info "Removing prior test data..."
@@ -1069,6 +1062,7 @@ if [ "$test" = true ]; then
 
   source="./test/originals"
   library="./test"
+  _validate_storage
   _import_media
 
   copyright="This is a Test Copyright"
@@ -1085,6 +1079,13 @@ if [ "$test" = true ]; then
   _info "TESTING successful!"
   exit 0
 fi
+
+# Before proceeding validate storage hierarchy
+# This is necesssary when dealing with linked sub directories located on 
+# separate storage devices like external SSDs or HDDs. When those devices
+# are not mounted, links to them still exist but are none operational.
+# Depending on processing options, various steps might become impossible.
+_validate_storage
 
 # Execute in order: archive, import, clean, geonames, process, firmware
 if [ "$archive" = true ]; then
