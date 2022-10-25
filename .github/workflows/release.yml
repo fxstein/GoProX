@@ -18,7 +18,9 @@ jobs:
     name: sha256
     runs-on: ubuntu-latest
     steps:
-      - name: Calculate sha256
-        - run: curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256
-        - run: curl -sL "{{ github.event.tarball_url }}" | shasum -a 256
-        - run: curl -sL "{{ github.event.zipball_url }}" | shasum -a 256
+      - name: Calculate tarball sha256 (1)
+        run: curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256
+      - name: Calculate tarball sha256 (2)
+        run: curl -sL "{{ github.event.tarball_url }}" | shasum -a 256
+      - name: Calculate zipball sha256
+        run: curl -sL "{{ github.event.zipball_url }}" | shasum -a 256
