@@ -21,7 +21,7 @@ developed and tested with GoPro Hero8, Hero9, Hero10, Hero11 and GoPro Max.
 
 The most common way to install `goprox` is via home-brew.
 
-To install goprox simply type
+To install `goprox` simply type
 
 ```
 brew install fxstein/fxstein/goprox
@@ -31,6 +31,20 @@ Alternatively, you can add the fxstein tap manually before installing goprox
 
 ```
 brew tap fxstein/fxstein
+brew install goprox
+```
+
+Once installed, you can upgrade `goprox` by simply running
+
+```
+brew upgrade goprox
+```
+
+Alternatively, you can also uninstall and reinstall goprox in case of issues with the
+upgrade
+
+``` 
+brew uninstall goprox
 brew install goprox
 ```
 
