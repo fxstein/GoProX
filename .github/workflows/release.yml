@@ -1,5 +1,5 @@
 name: goprox release action
-run-name: ${{ github.actor }} is publishing a release
+run-name: ${{ github.actor }} is publishing release ${{ github.ref_name }}
 on:
   release:
     types: [published]
@@ -19,4 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Calculate sha256
-        run: curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256
+        - run: curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256
+        - run: curl -sL "{{ github.event.tarball_url }}" | shasum -a 256
+        - run: curl -sL "{{ github.event.zipball_url }}" | shasum -a 256
