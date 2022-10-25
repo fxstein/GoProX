@@ -625,6 +625,8 @@ function _geonames_media()
           _info "Media file: "$file
 
           # Get GPS info from file
+          # @todo Add exiftool error handling
+          # @body Need to test exiftool for errors  
           gpsdata=$(exiftool -n -q -q \
                     -p 'lat=$gpslatitude&lng=$gpslongitude' "$file" | head -n 1)
           _debug "GPS Data: "$gpsdata
@@ -641,6 +643,8 @@ function _geonames_media()
             _info "Writing GeoNames file: ${d}${geonamesfile}"
 
             # Add our current file as reference
+            # @todo Add geonames error handling
+            # @body Add check if geonames call resulted in valid geonames data, at the minimum that it is not empty
             echo $geonamesdata | jq ". + {reference: \"${file}\"}">${d}${geonamesfile}
             ((ngeo++))
 
