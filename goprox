@@ -565,7 +565,7 @@ function _process_media()
   -if4 "${timefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
-  '-filename<P_%f.%e'\
+  '-filename=P_%f.%e'\
   '-directory<'"${processdir}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${processdir}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
