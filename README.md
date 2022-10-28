@@ -193,12 +193,16 @@ goprox --process --time
 ```
 The `--process` option takes unmodified imported media files and rewrites them with enhanced
 metadata. This is where `goprox` inserts tags and flags into the media files that are then picked
-up by the likes of Apple Photos. By default, `process` will look for newly imported media files 
-since the last `process` run. 
-Alternatively, `all` or any valid time window can be specified `*[0-9](y|m|w|d|H|M|S)` 
-For example `goprox --process 30d` will process the past 30d while `goprox --process all` will 
+up by the likes of Apple Photos. For GoPro video media (mp4 & 360) `--process` also performs 
+a UTC timeshift of all the Quicktime tags to allow downstream tools like Apple or Google Photos
+to display the correct date and time.
+
+By default, `process` will look for newly imported media files 
+since the last `process` run. Alternatively, `all` or any valid time window can be specified 
+`*[0-9](y|m|w|d|H|M|S)`. 
+For example, `goprox --process 30d` will process the past 30d while `goprox --process all` will 
 process all imported media files. Caution should be used when reprocessing older media files as the
-content of a file will change with a newer version of `goprox` as any change in metadata will lead 
+content of a file will change with a newer version of `goprox`, as any change in metadata will lead 
 to a modified file. 
 
 ## Filenames
