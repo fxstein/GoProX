@@ -490,7 +490,7 @@ function _process_media()
   # 0x9011	OffsetTimeOriginal	string	ExifIFD	(time zone for DateTimeOriginal)
 
   # First pass - exlude mp4 and 360 files
-  _info "First pass: 1/3 - All files but mp4 and 360"
+  _info "First pass: 1/4 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -521,7 +521,7 @@ function _process_media()
 
   # Second pass - only mp4 files
   # Need to apply differnt logic for various tags
-  _info "Second pass: 2/3 - Only mp4 files"
+  _info "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -555,7 +555,7 @@ function _process_media()
 
   # Third pass - only 360 files
   # Need to apply differnt logic for various tags and sort into 360 subtree
-  _info "Third pass: 3/3 - Only 360 files"
+  _info "Third pass: 3/4 - Only 360 files"
 
   # Override - File name pattern is different for 360 media
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
@@ -587,6 +587,34 @@ function _process_media()
       _warning "Third pass: No files processed by exiftool."
     else  
       _warning "Third pass: exiftool reported one or more errors. Please check output."
+    fi
+  }
+
+  # Forth pass - timeshift gopro video files
+  # To eliminate issues with Apple & Google photos we need to convert the QuickTime date/time 
+  # fields into UTC. Since GoPro records those fields in local time of the camera, we need to 
+  # leverage the GPSDateTime to calculate the approx DST offset and then shift all the 
+  # QuickTime tags by that amount.
+  _info "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
+
+# exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
+  exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
+  -if4 "${timefilter}"\
+  '-quicktime:time:all<${GPSDateTime;$_=$self->GetValue("CreateDate")+'\
+'int((($_-$self->GetValue("CreateDate"))/3600)+(($_-$self->GetValue("CreateDate"))/3600)/'\
+'abs((($_-$self->GetValue("CreateDate"))/3600)*2 || 1))*3600}'\
+  -ext mp4 -ext 360\
+  -api "${apifilter}"\
+  -api largefilesupport=1\
+  -api QuickTimeHandler=1\
+  -api TimeZone=GMT\
+  "${processdir}" || {
+    # exiftool reported one or more errors
+    exiftoolstatus=$?
+    if [[ $exiftoolstatus = 2 ]]; then
+      _warning "Forth pass: No files processed by exiftool."
+    else  
+      _warning "Forth pass: exiftool reported one or more errors. Please check output."
     fi
   }
 
