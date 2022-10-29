@@ -343,13 +343,13 @@ function _process_media()
     deltadate=$(date -v-${processopt} +%s)
     _debug "Delta date: ${deltadate}"
 
-    timefilter='${FileModifyDate;DateFmt("%s")} gt '${deltadate}
+    timefilter='${FileModifyDate#;DateFmt("%s")} gt '${deltadate}
     _debug "exiftool time filter: ${timefilter}"
   elif [[ -n $processopt ]]; then
     _error "Unknown processing option: ${processopt} specified."
     exit 1
   elif [[ -n $lastprocess ]]; then
-    timefilter='${FileModifyDate;DateFmt("%s")} gt '${lastprocess}
+    timefilter='${FileModifyDate#;DateFmt("%s")} gt '${lastprocess}
     _debug "exiftool time filter: ${timefilter}"
   else
     _info "Process dir ${processdir} is empty. Processing all files from ${importdir}"
