@@ -44,6 +44,8 @@ readonly HELP_TEXT="Available Options:
 -p:: --process::[all|val[ymwdHMS]]
 -s: --source:
 -t:: --timeshift::
+-q --quiet
+-v --verbose
 --clean
 --config:
 --geonames::
@@ -68,7 +70,7 @@ readonly DEFAULT_FILETYPES="JPG|MP4|360|JPEG|HEIC"
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
-readonly DEFAULT_LOGLEVEL=1 #debug:0; info:1; warn:2; error:3
+readonly DEFAULT_LOGLEVEL=2 #debug:0; info:1; warn:2; error:3
 
 readonly GOPROX=$(which ${__this__})
 readonly REALGOPROX=$(readlink -f $GOPROX)
@@ -894,6 +896,8 @@ zparseopts -D -E -F -A opts - \
             p:: -process:: \
             s: -source: \
             t:: -timeshift:: \
+            q -quiet \
+            v -verbose \
             -clean \
             -config: \
             -debug \
@@ -947,6 +951,11 @@ for key val in "${(kv@)opts}"; do
       # TODO: Implement variants like GPS and manual TZ
       timeshiftopt=$val
     ;;
+    -q|--quiet)
+      loglevel=3 # error
+    ;;
+    -v|--verbose)
+      loglevel=1 # info
     ;;
     --clean)
       # Perform archive tasks
