@@ -884,6 +884,11 @@ colors
 # enable built in stat
 zmodload zsh/stat
 
+# If no parameters have been provided display help and exit
+if [[ $# -eq 0 ]] ; then
+  _help
+  exit 1
+fi
 
 # Parse options
 declare -A opts
