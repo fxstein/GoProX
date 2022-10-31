@@ -48,10 +48,17 @@ readonly HELP_TEXT="Available Options:
 -q --quiet
 -v --verbose
 --clean
+--created-on:[date|file]
+--created-after:[date|file]
+--created-before:[date|file]
 --config:
 --geonames::
 --debug
 --firmware::[labs]
+--if:[condition]
+--modified-on:[date|file]
+--modified-after:[date|file]
+--modified-before:[date|file]
 --setup
 --test
 --time::[format]
@@ -105,6 +112,19 @@ processopt=""
 copyrightopt=""
 geonamesopt=""
 firmwareopt=""
+
+# filter options 
+filter=false
+createdfilter=false
+createdonopt=""
+createdafteropt=""
+createdbeforeopt=""
+ifopt=""
+modifiedfilter=false
+modifiedonopt=""
+modifiedafteropt=""
+modifiedbeforeopt=""
+
 exiftoolstatus=0
 validlibrary=false
 validarchive=false
@@ -909,9 +929,16 @@ zparseopts -D -E -F -A opts - \
             v -verbose \
             -clean \
             -config: \
+            -created-on: \
+            -created-after: \
+            -created-before: \
             -debug \
             -firmware:: \
             -geonames:: \
+            -if: \
+            -modified-on: \
+            -modified-after: \
+            -modified-before: \
             -setup \
             -test \
             -time:: \
@@ -978,6 +1005,22 @@ for key val in "${(kv@)opts}"; do
     --config)
       config=$val
     ;;
+    --created-on)
+      # Filter on creation date; exiftool -if4
+      filter=true
+      createdfilter=true
+      createdonopt=$val
+    ;;
+    --created-after)
+      filter=true
+      createdfilter=true
+      createdafteropt=$val
+    ;;
+    --created-before)
+      filter=true
+      createdfilter=true
+      createdbeforeopt=$val
+    ;;
     --debug)
       # Turn on debug output
       debug=true
@@ -994,6 +1037,27 @@ for key val in "${(kv@)opts}"; do
     --geonames)
       geonames=true
       geonamesopt=$val
+    ;;
+    --if)
+      # filter on metadata; exiftool -if
+      filter=true
+      ifopt=$val
+    ;;
+    --modified-on)
+      # filter on modification date; exiftool -if4
+      filter=true
+      modifiedfilter=true
+      modifiedonopt=$val
+    ;;
+    --modified-after)
+      filter=true
+      modifiedfilter=true
+      modifiedafteropt=$val
+    ;;
+    --modified-before)
+      filter=true
+      modifiedfilter=true
+      modifiedbeforeopt=$val
     ;;
     --setup)
       # Perform setup tasks
