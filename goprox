@@ -37,21 +37,23 @@ $__github__
 "
 readonly HELP_TEXT="Available Options:
 -h --help
--s: --source:
--l: --library:
+-a --archive
 -c: --copyright:
 -i --import
+-l: --library:
 -p:: --process::[all|val[ymwdHMS]]
+-s: --source:
 -t:: --timeshift::
--a --archive
 --clean
 --config:
 --geonames::
 --debug
---setup
 --firmware::[labs]
---time::
+--setup
 --test
+--time::[format]
+--repair::[created]
+--version
 "
 
 # Various defaults
@@ -885,21 +887,21 @@ zmodload zsh/stat
 declare -A opts
 zparseopts -D -E -F -A opts - \
             h -help \
-            s: -source: \
-            l: -library: \
+            a -archive \
             c: -copyright: \
             i -import \
+            l: -library: \
             p:: -process:: \
+            s: -source: \
             t:: -timeshift:: \
-            a -archive \
             -clean \
-            -geonames:: \
             -config: \
             -debug \
-            -setup \
             -firmware:: \
-            -time:: \
+            -geonames:: \
+            -setup \
             -test \
+            -time:: \
 	          || exit 1
 
 # remove first -- or -
@@ -908,26 +910,24 @@ set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
 
 for key val in "${(kv@)opts}"; do
   case $key in
-    --config)
-      config=$val
+    -h|--help)
+      _help
+      exit 1
+    ;;
+    -a|--archive)
+      # Perform archive tasks
+      archive=true
     ;;
     -c|--copyright)
       copyrightopt=$val
       #"-artist=$val -author=$val -xmp:copyright=$val"
     ;;
-    --debug)
-      # Turn on debug output
-      debug=true
-      # DEBUG output only works AFTER parameter processing has been completed
-      # For manual script wide override set the $debug variable to true
-    ;;
-    -h|--help)
-      _help
-      exit 1
-    ;;
     -i|--import)
       # Perform import tasks
       import=true
+    ;;
+    -l|--library)
+      libraryopt=$val
     ;;
     -p|--process)
       # Perform process tasks
@@ -937,6 +937,9 @@ for key val in "${(kv@)opts}"; do
       # imports from now - eg 7d: process past 7 days of imported media)
       processopt=$val
     ;;
+    -s|--source)
+      sourceopt=$val
+    ;;
     -t|--timeshift)
       # Perform process tasks
       timeshift=true
@@ -944,21 +947,19 @@ for key val in "${(kv@)opts}"; do
       # TODO: Implement variants like GPS and manual TZ
       timeshiftopt=$val
     ;;
-    -a|--archive)
-      # Perform archive tasks
-      archive=true
     ;;
     --clean)
       # Perform archive tasks
       clean=true
     ;;
-    --geonames)
-      geonames=true
-      geonamesopt=$val
+    --config)
+      config=$val
     ;;
-    --setup)
-      # Perform setup tasks
-      setup=true
+    --debug)
+      # Turn on debug output
+      debug=true
+      # DEBUG output only works AFTER parameter processing has been completed
+      # For manual script wide override set the $debug variable to true
     ;;
     --firmware)
       # setup firmware upgrade
@@ -967,11 +968,13 @@ for key val in "${(kv@)opts}"; do
       # installs labs firmware for camera
       firmwareopt=$val
     ;;
-    -s|--source)
-      sourceopt=$val
+    --geonames)
+      geonames=true
+      geonamesopt=$val
     ;;
-    -l|--library)
-      libraryopt=$val
+    --setup)
+      # Perform setup tasks
+      setup=true
     ;;
     --test)
       test=true
