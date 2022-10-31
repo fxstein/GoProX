@@ -30,7 +30,8 @@ __version__='00.18.dev'
 __github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
-readonly BANNER="$__this__ v$__version__
+readonly VERSION_TEXT="$__this__ v$__version__"
+readonly BANNER_TEXT="$VERSION_TEXT
 $__copyright__
 License: $__license__
 $__github__
@@ -86,6 +87,7 @@ copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 filetypes=$DEFAULT_FILETYPES
 loglevel=$DEFAULT_LOGLEVEL
+
 test=false
 setup=false
 debug=false
@@ -95,6 +97,8 @@ geonames=false
 archive=false
 clean=false
 firmware=false
+version=false
+
 sourceopt=""
 libraryopt=""
 processopt=""
@@ -139,11 +143,11 @@ function _validate_dependencies()
   # only works if the exiftool is installed
   _info "Validating exiftool..."
   if (( ${+commands[exiftool]} )); then
-      which exiftool
+      [[ $loglevel -le 1 ]] && which exiftool
       if [[ "$debug" = true ]]; then
         exiftool -ver -v
       else
-        exiftool -ver
+        [[ $loglevel -le 1 ]] && exiftool -ver
       fi
   else
       _error "ERROR: Please install exiftool first, run:"
@@ -153,7 +157,7 @@ function _validate_dependencies()
   # jq is needed to parse and write json data
   _info "Validating jq..."
   if (( ${+commands[jq]} )); then
-      which jq && jq --version
+      [[ $loglevel -le 1 ]] && which jq && jq --version
   else
       _error "ERROR: Please install jq first, run:"
       _warning "brew install jq"
@@ -162,7 +166,7 @@ function _validate_dependencies()
   # tag is needed to write macOS tags
   _info "Validating tag..."
   if (( ${+commands[tag]} )); then
-      which tag && tag --version
+      [[ $loglevel -le 1 ]] && which tag && tag --version
   else
       _error "ERROR: Please install tag first, run:"
       _warning "brew install tag"
@@ -911,7 +915,12 @@ zparseopts -D -E -F -A opts - \
             -setup \
             -test \
             -time:: \
-	          || exit 1
+            -version \
+	          || {
+    # Unknown option
+    _error "Unknown option: $@"
+    exit 1
+  }
 
 # remove first -- or -
 end_opts=$@[(i)(--|-)]
@@ -1006,6 +1015,9 @@ for key val in "${(kv@)opts}"; do
       fi
       output=$TIMESTAMP_PRE"$timeformat"$TIMESTAMP_POST
     ;;
+    --version)
+      version=true
+    ;
   esac
 done
 
@@ -1016,7 +1028,12 @@ fi
 
 # so we can timestamp the output
 (
-_info $BANNER
+if [ "$version" = true ]; then
+  # Display version independent of logging level 
+  echo $VERSION_TEXT
+fi
+
+_info $BANNER_TEXT
 
 # Check if all required dependencies are installed
 _validate_dependencies
@@ -1025,7 +1042,7 @@ _validate_dependencies
 # Check if we have a config file to work with
 if [[ -f "$config" ]]; then
   _info "Loading config file: $config"
-  tail $config
+  [[ $loglevel -le 1 ]] && tail $config
   source $config
 fi
 
