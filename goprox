@@ -130,8 +130,6 @@ modifiedonopt=""
 modifiedafteropt=""
 modifiedbeforeopt=""
 iffilter=() # default is empty array for later parameter expansion
-createdtimefilter="1" # default is unfiltered for exiftool -if4
-modifiedtimefilter="1" # default is unfiltered for exiftool -if4
 
 exiftoolstatus=0
 validlibrary=false
@@ -315,14 +313,19 @@ function _create_timefilter()
 
     if [[ -n $createdonopt ]]; then
       _debug "CreatedOnFilter: "${createdonopt}
-      createdtimefilter='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} =~ "'${createdonopt}'"'
+      # Need to assemble as an array to preserve whitespaces within $ifopt
+      iffilter+='-if4'
+      iffilter+='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} =~ "'${createdonopt}'"'
     elif [[ -n $createdafteropt && -n $createdbeforeopt ]]; then
-      createdtimefilter='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${createdafteropt}'"'\
+      iffilter+='-if4'
+      iffilter+='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${createdafteropt}'"'\
 ' and ${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${createdbeforeopt}'"'
     elif [[ -n $createdafteropt ]]; then
-      createdtimefilter='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${createdafteropt}'"'
+      iffilter+='-if4'
+      iffilter+='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${createdafteropt}'"'
     elif [[ -n $createdbeforeopt ]]; then
-      createdtimefilter='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${createdbeforeopt}'"'
+      iffilter+='-if4'
+      iffilter+='${FileCreateDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${createdbeforeopt}'"'
     else
       _error "Invalid filter options."
       return 1
@@ -334,22 +337,25 @@ function _create_timefilter()
 
     if [[ -n $modifiedonopt ]]; then
       _debug "ModifiedOnFilter: "${modifiedonopt}
-      modifiedtimefilter='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} =~ "'${modifiedonopt}'"'
+      # Need to assemble as an array to preserve whitespaces within $ifopt
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} =~ "'${modifiedonopt}'"'
     elif [[ -n $modifiedafteropt && -n $modifiedbeforeopt ]]; then
-      modifiedtimefilter='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${modifiedafteropt}'"'\
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${modifiedafteropt}'"'\
 ' and ${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${modifiedbeforeopt}'"'
     elif [[ -n $modifiedafteropt ]]; then
-      modifiedtimefilter='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${modifiedafteropt}'"'
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} ge "'${modifiedafteropt}'"'
     elif [[ -n $modifiedbeforeopt ]]; then
-      modifiedtimefilter='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${modifiedbeforeopt}'"'
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%Y%m%d%H%M%S")} lt "'${modifiedbeforeopt}'"'
     else
       _error "Invalid filter options."
       return 1
     fi
   fi
 
-  _info "CreatedTime filter: $createdtimefilter"
-  _info "ModifiedTime filter: $modifiedtimefilter"
   _info "Finished time filter."
 
   return 0
@@ -385,8 +391,6 @@ function _import_media()
   _info "Library: "$importdir
 
   exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir}"'/NODATE/'\
-  -if4 "${createdtimefilter}"\
-  -if4 "${modifiedtimefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<${FileName}'\
@@ -453,27 +457,23 @@ function _process_media()
 
     if [[ $processopt == "all" ]]; then
       _info "Requested processing: ${processopt}. Processing all files from ${importdir}"
-      processtimefilter="1"
     elif [[ $processopt == *[0-9](y|m|w|d|H|M|S) ]]; then
       _info " Processing the past ${processopt} of imported media files."
 
       deltadate=$(date -v-${processopt} +%s)
       _debug "Delta date: ${deltadate}"
 
-      processtimefilter='${FileModifyDate#;DateFmt("%s")} gt '${deltadate}
-      _debug "exiftool time filter: ${timefilter}"
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%s")} gt '${deltadate}
     elif [[ -n $processopt ]]; then
       _error "Unknown processing option: ${processopt} specified."
       exit 1
     elif [[ -n $lastprocess ]]; then
-      processtimefilter='${FileModifyDate#;DateFmt("%s")} gt '${lastprocess}
-      _debug "exiftool time filter: ${timefilter}"
+      iffilter+='-if4'
+      iffilter+='${FileModifyDate#;DateFmt("%s")} gt '${lastprocess}
     else
       _info "Process dir ${processdir} is empty. Processing all files from ${importdir}"
-      processtimefilter="1"
     fi
-  else
-    processtimefilter="1"
   fi
 
   # The following keywords and tags are being created and added in order to
@@ -614,9 +614,6 @@ function _process_media()
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  -if4 "${processtimefilter}"\
-  -if4 "${createdtimefilter}"\
-  -if4 "${modifiedtimefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -647,9 +644,6 @@ function _process_media()
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  -if4 "${processtimefilter}"\
-  -if4 "${createdtimefilter}"\
-  -if4 "${modifiedtimefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -686,9 +680,6 @@ function _process_media()
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  -if4 "${processtimefilter}"\
-  -if4 "${createdtimefilter}"\
-  -if4 "${modifiedtimefilter}"\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename=P_%f.%e'\
@@ -725,9 +716,6 @@ function _process_media()
 
 # exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
   exiftool -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
-  -if4 "${processtimefilter}"\
-  -if4 "${createdtimefilter}"\
-  -if4 "${modifiedtimefilter}"\
   '-quicktime:time:all<${GPSDateTime;$_=$self->GetValue("CreateDate")+'\
 'int((($_-$self->GetValue("CreateDate"))/3600)+(($_-$self->GetValue("CreateDate"))/3600)/'\
 'abs((($_-$self->GetValue("CreateDate"))/3600)*2 || 1))*3600}'\
@@ -1232,6 +1220,7 @@ _debug "CopyrightOpt: $copyrightopt"
 _debug "GeonamesOpt: $geonamesopt"
 
 # Create optional timefilters
+# Must be executed BEFORE iffilter logic as exiftool -if4 must be left of -if0
 _create_timefilter || {
   # failure during time filter creation
   _error "Invalid time filter."
@@ -1239,6 +1228,7 @@ _create_timefilter || {
 }
 
 # Create optional iffilters
+# Must be executed AFTER timefilter logic as exiftool -if4 must be left of -if0
 _create_iffilter || {
   # failure during time filter creation
   _error "Invalid time filter."
