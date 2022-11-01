@@ -129,6 +129,7 @@ modifiedfilter=false
 modifiedonopt=""
 modifiedafteropt=""
 modifiedbeforeopt=""
+iffilter=() # default is empty array for later parameter expansion
 createdtimefilter="1" # default is unfiltered for exiftool -if4
 modifiedtimefilter="1" # default is unfiltered for exiftool -if4
 
@@ -354,6 +355,24 @@ function _create_timefilter()
   return 0
 }
 
+function _create_iffilter()
+{
+  if [[ $filter = false ]] ; then
+    _debug "Nothing to filter."
+    return 0
+  fi
+
+  if [[ -n $ifopt ]]; then
+    _debug "IfFilter: "${ifopt}
+
+    # Need to assemble as an array to preserve whitespaces within $ifopt
+    iffilter+='-if0'
+    iffilter+="${ifopt}"
+  fi
+
+  return 0
+}
+
 function _import_media()
 {
   if [[ $validimported = false ]] ; then
@@ -365,7 +384,7 @@ function _import_media()
   _info "Source: "$source
   _info "Library: "$importdir
 
-  exiftool -r $=exifloglevel -o "${importdir}"'/NODATE/'\
+  exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir}"'/NODATE/'\
   -if4 "${createdtimefilter}"\
   -if4 "${modifiedtimefilter}"\
   '-FileCreateDate<FileCreateDate'\
@@ -594,7 +613,7 @@ function _process_media()
   _info "First pass: 1/4 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${processtimefilter}"\
   -if4 "${createdtimefilter}"\
   -if4 "${modifiedtimefilter}"\
@@ -627,7 +646,7 @@ function _process_media()
   _info "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${processtimefilter}"\
   -if4 "${createdtimefilter}"\
   -if4 "${modifiedtimefilter}"\
@@ -666,7 +685,7 @@ function _process_media()
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${processtimefilter}"\
   -if4 "${createdtimefilter}"\
   -if4 "${modifiedtimefilter}"\
@@ -705,7 +724,7 @@ function _process_media()
   _info "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
 
 # exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
-  exiftool -r -wm w -ee -d '%s' $=exifloglevel -P -overwrite_original_in_place\
+  exiftool -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
   -if4 "${processtimefilter}"\
   -if4 "${createdtimefilter}"\
   -if4 "${modifiedtimefilter}"\
@@ -1214,6 +1233,13 @@ _debug "GeonamesOpt: $geonamesopt"
 
 # Create optional timefilters
 _create_timefilter || {
+  # failure during time filter creation
+  _error "Invalid time filter."
+  exit 1
+}
+
+# Create optional iffilters
+_create_iffilter || {
   # failure during time filter creation
   _error "Invalid time filter."
   exit 1
