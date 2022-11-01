@@ -149,6 +149,11 @@ function _info()
   [[ $loglevel -le 1 ]] && echo $fg[green]"Info: "$1 $2$reset_color
 }
 
+function _echo()
+{
+  [[ $loglevel -le 2 ]] && echo $fg[green]$1 $2$reset_color
+}
+
 function _warning()
 {
   [[ $loglevel -le 2 ]] && echo $fg[yellow]"Warning: "$1 $2$reset_color
@@ -386,7 +391,7 @@ function _import_media()
     exit 1
   fi
   importdir=$library/imported
-  _info "Starting media import..."
+  _echo "Starting media import..."
   _info "Source: "$source
   _info "Library: "$importdir
 
@@ -418,7 +423,7 @@ function _import_media()
     _warning "exiftool reported one or more errors. Please check output."
   }
 
-  _info "Finished media import"
+  _echo "Finished media import"
 }
 
 function _process_media()
@@ -429,7 +434,7 @@ function _process_media()
   fi
   importdir=$library/imported
   processdir=$library/processed
-  _info "Starting media processing..."
+  _echo "Starting media processing..."
   _info "ImportDir: "$importdir
   _info "ProcessDir: "$processdir
   _info "Process option: "$processopt
@@ -610,7 +615,7 @@ function _process_media()
   # 0x9011	OffsetTimeOriginal	string	ExifIFD	(time zone for DateTimeOriginal)
 
   # First pass - exlude mp4 and 360 files
-  _info "First pass: 1/4 - All files but mp4 and 360"
+  _echo "First pass: 1/4 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -640,7 +645,7 @@ function _process_media()
 
   # Second pass - only mp4 files
   # Need to apply differnt logic for various tags
-  _info "Second pass: 2/4 - Only mp4 files"
+  _echo "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -673,7 +678,7 @@ function _process_media()
 
   # Third pass - only 360 files
   # Need to apply differnt logic for various tags and sort into 360 subtree
-  _info "Third pass: 3/4 - Only 360 files"
+  _echo "Third pass: 3/4 - Only 360 files"
 
   # Override - File name pattern is different for 360 media
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
@@ -712,7 +717,7 @@ function _process_media()
   # fields into UTC. Since GoPro records those fields in local time of the camera, we need to 
   # leverage the GPSDateTime to calculate the approx DST offset and then shift all the 
   # QuickTime tags by that amount.
-  _info "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
+  _echo "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
 
 # exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
   exiftool -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
@@ -734,7 +739,7 @@ function _process_media()
     fi
   }
 
-  _info "Finished media processing"
+  _echo "Finished media processing"
 }
 
 function _geonames_media()
@@ -746,7 +751,7 @@ function _geonames_media()
 
   importdir=$library/imported
 
-  _info "Starting GeoNames processing..."
+  _echo "Starting GeoNames processing..."
   _info "Library: "$library
   _info "ImportDir: "$importdir
   _info "GeoNames account: "$geonamesacct
@@ -805,7 +810,7 @@ function _geonames_media()
   _info "$ndir directories processed."
   _info "$ngeo GeoNames files created."
 
-  _info "Finished GeoNames processing"
+  _echo "Finished GeoNames processing"
 }
 
 
@@ -833,7 +838,7 @@ function _archive_media()
   fi
 
   archivedir=$library/archive
-  _info "Starting media archive..."
+  _echo "Starting media archive..."
   _info "Source: "$source
   _info "Library: "$archivedir
 
@@ -878,12 +883,12 @@ function _archive_media()
     exit 1
   }
 
-  _info "Finished media archive"
+  _echo "Finished media archive"
 }
 
 function _clean_media()
 {
-  _info "Cleaning Source Media..."
+  _echo "Cleaning Source Media..."
   _info "Source: "$source
 
   # Check if this is a GoPro storage card
@@ -924,12 +929,12 @@ function _clean_media()
     exit 1
   fi
 
-  _info "Finished cleanup tasks"
+  _echo "Finished cleanup tasks"
 }
 
 function _firmware()
 {
-  _info "Installing firmware upgrade..."
+  _echo "Installing firmware upgrade..."
   _info "Source: "$source
 
   # Check if this is a GoPro storage card
@@ -985,7 +990,7 @@ function _firmware()
     exit 1
   fi
 
-  _info "Finished firmware check."
+  _echo "Finished firmware check."
 }
 
 
@@ -1196,6 +1201,8 @@ esac
 
 # so we can timestamp the output
 (
+_echo "GoProX started..."
+
 if [ "$version" = true ]; then
   # Display version independent of logging level 
   echo $VERSION_TEXT
@@ -1302,7 +1309,7 @@ if [ "$setup" = true ]; then
 fi
 
 if [ "$test" = true ]; then
-  _info "TESTING - Performing tests..."
+  _echo "TESTING - Performing tests..."
   _info "Removing prior test data..."
   rm -r "./test/imported"
   rm -r "./test/processed"
@@ -1327,7 +1334,7 @@ if [ "$test" = true ]; then
     git diff --stat ./test/
     exit 1
   }
-  _info "TESTING successful!"
+  _echo "TESTING successful!"
   exit 0
 fi
 
@@ -1361,9 +1368,9 @@ if [ "$firmware" = true ]; then
   _firmware
 fi
 
-_info "GoProx processing finished."
 if (( $exiftoolstatus )) then
   _warning "exiftool reported one or more errors during this goprox run. Please check output."
 fi
+_echo "GoProX processing finished."
 
 ) 2>&1 | eval ${output}
