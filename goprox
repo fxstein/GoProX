@@ -79,6 +79,10 @@ readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "
 readonly TIMESTAMP_POST='] ", localtime'"'"
 readonly DEFAULT_OUTPUT='tee'
 readonly DEFAULT_LOGLEVEL=2 #debug:0; info:1; warn:2; error:3
+readonly DEFAULT_EXIFTOOL_LOGLEVEL0="-v2"
+readonly DEFAULT_EXIFTOOL_LOGLEVEL1="-v1"
+readonly DEFAULT_EXIFTOOL_LOGLEVEL2="-q -q"
+readonly DEFAULT_EXIFTOOL_LOGLEVEL3="-q -q"
 
 readonly GOPROX=$(which ${__this__})
 readonly REALGOPROX=$(readlink -f $GOPROX)
@@ -94,6 +98,7 @@ copyright=$DEFAULT_COPYRIGHT
 output=$DEFAULT_OUTPUT
 filetypes=$DEFAULT_FILETYPES
 loglevel=$DEFAULT_LOGLEVEL
+exifloglevel=$DEFAULT_EXIFTOOL_LOGLEVEL2
 
 test=false
 setup=false
@@ -521,8 +526,8 @@ function _process_media()
   _info "First pass: 1/4 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${timefilter}"\
+  exiftool -r -F -sep ", " $=exifloglevel -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -552,8 +557,8 @@ function _process_media()
   _info "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${timefilter}"\
+  exiftool -r -F -sep ", " $=exifloglevel -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -589,8 +594,8 @@ function _process_media()
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   -if4 "${timefilter}"\
+  exiftool -r -F -sep ", " $=exifloglevel -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename=P_%f.%e'\
@@ -626,8 +631,8 @@ function _process_media()
   _info "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
 
 # exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
-  exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
   -if4 "${timefilter}"\
+  exiftool -r -wm w -ee -d '%s' $=exifloglevel -progress -P -overwrite_original_in_place\
   '-quicktime:time:all<${GPSDateTime;$_=$self->GetValue("CreateDate")+'\
 'int((($_-$self->GetValue("CreateDate"))/3600)+(($_-$self->GetValue("CreateDate"))/3600)/'\
 'abs((($_-$self->GetValue("CreateDate"))/3600)*2 || 1))*3600}'\
@@ -1089,6 +1094,22 @@ if [ "$debug" = true ]; then
   loglevel=0
   set -x
 fi
+
+# Set exiftool logging
+case $loglevel in
+  0)
+  exifloglevel=$DEFAULT_EXIFTOOL_LOGLEVEL0
+  ;;
+  1)
+  exifloglevel=$DEFAULT_EXIFTOOL_LOGLEVEL1
+  ;;
+  2)
+  exifloglevel=$DEFAULT_EXIFTOOL_LOGLEVEL2
+  ;;
+  3)
+  exifloglevel=$DEFAULT_EXIFTOOL_LOGLEVEL3
+  ;;
+esac
 
 # so we can timestamp the output
 (
