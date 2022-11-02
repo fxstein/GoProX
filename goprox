@@ -48,17 +48,17 @@ readonly HELP_TEXT="Available Options:
 -q --quiet
 -v --verbose
 --clean
---created-on:[date|val[ymwdHMS]|file]
---created-after:[date|val[ymwdHMS]|file]
---created-before:[date|val[ymwdHMS]|file]
+--created-on:[date]
+--created-after:[date]
+--created-before:[date]
 --config:
 --geonames::
 --debug
 --firmware::[labs]
 --if:[condition]
---modified-on:[date|val[ymwdHMS]|file]
---modified-after:[date|val[ymwdHMS]|file]
---modified-before:[date|val[ymwdHMS]|file]
+--modified-on:[date]
+--modified-after:[date]
+--modified-before:[date]
 --setup
 --test
 --time::[format]
@@ -305,12 +305,12 @@ function _create_timefilter()
   fi
 
   # Assemble time filter based on various filter options:
-  # --created-on:[date|val[ymwdHMS]|file]
-  # --created-after:[date|val[ymwdHMS]|file]
-  # --created-before:[date|val[ymwdHMS]|file]
-  # --modified-on:[date|val[ymwdHMS]|file]
-  # --modified-after:[date|val[ymwdHMS]|file]
-  # --modified-before:[date|val[ymwdHMS]|file]
+  # --created-on:[date]
+  # --created-after:[date]
+  # --created-before:[date]
+  # --modified-on:[date]
+  # --modified-after:[date]
+  # --modified-before:[date]
   _info "Creating time filter..."
 
   if [[ $createdfilter = true ]] ; then
@@ -373,6 +373,8 @@ function _create_iffilter()
     return 0
   fi
 
+  _info "Creating if filter..."
+
   if [[ -n $ifopt ]]; then
     _debug "IfFilter: "${ifopt}
 
@@ -381,6 +383,8 @@ function _create_iffilter()
     iffilter+="${ifopt}"
   fi
 
+  _info "Finished if filter..."
+  
   return 0
 }
 
