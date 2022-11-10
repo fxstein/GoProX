@@ -436,9 +436,10 @@ of operations that would require the portions of the library that are unreachabl
 This is necessary to avoid situations where external storage devices are not mounted
 or simply not available when on the road.
 
-Simple run `goprox` with no parameters to get the storage validation summary:
+Simple run `goprox --verbose` with no other parameters to get the storage validation summary:
 
 ```
+...
 Info: Validating storage hierarchy... 
 Info: goprox library: /Users/xxxxxxx/goprox directory validated 
 Info: goprox archive: /Users/xxxxxxx/goprox/archive directory validated 
