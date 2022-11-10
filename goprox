@@ -131,6 +131,14 @@ modifiedafteropt=""
 modifiedbeforeopt=""
 iffilter=() # default is empty array for later parameter expansion
 
+# The api filter is used to rename camera models globally
+apifilter=()
+apifilter+=('Filter=s/HERO11 Black/GoPro_Hero11/g;')
+apifilter+=('s/HERO10 Black/GoPro_Hero10/g;')
+apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
+apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
+apifilter+=('s/GoPro Max/GoPro_Max/g')
+
 exiftoolstatus=0
 validlibrary=false
 validarchive=false
@@ -416,11 +424,7 @@ function _import_media()
   '-directory<'"${importdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   '-if "$MIMEType=~/image/" -if "$MIMEType=~/video/"'\
   --ext lrv --ext thm --ext xmp --ext . --ext tar --ext gz --ext zip --ext dmg\
-  -api 'Filter=s/HERO11 Black/GoPro_Hero11/g;'\
-'s/HERO10 Black/GoPro_Hero10/g;'\
-'s/HERO9 Black/GoPro_Hero9/g;'\
-'s/HERO8 Black/GoPro_Hero8/g'\
-'s/GoPro Max/GoPro_Max/g;'\
+  -api "${apifilter}"\
   "${source}" || {
     # exiftool reported one or more errors
     exiftoolstatus=$?
@@ -600,14 +604,6 @@ function _process_media()
   # quicktimedata+=('-Keys:Information=My Information')
   # quicktimedata+=('-Keys:Description=My Description')
   # quicktimedata+=('-Keys:Keywords="GoProX:'${__version__}'","Make:MyGoPro"')
-
-  # The api filter is used to rename camera models globally
-  local apifilter=()
-  apifilter+=('Filter=s/HERO11 Black/GoPro_Hero11/g;')
-  apifilter+=('s/HERO10 Black/GoPro_Hero10/g;')
-  apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
-  apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
-  apifilter+=('s/GoPro Max/GoPro_Max/g')
 
   # Additional data...
   #
@@ -852,11 +848,7 @@ function _archive_media()
 
   # Camera model name
   camera=$(exiftool -Model -s -s -s "${firstmedia}"\
-  -api 'Filter=s/HERO11 Black/GoPro_Hero11/g;'\
-'s/HERO10 Black/GoPro_Hero10/g;'\
-'s/HERO9 Black/GoPro_Hero9/g;'\
-'s/HERO8 Black/GoPro_Hero8/g'\
-'s/GoPro Max/GoPro_Max/g;')
+  -api "${apifilter}")
 
   # Check for exiftool errors
   if (( $? )) then
