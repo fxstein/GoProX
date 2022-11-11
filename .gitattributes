@@ -11,6 +11,7 @@ HD9.01.01.60.00 export-ignore
 H21.01.01.30.00 export-ignore
 H21.01.01.42.00 export-ignore
 H22.01.01.10.00 export-ignore
+H22.01.01.12.00 export-ignore
 test/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 test/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
 test/**/*.png filter=lfs diff=lfs merge=lfs -text
