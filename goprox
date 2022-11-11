@@ -422,7 +422,7 @@ function _import_media()
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
   '-directory<'"${importdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${importdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
-  '-if "$MIMEType=~/image/" -if "$MIMEType=~/video/"'\
+  -if '$MIMEType=~/image/ or $MIMEType=~/video/'\
   --ext lrv --ext thm --ext xmp --ext . --ext tar --ext gz --ext zip --ext dmg\
   -api "${apifilter}"\
   "${source}" || {
