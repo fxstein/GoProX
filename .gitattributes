@@ -12,3 +12,5 @@ H21.01.01.30.00 export-ignore
 H21.01.01.42.00 export-ignore
 H22.01.01.10.00 export-ignore
 H22.01.01.12.00 export-ignore
+# exlude outdated labs firmware
+H22.01.01.10.70 export-ignore
