@@ -1190,6 +1190,12 @@ for key val in "${(kv@)opts}"; do
     ;;
     --version)
       version=true
+
+      # if no other options have been provided, discplay version and exit
+      if [[ $# -eq 1 ]] ; then
+        echo $VERSION_TEXT
+        exit 0
+      fi
     ;
   esac
 done
