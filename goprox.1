@@ -1,0 +1,138 @@
+.TH goprox 1 "December 17, 2022" "GoProX Manual" "GoProX Manual"
+.SH NAME
+goprox - import and process GoPro media files
+
+.SH SYNOPSIS
+goprox [commands] [options]...
+
+.SH DESCRIPTION
+The goprox utility enables the import and processing of media files from GoPro Hero 8, 9, 10, 11, as well as GoPro MAX cameras. It also supports GoPro Labs firmware. The program has a number of options that allow you to specify how the media files should be imported, processed, and organized.
+
+.SH COMMANDS
+
+-a, --archive
+    archive contents of source sdcard
+
+-i, --import
+    import media files
+
+-p, --process
+    process imported files
+    default: process imported files since last process run
+    all: process all imported files
+    val[ymwdHMS]: process files modified within the specified time period
+
+--clean
+    clean up source sdcard
+    checks if source is a GoPro sdcard format
+
+--firmware
+    update sdcard to lastest GoPro firmware version
+    labs: use GoPro Labs firmware
+
+--geonames
+    add geonames information to imported directories to enable time processing
+
+--setup
+    run program setup
+
+--test
+    run program tests
+    this option is reserved for developers who clone the github project
+
+.SH OPTIONS
+
+-h, --help
+    show this help message and exit
+
+--version
+    show version information and exit
+
+-c, --copyright
+    add copyright information to processed files
+
+-l, --library
+    specify library directory
+
+-s, --source
+    specify source directory for media files
+
+-t, --timeshift
+    adjust timestamps of imported files
+
+-q, --quiet
+    run program quietly
+
+-v, --verbose
+    run program verbosely
+
+--config
+    specify config file
+
+--debug
+    run program in debug mode
+
+--time
+    specify time format for output
+    format: specify time format for output
+
+.SH ADVANCED OPTIONS
+
+--if
+    specify conditional processing
+    condition: specify condition for processing
+
+--created-on
+    filter files by creation date
+    date: filter files created on the specified date
+
+--created-after
+    filter files by creation date
+    date: filter files created after the specified date
+
+--created-before
+    filter files by creation date
+    date: filter files created before the specified date
+
+--modified-on
+    filter files by modification date
+    date: filter files modified on the specified date
+
+--modified-after
+    filter files by modification date
+    date: filter files modified after the specified date
+
+--modified-before
+    filter files by modification date
+    date: filter files modified before the specified date
+
+--repair
+    repair time information of imported files
+    created: repair file creation dates
+
+.SH EXIT STATUS
+The goprox utility exits 0 on success, and >0 if an error occurs.
+
+.SH EXAMPLES
+goprox --verbose
+    Displays version information and validates the storage hierarchy of the library.
+
+goprox --setup --library "/mylibrary/dir" --source "." --copyright "My Name"
+
+.SH AUTHOR
+Oliver Ratzesberger https://github.com/fxstein
+
+.SH SOURCE
+https://github.com/fxstein/GoProX
+
+.SH BUGS
+Report bugs at https://github.com/fxstein/GoProX/issues
+
+.SH COPYRIGHT
+Copyright 2022 Oliver Ratzesberger
+       
+.SH LICENSE       
+MIT License - This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+    exiftool(1), tag(1), tar(1)
