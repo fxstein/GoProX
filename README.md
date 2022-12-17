@@ -606,6 +606,9 @@ common GoPro metadata to name and tag images and videos for further processing.
 GoProX leverages the [GeoNames](https://www.geonames.org) database by Marc Wick
 to perform GPS-based geocode lookups of timezones and related data.
 
+Portions of code and documentation created with the help of 
+[ChatGPT](https://chat.openai.com)
+
 ## Links & Resources
 
 Homebrew tap to enable the installation of `goprox`: [homebrew-fxstein](https://github.com/fxstein/homebrew-fxstein)
