@@ -42,12 +42,12 @@ Usage: goprox [OPTION]...
 
 Available Options:
   -h, --help            show this help message and exit
-  -a, --archive         archive imported files
+  -a, --archive         archive source sdcard
   -c, --copyright       add copyright information to processed files
   -i, --import          import media files
   -l, --library         specify library directory
   -p, --process         process imported files
-                        no option: process imported files since last process run
+                        default: process imported files since last process run
                         all: process all imported files
                         val[ymwdHMS]: process files modified within the specified time period
   -s, --source          specify source directory for media files commonly .
@@ -84,6 +84,8 @@ Available Options:
   --repair              repair imported files time information
                         created: repair file creation dates
   --version             show version information and exit
+
+For more detailed documentation type: man goprox  or visit $__github__
 "
 
 # Various defaults
