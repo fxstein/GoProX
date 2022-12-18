@@ -3,9 +3,13 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>xyz.fxstein.goprox-watcher</string>
-    <key>Program</key>
-    <string>goprox --mount</string>
+    <string>com.goprox.mount</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>goprox</string>
+      <string>--mount</string>
+      <string>$1</string>
+    </array>
     <key>WatchPaths</key>
     <array>
       <string>/Volumes</string>
