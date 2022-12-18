@@ -3,7 +3,7 @@
 goprox - import and process GoPro media files
 
 .SH SYNOPSIS
-goprox [commands] [options]...
+goprox [commands] [options] [advanced options] ...
 
 .SH DESCRIPTION
 The goprox utility enables the import and processing of media files from GoPro Hero 8, 9, 10, 11, as well as GoPro MAX cameras. It also supports GoPro Labs firmware. The program has a number of options that allow you to specify how the media files should be imported, processed, and organized.
@@ -25,6 +25,7 @@ The goprox utility enables the import and processing of media files from GoPro H
 --clean
     clean up source sdcard
     checks if source is a GoPro sdcard format
+    will only execute when combine with either archive or import
 
 --firmware
     update sdcard to lastest GoPro firmware version
@@ -43,10 +44,7 @@ The goprox utility enables the import and processing of media files from GoPro H
 .SH OPTIONS
 
 -h, --help
-    show this help message and exit
-
---version
-    show version information and exit
+    show help message and exit
 
 -c, --copyright
     add copyright information to processed files
@@ -65,6 +63,9 @@ The goprox utility enables the import and processing of media files from GoPro H
 
 -v, --verbose
     run program verbosely
+
+--version
+    show version information and exit
 
 --config
     specify config file
@@ -124,7 +125,7 @@ goprox --import
     Import media files from source (defaults to current directory ".")
 
 goprox --archive
-    Archive the contents of source and create a gzipped tarbar
+    Archive the contents of source and create a gzipped tarball
 
 goprox --archive --import --clean --time
     Archive the contents of source, import the media files, then clean source and
