@@ -430,8 +430,8 @@ function _import_media()
   fi
   importdir=$library/imported
   _echo "Starting media import..."
-  _info "Source: "$source
-  _info "Library: "$importdir
+  _info "Source: $source ($(realpath $source))"
+  _info "Library: $importdir ($(realpath $importdir))"
 
   exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
@@ -865,8 +865,8 @@ function _archive_media()
 
   archivedir=$library/archive
   _echo "Starting media archive..."
-  _info "Source: "$source
-  _info "Library: "$archivedir
+  _info "Source: $source ($(realpath $source))"
+  _info "Library: $archivedir ($(realpath $archivedir))"
 
   # Find first image file to get camera model and serial
   firstmedia=$(find -E $source -regex '.*\.(JPG|MP4|360)' | head -n 1)
@@ -911,7 +911,7 @@ function _archive_media()
 function _clean_media()
 {
   _echo "Cleaning Source Media..."
-  _info "Source: "$source
+  _info "Source: $source ($(realpath $source))"
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
@@ -920,7 +920,7 @@ function _clean_media()
       # One more check to make sure any prior step did not result in an exiftool error
       _debug "exiftool status: $exiftoolstatus"
       if (( $exiftoolstatus )) then
-        _error "Will not clean ${source} due to exiftool error status: ${exiftoolstatus}"
+        _error "Will not clean ${source} ($(realpath $source)) due to exiftool error status: ${exiftoolstatus}"
         _error "Please check output."
         exit 1
       fi
@@ -928,7 +928,7 @@ function _clean_media()
         _debug "Removing $source/DCIM"
         rm -rfv $source/DCIM || {
           # Cleanup failed
-          _error "Cleaning ${source} failed!"
+          _error "Cleaning ${source} ($(realpath $source)) failed!"
           exit 1
         }
       fi
@@ -941,13 +941,13 @@ function _clean_media()
         }
       done
     else
-      _error "Will not clean ${source} without prior archive or import"
+      _error "Will not clean ${source} ($(realpath $source)) without prior archive or import"
       _error "Run options --archive or --import and --clean together"
       exit 1
     fi
   else
-    _error "Will not clean ${source} cannot verify it is a GoPro storage device"
-    _error "Missing $source/MISC/version.txt"
+    _error "Will not clean ${source} ($(realpath $source)) cannot verify it is a GoPro storage device"
+    _error "Missing $source/MISC/version.txt ($(realpath $source)/MISC/version.txt)"
     exit 1
   fi
 
@@ -957,7 +957,7 @@ function _clean_media()
 function _firmware()
 {
   _echo "Installing firmware upgrade..."
-  _info "Source: "$source
+  _info "Source: $source ($(realpath $source))"
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
@@ -1007,8 +1007,8 @@ function _firmware()
     fi
 
   else
-    _error "Cannot verify that ${source} is a GoPro storage device"
-    _error "Missing $source/MISC/version.txt"
+    _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
+    _error "Missing $(realpath ${source})/MISC/version.txt"
     exit 1
   fi
 
@@ -1315,8 +1315,8 @@ if [[ -n $geonamesopt ]]; then
   geonamesacct=$geonamesopt
 fi
 
-_debug "Source: $source"
-_debug "Library: $library"
+_debug "Source: $source ($(realpath $source))"
+_debug "Library: $library ($(realpath $library))"
 _debug "Copyright: $copyright"
 _debug "GeonamesAcct: $geonamesacct"
 
