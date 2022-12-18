@@ -38,52 +38,56 @@ $__github__
 "
 readonly HELP_TEXT="goprox - import and process GoPro media files
 
-Usage: goprox [OPTION]...
+Usage: goprox [commands] [options] [advanced options] ...
 
-Available Options:
-  -h, --help            show this help message and exit
+Commands:
   -a, --archive         archive source sdcard
-  -c, --copyright       add copyright information to processed files
   -i, --import          import media files
-  -l, --library         specify library directory
   -p, --process         process imported files
                         default: process imported files since last process run
                         all: process all imported files
                         val[ymwdHMS]: process files modified within the specified time period
+  --clean               clean up source sdcard
+                        checks if source is a GoPro sdcard format
+  --firmware            update sdcard to lastest GoPro firmware version
+                        labs: use GoPro Labs firmware
+  --geonames            add geonames information to imported directories to enable time processing
+  --setup               run program setup
+  --test                run program tests
+                        this option is reserved for developers who clone the github project
+
+Options:
+  -h, --help            show this help message and exit
+  -c, --copyright       add copyright information to processed files
+  -l, --library         specify library directory
   -s, --source          specify source directory for media files commonly .
   -t, --timeshift       adjust timestamps of imported files
   -q, --quiet           run program quietly
   -v, --verbose         run program verbosely
-  --clean               clean up source sdcard
-                        checks if source is a GoPro sdcard format
+  --config              specify config file
+                        defaults to ~/.goprox
+  --debug               run program in debug mode
+  --time                specify time format for output
+                        format: specify time format for output
+  --version             show version information and exit
+
+Advanced Options:
+  --if                  specify conditional processing
+                        condition: specify condition for processing
   --created-on          filter files by creation date
                         date: filter files created on the specified date
   --created-after       filter files by creation date
                         date: filter files created after the specified date
   --created-before      filter files by creation date
                         date: filter files created before the specified date
-  --config              specify config file
-                        defaults to ~/.goprox
-  --geonames            add geonames information to imported directories to enable time processing
-  --debug               run program in debug mode
-  --firmware            update sdcard to lastest GoPro firmware version
-                        labs: use GoPro Labs firmware
-  --if                  specify conditional processing
-                        condition: specify condition for processing
   --modified-on         filter files by modification date
                         date: filter files modified on the specified date
   --modified-after      filter files by modification date
                         date: filter files modified after the specified date
   --modified-before     filter files by modification date
                         date: filter files modified before the specified date
-  --setup               run program setup
-  --test                run program tests
-                        this option is reserved for developers who clone the github project
-  --time                specify time format for output
-                        format: specify time format for output
   --repair              repair imported files time information
                         created: repair file creation dates
-  --version             show version information and exit
 
 For more detailed documentation type: man goprox  or visit $__github__
 "
