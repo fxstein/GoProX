@@ -118,6 +118,20 @@ goprox --verbose
     Displays version information and validates the storage hierarchy of the library.
 
 goprox --setup --library "/mylibrary/dir" --source "." --copyright "My Name"
+    Create configuration file ~/.goprox with library, source and copyright options
+
+goprox --import
+    Import media files from source (defaults to current directory ".")
+
+goprox --archive
+    Archive the contents of source and create a gzipped tarbar
+
+goprox --archive --import --clean --time
+    Archive the contents of source, import the media files, then clean source and
+    timestamp the output
+
+goprox --process
+    Process all media files since the last process run (based on file timestamps)
 
 .SH AUTHOR
 Oliver Ratzesberger https://github.com/fxstein
