@@ -849,10 +849,10 @@ function _timeshift_media()
   importdir=$library/imported
   processdir=$library/processed
 
+  # TODO: Implement timeshift functionality
   geooffset=$(TZ=Europe/Vienna date -j -f "%Y%m%d" "20200601" "+%z")
   _debug "GeoOffset: "$geooffset
-
-
+  # /TODO
 }
 
 
