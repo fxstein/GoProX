@@ -6,7 +6,7 @@
 ![Platform](https://img.shields.io/badge/platform-macOS-blue)
 [![GitHub labels](https://img.shields.io/github/labels/fxstein/goprox/help%20wanted)](https://github.com/fxstein/GoProX/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
                 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/fxstein/goprox/release.yml?branch=main&label=release&logo=github)](https://github.com/fxstein/GoProX/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/fxstein/goprox/release.yml?label=release&logo=github)](https://github.com/fxstein/GoProX/actions)
 
 The missing GoPro workflow and data manager for macOS.
 
