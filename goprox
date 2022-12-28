@@ -175,27 +175,42 @@ tempdir=""
 
 function _debug()
 {
-  [[ $loglevel -le 0 ]] && echo $fg[blue]"Debug: "$1 $2$reset_color
+  if [[ $loglevel -le 0 ]] ; then
+    echo $fg[blue]"Debug: "$1 $2$reset_color
+    logger -t "goprox" -p user.debug "goprox: Debug: "$1 $2
+  fi
 }
 
 function _info()
 {
-  [[ $loglevel -le 1 ]] && echo $fg[green]"Info: "$1 $2$reset_color
+  if [[ $loglevel -le 1 ]] ; then
+    echo $fg[green]"Info: "$1 $2$reset_color
+    logger -t "goprox" -p user.info "goprox: Info: "$1 $2
+  fi
 }
 
 function _echo()
 {
-  [[ $loglevel -le 2 ]] && echo $fg[green]$1 $2$reset_color
+  if [[ $loglevel -le 2 ]] ; then
+    echo $fg[green]$1 $2$reset_color
+    logger -t "goprox" -p user.notice "goprox: "$1 $2
+  fi
 }
 
 function _warning()
 {
-  [[ $loglevel -le 2 ]] && echo $fg[yellow]"Warning: "$1 $2$reset_color
+  if [[ $loglevel -le 2 ]] ; then
+    echo $fg[yellow]"Warning: "$1 $2$reset_color
+    logger -t "goprox" -p user.warning "goprox: Warning: "$1 $2
+  fi
 }
 
 function _error()
 {
-  [[ $loglevel -le 3 ]] && >&2 echo $fg[red]"Error: "$1 $2$reset_color
+  if [[ $loglevel -le 3 ]] ; then
+    >&2 echo $fg[red]"Error: "$1 $2$reset_color
+    logger -t "goprox" -p user.error -s "goprox: Error: "$1 $2
+  fi
 }
 
 function _help()
