@@ -168,6 +168,7 @@ iffilter=() # default is empty array for later parameter expansion
 # The api filter is used to rename camera models globally
 apifilter=()
 apifilter+=('Filter=s/HERO11 Black/GoPro_Hero11/g;')
+apifilter+=('s/HERO11 Black Mini/GoPro_Hero11_Mini/g;')
 apifilter+=('s/HERO10 Black/GoPro_Hero10/g;')
 apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
 apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
