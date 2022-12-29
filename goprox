@@ -114,6 +114,11 @@ readonly GOPROX=$(which ${__this__})
 readonly REALGOPROX=$(readlink -f $GOPROX)
 readonly GOPROX_HOME=$(dirname $REALGOPROX)
 
+readonly DEFAULT_ARCHIVED_MARKER=".goprox.archived"
+readonly DEFAULT_IMPORTED_MARKER=".goprox.imported"
+readonly DEFAULT_CLEANED_MARKER=".goprox.cleaned"
+readonly DEFAULT_FWCHECKED_MARKER=".goprox.fwchecked"
+
 # Initializing...
 config=$DEFAULT_CONFIG
 source=$DEFAULT_SOURCE
@@ -448,6 +453,9 @@ function _import_media()
   _info "Source: $source ($(realpath $source))"
   _info "Library: $importdir ($(realpath $importdir))"
 
+  # Remove previous import marker
+  rm -f $source/$DEFAULT_IMPORTED_MARKER
+
   exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
@@ -473,6 +481,9 @@ function _import_media()
   }
 
   _echo "Finished media import"
+
+  # Leave a marker
+  touch $source/$DEFAULT_IMPORTED_MARKER
 }
 
 function _process_media()
@@ -890,6 +901,8 @@ function _archive_media()
   # Camera model name
   camera=$(exiftool -Model -s -s -s "${firstmedia}"\
   -api "${apifilter}")
+  # Remove previous archive marker
+  rm -f $source/$DEFAULT_ARCHIVED_MARKER
 
   # Check for exiftool errors
   if (( $? )) then
@@ -921,12 +934,18 @@ function _archive_media()
   }
 
   _echo "Finished media archive"
+
+  # Leave a marker
+  touch $source/$DEFAULT_ARCHIVED_MARKER
 }
 
 function _clean_media()
 {
   _echo "Cleaning Source Media..."
   _info "Source: $source ($(realpath $source))"
+
+  # Remove previous clean marker
+  rm -f $source/$DEFAULT_CLEANED_MARKER
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
@@ -967,15 +986,20 @@ function _clean_media()
   fi
 
   _echo "Finished cleanup tasks"
+
+  # Leave a marker
+  touch $source/$DEFAULT_CLEANED_MARKER
 }
 
 function _firmware()
 {
-  _echo "Installing firmware upgrade..."
+  _echo "Checking firmware..."
   _info "Source: $source ($(realpath $source))"
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
+    # Remove previous firmware marker
+    rm -f $source/$DEFAULT_FWCHECKED_MARKER
 
     # Extract camera model and firmware version
     # Due to some broken version.txt files for some models and firmware versions
@@ -1021,6 +1045,8 @@ function _firmware()
       _info "Camera ${camera} has the latest firmware: ${latestversion}"
     fi
 
+    # Leave a marker - but in this case only if we ran against a verified GoPro volume
+    touch $source/$DEFAULT_FWCHECKED_MARKER
   else
     _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
     _error "Missing $(realpath ${source})/MISC/version.txt"
