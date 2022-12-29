@@ -52,6 +52,9 @@ Commands:
   --firmware            update sdcard to lastest GoPro firmware version
                         labs: use GoPro Labs firmware
   --geonames            add geonames information to imported directories to enable time processing
+  --mount               trigger mountpoint processing
+                        will search for GoPro media card mountpoints and kick of processing
+                        this is also leveraged by the goprox launch agent
   --setup               run program setup
   --test                run program tests
                         this option is reserved for developers who clone the github project
