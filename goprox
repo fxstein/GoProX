@@ -1008,11 +1008,11 @@ function _firmware()
     # Otherwise we could simply cat
     # camera=$(cat MISC/version.txt | jq '."camera type"')
     # camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq '."camera type"')
-    camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq -r '."camera type"')
-    version=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq -r '."firmware version"')
+    camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera type"')
+    version=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."firmware version"')
 
-    _info "Camera detected: ${camera}"
-    _info "Existing firmware version: ${version}"
+    _info "Camera: ${camera}"
+    _info "Version: ${version}"
 
     # Get the latest firmware for the device
 
@@ -1024,10 +1024,16 @@ function _firmware()
     fi
     _debug "Firmware base: $firmwarebase"
 
-    latestfirmware=(${firmwarebase}/*([-1]))
+    latestfirmware=`${firmwarebase}/*([-1])`
     _debug "Latest firmware: " ${latestfirmware}
 
-    latestversion=(${latestfirmware:t})
+    if [[ -z "$latestfirmware" ]]; then
+      echo "No firmware files found at ${firmwarebase}"
+      # nothing left todo
+      return
+    fi
+
+    latestversion=`${latestfirmware:t}`
     _debug "Latest version: " ${latestversion}
 
     if [[ $latestversion != $version ]]; then
