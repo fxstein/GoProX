@@ -2,17 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    </dict>
     <key>Label</key>
     <string>com.goprox.mount</string>
     <key>ProgramArguments</key>
     <array>
-      <string>goprox</string>
-      <string>--mount</string>
-      <string>$1</string>
+      <string>/opt/homebrew/bin/goprox</string>
+      <string>--mount launchd</string>
     </array>
-    <key>WatchPaths</key>
-    <array>
-      <string>/Volumes</string>
-    </array>
+    <key>StartOnMount</key>
+    <true/>
   </dict>
 </plist>

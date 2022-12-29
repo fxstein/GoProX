@@ -114,6 +114,7 @@ readonly GOPROX=$(which ${__this__})
 readonly REALGOPROX=$(readlink -f $GOPROX)
 readonly GOPROX_HOME=$(dirname $REALGOPROX)
 
+readonly DEFAULT_LOCKFILE=".goprox.lock"
 readonly DEFAULT_ARCHIVED_MARKER=".goprox.archived"
 readonly DEFAULT_IMPORTED_MARKER=".goprox.imported"
 readonly DEFAULT_CLEANED_MARKER=".goprox.cleaned"
@@ -141,6 +142,7 @@ archive=false
 clean=false
 firmware=false
 version=false
+mount=false
 
 sourceopt=""
 libraryopt=""
@@ -148,6 +150,7 @@ processopt=""
 copyrightopt=""
 geonamesopt=""
 firmwareopt=""
+mountopt=""
 
 # filter options 
 filter=false
@@ -1100,6 +1103,7 @@ zparseopts -D -E -F -A opts - \
             -modified-on: \
             -modified-after: \
             -modified-before: \
+            -mount:: \
             -setup \
             -test \
             -time:: \
@@ -1219,6 +1223,10 @@ for key val in "${(kv@)opts}"; do
       filter=true
       modifiedfilter=true
       modifiedbeforeopt=$val
+    ;;
+    --mount)
+      mount=true
+      mountopt=$val
     ;;
     --setup)
       # Perform setup tasks
@@ -1418,6 +1426,75 @@ fi
 # are not mounted, links to them still exist but are none operational.
 # Depending on processing options, various steps might become impossible.
 _validate_storage
+
+if [ "$mount" = true ]; then
+  _echo "Mount event received. Option: ${mountopt}"
+
+  # Search for mounted sdcards, start with lifs mount points
+  # Cannot rely on USB device mounts, as buit in card readers might not be USB
+
+  for mountpoint in $(mount -t lifs | awk '{print $3}'); do # all external filesystems
+    _echo "Mountpoint: "$mountpoint 
+
+    # Check if this is a GoPro storage card
+    if [[ -f "$mountpoint/MISC/version.txt" ]]; then
+      # Create lockfile or skip mountpoint
+      if { set -C; : 2>/dev/null >$mountpoint/$DEFAULT_LOCKFILE; }; then
+        # Remove lockfile once we exit
+         trap "rm -f $mountpoint/$DEFAULT_LOCKFILE" EXIT
+      else
+         _info "Cannot create $mountpoint/$DEFAULT_LOCKFILE - skipping mountpoint"
+         continue
+      fi
+
+      # Perform mount processing
+      _info "Start mount processing..."
+
+      source=$mountpoint
+
+      # TODO: Need to make auto mount processing configurable
+      archive=true
+      import=true
+      clean=true
+      firmware=true
+
+      # Execute auto tasks configured to run at mount
+      if [ "$archive" = true ]; then
+        _archive_media
+      fi
+      if [ "$import" = true ]; then
+        _import_media
+      fi
+      if [ "$clean" = true ]; then
+        _clean_media
+      fi
+      if [ "$firmware" = true ]; then
+        _firmware
+      fi
+
+      # Done with processing for this mount point remove lock and trap
+      rm -f $mountpoint/$DEFAULT_LOCKFILE
+      trap - EXIT
+
+      if test -t 0 ; then
+        # running interactively - offer to unmount the card - timeout after 30 sec
+        if read -t30 -s -q "ANSWER?Do you want to unmount $mountpoint? (sudo required) [y/N] "; then
+          echo "Yes"
+          _echo "Unmounting ${mountpoint}"
+          sudo umount $mountpoint
+        else
+          echo "No"
+        fi
+      fi
+    else
+      _info "Not a GoPro storage card. Skipping..."
+    fi
+  done
+
+  _echo "Mount processing finished."
+  
+  exit 0
+fi
 
 # Execute in order: archive, import, clean, geonames, process, firmware
 if [ "$archive" = true ]; then
