@@ -894,44 +894,43 @@ function _archive_media()
   _info "Source: $source ($(realpath $source))"
   _info "Library: $archivedir ($(realpath $archivedir))"
 
-  # Find first image file to get camera model and serial
-  firstmedia=$(find -E $source -regex '.*\.(JPG|MP4|360)' | head -n 1)
-  _info "First Media: "$firstmedia
-
-  # Camera model name
-  camera=$(exiftool -Model -s -s -s "${firstmedia}"\
-  -api "${apifilter}")
   # Remove previous archive marker
   rm -f $source/$DEFAULT_ARCHIVED_MARKER
 
-  # Check for exiftool errors
-  if (( $? )) then
-    _warning "exiftool: Unable to get camera model."
-  fi
+  # Check if this is a GoPro storage card
+  if [[ -f "$source/MISC/version.txt" ]]; then
 
-  # Last 4 digits of serial number
-  serial=$(exiftool -CameraSerialNumber -s -s -s "${firstmedia}")
+    # Extract camera model and firmware version
+    # Due to some broken version.txt files for some models and firmware versions
+    # we have to apply a rather complicated looking fix: remove comma from the
+    # end of the second to last line in the file:
+    # sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt
+    # Otherwise we could simply cat
+    # camera=$(cat MISC/version.txt | jq '."camera type"')
+    # camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq '."camera type"')
+    camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera type"')
+    serial=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera serial number"')
+    timestamp=$(date +%Y%m%d%H%M%S)
 
-  # Check for exiftool errors
-  if (( $? )) then
-    _warning "exiftool: Unable to get camera serial number."
-  fi
+    _info "Camera: "${camera}
+    _info "Serial: "${serial:(-4)}
+    _info "Time: "$timestamp
 
-  timestamp=$(date +%Y%m%d%H%M%S)
+    archivename=${timestamp}_${camera// /_}_${serial:(-4)}
 
-  _info "Camera: "$camera
-  _info "Serial: "${serial:(-4)}
-  _info "Time: "$timestamp
+    _info "Archive: "$archivename
 
-  archivename=${timestamp}_${camera}_${serial:(-4)}
-
-  _info "Archive: "$archivename
-
-  tar --totals --exclude='.Spotlight-V100' -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
-    # Archive failed
-    _error "Archive creation failed!"
+    tar --totals --exclude='.Spotlight-V100' --exclude='.Trash*' --exclude='.goprox.*' \
+        -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
+      # Archive failed
+      _error "Archive creation failed!"
+      exit 1
+    }
+  else
+    _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
+    _error "Missing $(realpath ${source})/MISC/version.txt"
     exit 1
-  }
+  fi
 
   _echo "Finished media archive"
 
