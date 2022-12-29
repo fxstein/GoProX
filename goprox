@@ -110,7 +110,7 @@ readonly DEFAULT_EXIFTOOL_LOGLEVEL1="-v1 -progress"
 readonly DEFAULT_EXIFTOOL_LOGLEVEL2="-q -q -progress"
 readonly DEFAULT_EXIFTOOL_LOGLEVEL3="-q -q -q"
 
-readonly GOPROX=$(which ${__this__})
+readonly GOPROX=$(which $0)
 readonly REALGOPROX=$(readlink -f $GOPROX)
 readonly GOPROX_HOME=$(dirname $REALGOPROX)
 
