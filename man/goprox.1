@@ -34,6 +34,11 @@ The goprox utility enables the import and processing of media files from GoPro H
 --geonames
     add geonames information to imported directories to enable time processing
 
+--mount
+    trigger mountpoint processing
+    will search for GoPro media card mountpoints and kick of processing
+    this is also leveraged by the goprox launch agent
+
 --setup
     run program setup
 
@@ -133,6 +138,11 @@ goprox --archive --import --clean --time
 
 goprox --process
     Process all media files since the last process run (based on file timestamps)
+
+goprox --mount
+    Start the mountpoint processing. Can be run manually but is otherwise used by
+    the launchd agent when a new volume has been mounted. It will execute all
+    configured processing options.
 
 .SH AUTHOR
 Oliver Ratzesberger https://github.com/fxstein
