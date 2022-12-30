@@ -29,4 +29,6 @@
 #
 
 cwd=$(pwd)
-rm /usr/local/bin/goprox
+launchctl unload ~/Library/LaunchAgents/com.goprox.mount.plist
+rm ~/Library/LaunchAgents/com.goprox.mount.plist
+sudo rm /opt/homebrew/bin/goprox

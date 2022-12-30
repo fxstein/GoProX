@@ -29,4 +29,13 @@
 #
 
 cwd=$(pwd)
-ln -s $cwd/goprox /usr/local/bin
+
+# In order to bypass macOS sandbox limitations when the git repo is within the 
+# users Documents folder we have to physically copy the developer copy of goprox 
+# into the homebrew tree. Links will cause the launch agent execution to fail 
+
+# sudo ln -s $cwd/goprox /usr/local/bin
+sudo cp $cwd/goprox /opt/homebrew/bin
+# ln -s $cwd/launchd/com.goprox.mount.plist ~/Library/LaunchAgents
+cp $cwd/launchd/com.goprox.mount.plist ~/Library/LaunchAgents
+launchctl load ~/Library/LaunchAgents/com.goprox.mount.plist
