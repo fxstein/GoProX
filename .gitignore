@@ -2,4 +2,5 @@
 .DS_Store
 test/tmp
 goprox.log
-test/originals/.goprox.imported
+test/originals/.goprox.*
+test/archive/
