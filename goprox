@@ -1400,16 +1400,19 @@ fi
 if [ "$test" = true ]; then
   _echo "TESTING - Performing tests..."
   _info "Removing prior test data..."
+  rm -r "./test/archive"
   rm -r "./test/imported"
   rm -r "./test/processed"
 
   _info "Setting up test structure..."
+  mkdir "./test/archive"
   mkdir "./test/imported"
   mkdir "./test/processed"
 
   source="./test/originals"
   library="./test"
   _validate_storage
+  _archive_media
   _import_media
 
   copyright="This is a Test Copyright"
