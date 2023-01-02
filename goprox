@@ -102,6 +102,7 @@ readonly DEFAULT_LIBRARY="~/goprox"
 readonly DEFAULT_COPYRIGHT=""
 readonly DEFAULT_GEONAMESACCT=""
 readonly DEFAULT_GEONAMESFILE="geonames.json"
+readonly DEFAULT_MOUNTOPTIONS=(--archive --import --clean --firmware)
 readonly DEFAULT_TIMEFORMAT='%Y-%m-%d %H:%M:%S'
 readonly DEFAULT_FILETYPES="JPG|MP4|360|JPEG|HEIC"
 readonly TIMESTAMP_PRE='perl -pe '"'"'use POSIX strftime; $|=1; print strftime "['
@@ -130,6 +131,7 @@ library=$DEFAULT_LIBRARY
 geonamesacct=$DEFAULT_GEONAMESACCT
 geonamesfile=$DEFAULT_GEONAMESFILE
 copyright=$DEFAULT_COPYRIGHT
+mountoptions=$DEFAULT_MOUNTOPTIONS
 output=$DEFAULT_OUTPUT
 filetypes=$DEFAULT_FILETYPES
 loglevel=$DEFAULT_LOGLEVEL
@@ -350,6 +352,7 @@ function _setup()
   echo "library=\""$library"\"">>$config
   echo "copyright=\""$copyright"\"">>$config
   echo "geonamesacct=\""$geonamesacct"\"">>$config
+  echo "mountoptions=(${mountoptions})">>$config
   _info "Config saved as $config"
 
   # check if library exists, otherwise create the skeleton
@@ -1434,6 +1437,26 @@ _validate_storage
 if [ "$mount" = true ]; then
   _echo "Mount event received. Option: ${mountopt}"
 
+  # Setup the type of processing that has been configured for a mount event
+  _info "Mount options: ${mountoptions}"
+  for moption in "${mountoptions[@]}"; do
+    _info "Mount option: ${moption}"
+    case $moption in 
+      --archive)
+        archive=true
+        ;;
+      --import)
+        import=true
+        ;;
+      --clean)
+        clean=true
+        ;;
+      --firmware)
+        firmware=true
+        ;;
+    esac
+  done
+
   # Search for mounted sdcards, start with lifs mount points
   # Cannot rely on USB device mounts, as buit in card readers might not be USB
 
@@ -1455,12 +1478,6 @@ if [ "$mount" = true ]; then
       _info "Start mount processing..."
 
       source=$mountpoint
-
-      # TODO: Need to make auto mount processing configurable
-      archive=true
-      import=true
-      clean=true
-      firmware=true
 
       # Execute auto tasks configured to run at mount
       if [ "$archive" = true ]; then
