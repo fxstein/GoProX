@@ -1,0 +1,7 @@
+{
+"info version":"2.0"
+,"firmware version":"H99.09.09.00.00"
+,"wifi mac":"d99999e99999"
+,"camera type":"HERO99 Black"
+,"camera serial number":"C9999999999999"
+}
