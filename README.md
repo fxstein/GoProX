@@ -163,7 +163,7 @@ one exists. Simply put the sd card back into the camera and on the next boot up 
 upgrade itself. 
 
 The `labs` modifier: `goprox --firmware labs` will perform the same check for the latest GoPro 
-Labs firmware version. Ommitting the `labs` modifier in a later firmware check will return the
+Labs firmware version. Omitting the `labs` modifier in a later firmware check will return the
 camera to the latest official firmware.
 
 ```
@@ -311,8 +311,8 @@ file to inspect the metadata.
 Apple Photos only gives you Title, Caption and Tags to work with to store
 additional information aside from the most basic metadata.
 
-This is where GoProX performs a little metadata shuffle to make at least some
-of the attributes searchable from within Apple Photos.
+This is where GoProX performs a little metadata shuffle to make at least some 
+attributes searchable from within Apple Photos.
 
 Several of the low cardinality Exif fields are getting converted to a list of
 tags. That list Apple Photos converts to its tags when importing the media.
@@ -460,7 +460,7 @@ but will see an error if you attempt `--import` or `--process`.
 Once you get started, you will see `goprox` fill the library's content with your
 GoPro media data. 
 
-Here is a sample summary of how `goprox` builts the tree inside the various components:
+Here is a sample summary of how `goprox` builds the tree inside the various components:
 
 ```
 goprox/
@@ -553,7 +553,7 @@ cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox
 
 This will safely copy all the contents of the source to the new target. It will skip 
 existing files (so you can re-run it in case of a failure) but it is important to 
-capture and review its output, particularly the error out. For long running migrations
+capture and review its output, particularly the error out. For long-running migrations
 wrap in nohup:
 
 ```
