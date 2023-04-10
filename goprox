@@ -257,15 +257,6 @@ function _validate_dependencies()
       _warning "brew install jq"
       exit 1
   fi
-  # tag is needed to write macOS tags
-  _info "Validating tag..."
-  if (( ${+commands[tag]} )); then
-      [[ $loglevel -le 1 ]] && which tag && tag --version
-  else
-      _error "ERROR: Please install tag first, run:"
-      _warning "brew install tag"
-      exit 1
-  fi
 }
 
 
