@@ -49,7 +49,7 @@ Commands:
                         val[ymwdHMS]: process files modified within the specified time period
   --clean               clean up source sdcard
                         checks if source is a GoPro sdcard format
-  --firmware            update sdcard to lastest GoPro firmware version
+  --firmware            update sdcard to the latest GoPro firmware version
                         labs: use GoPro Labs firmware
   --geonames            add geonames information to imported directories to enable time processing
   --mount               trigger mountpoint processing
@@ -57,7 +57,7 @@ Commands:
                         this is also leveraged by the goprox launch agent
   --setup               run program setup
   --test                run program tests
-                        this option is reserved for developers who clone the github project
+                        this option is reserved for developers who clone the GitHub project
 
 Options:
   -h, --help            show this help message and exit
@@ -378,7 +378,7 @@ function _create_timefilter()
   _info "Creating time filter..."
 
   if [[ $createdfilter = true ]] ; then
-    _debug "FileCreatedDate filter assmbly"
+    _debug "FileCreatedDate filter assembly"
 
     if [[ -n $createdonopt ]]; then
       _debug "CreatedOnFilter: "${createdonopt}
@@ -402,7 +402,7 @@ function _create_timefilter()
   fi
 
   if [[ $modifiedfilter = true ]] ; then
-    _debug "FileModifiedDate filter assmbly"
+    _debug "FileModifiedDate filter assembly"
 
     if [[ -n $modifiedonopt ]]; then
       _debug "ModifiedOnFilter: "${modifiedonopt}
@@ -455,7 +455,7 @@ function _create_iffilter()
 function _import_media()
 {
   if [[ $validimported = false ]] ; then
-    _error "Invalid imported directoy. Cannot proceed with import."
+    _error "Invalid imported directory. Cannot proceed with import."
     exit 1
   fi
   importdir=$library/imported
@@ -499,7 +499,7 @@ function _import_media()
 function _process_media()
 {
   if [[ $validimported = false || $validexported = false ]]  ; then
-    _error "Invalid imported and/or processed directoy. Cannot proceed with processing."
+    _error "Invalid imported and/or processed directory. Cannot proceed with processing."
     exit 1
   fi
   importdir=$library/imported
@@ -556,7 +556,7 @@ function _process_media()
   # Applications. By turning them into tags inside of Photos, they can be used
   # to filter, sort or setup smart albums.
   # Not every camera model and firmware supports all of these tags, hence the
-  # incremental additions that allow missing data to be ommited without error.
+  # incremental additions that allow missing data to be omitted without error.
 
   local exififd=()
   exififd+=('-ExifIFD:LensMake-=')
@@ -620,7 +620,7 @@ function _process_media()
 
   function _create_tag_list()
   {
-    # exlude goprox version tag when testing to avoid changed files due to version numbering
+    # exclude goprox version tag when testing to avoid changed files due to version numbering
     if [ "$test" != true ]; then
       taglist+=('-'$1'=GoProX: '${__version__})
     fi
@@ -706,7 +706,7 @@ function _process_media()
   }
 
   # Second pass - only mp4 files
-  # Need to apply differnt logic for various tags
+  # Need to apply different logic for various tags
   _echo "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
@@ -739,7 +739,7 @@ function _process_media()
   }
 
   # Third pass - only 360 files
-  # Need to apply differnt logic for various tags and sort into 360 subtree
+  # Need to apply different logic for various tags and sort into 360 subtree
   _echo "Third pass: 3/4 - Only 360 files"
 
   # Override - File name pattern is different for 360 media
@@ -807,7 +807,7 @@ function _process_media()
 function _geonames_media()
 {
   if [[ $validimported = false ]] ; then
-    _error "Invalid imported directoy. Cannot proceed with geonames task."
+    _error "Invalid imported directory. Cannot proceed with geonames task."
     exit 1
   fi
 
@@ -822,7 +822,7 @@ function _geonames_media()
   unsetopt CASE_GLOB
   ndir=0
   ngeo=0
-  for d in ${importdir}/**/; do # all sub directories of import
+  for d in ${importdir}/**/; do # all subdirectories of import
     if [[ $d =~ .*/[0-9]{8} ]]; then # only those that match an 8 digit date
       if [[ ! -f "${d}${geonamesfile}" ]]; then
         _info "Processing "$d
@@ -879,7 +879,7 @@ function _geonames_media()
 function _timeshift_media()
 {
   if [[ $validimported = false || $validexported = false ]]  ; then
-    _error "Invalid imported and/or processed directoy. Cannot proceed with processing."
+    _error "Invalid imported and/or processed directory. Cannot proceed with processing."
     exit 1
   fi
   importdir=$library/imported
@@ -895,7 +895,7 @@ function _timeshift_media()
 function _archive_media()
 {
   if [[ $validarchive = false ]] ; then
-    _error "Invalid archive directoy. Cannot proceed with archive."
+    _error "Invalid archive directory. Cannot proceed with archive."
     exit 1
   fi
 
@@ -1258,7 +1258,7 @@ for key val in "${(kv@)opts}"; do
     --version)
       version=true
 
-      # if no other options have been provided, discplay version and exit
+      # if no other options have been provided, display version and exit
       if [[ $# -eq 1 ]] ; then
         echo $VERSION_TEXT
         exit 0
@@ -1431,7 +1431,7 @@ if [ "$test" = true ]; then
 fi
 
 # Before proceeding validate storage hierarchy
-# This is necesssary when dealing with linked sub directories located on 
+# This is necessary when dealing with linked subdirectories located on
 # separate storage devices like external SSDs or HDDs. When those devices
 # are not mounted, links to them still exist but are none operational.
 # Depending on processing options, various steps might become impossible.
@@ -1461,7 +1461,7 @@ if [ "$mount" = true ]; then
   done
 
   # Search for mounted sdcards, start with lifs mount points
-  # Cannot rely on USB device mounts, as buit in card readers might not be USB
+  # Cannot rely on USB device mounts, as built in card readers might not be USB
 
   for mountpoint in $(mount -t lifs | awk '{print $3}'); do # all external filesystems
     _echo "Mountpoint: "$mountpoint 
