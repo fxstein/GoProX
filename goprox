@@ -922,7 +922,7 @@ function _archive_media()
     _info "Archive: "$archivename
 
     tar --totals --exclude='.Spotlight-V100' --exclude='.Trash*' --exclude='.goprox.*' \
-        -zcvf "${archivedir}"/"${archivename}".tar.gz $source || {
+        -zcvf "${archivedir/#\~/$HOME}/${archivename}.tar.gz" "${source/#\~/$HOME}" || {
       # Archive failed
       _error "Archive creation failed!"
       exit 1
