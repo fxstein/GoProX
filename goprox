@@ -498,8 +498,8 @@ function _process_media()
   importdir=$library/imported
   processdir=$library/processed
   _echo "Starting media processing..."
-  _info "ImportDir: "$importdir
-  _info "ProcessDir: "$processdir
+  _info "ImportDir: "${importdir/#\~/$HOME}
+  _info "ProcessDir: "${processdir/#\~/$HOME}
   _info "Process option: "$processopt
 
   if [[ -n $copyright ]]; then
@@ -807,8 +807,8 @@ function _geonames_media()
   importdir=$library/imported
 
   _echo "Starting GeoNames processing..."
-  _info "Library: "$library
-  _info "ImportDir: "$importdir
+  _info "Library: "${library/#\~/$HOME}
+  _info "ImportDir: "${importdir/#\~/$HOME}
   _info "GeoNames account: "$geonamesacct
 
   # case independent globing
