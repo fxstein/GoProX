@@ -517,10 +517,10 @@ function _process_media()
     # Get the latest modification date in the processdir
     # zsh -c 'zmodload zsh/stat; stat +mtime -- **/*(.om[1])'
     # -if '${FileModifyDate;DateFmt("%s")} gt '"\"$(stat -f %m temp)"\"...
-    lastprocess=$(stat +mtime -- ${processdir}/**/*(.om[1]))
+    lastprocess=$(stat +mtime -- "${processdir/#\~/$HOME}"/**/*(.om[1]))
     _debug "Latest process timestamp: ${lastprocess}"
 
-    lastimport=$(stat +mtime -- ${importdir}/**/*(.om[1]))
+    lastimport=$(stat +mtime -- "${importdir/#\~/$HOME}"/**/*(.om[1]))
     _debug "Latest import timestamp: ${lastimport}"
 
     if [[ $processopt == "all" ]]; then
@@ -673,12 +673,12 @@ function _process_media()
   _echo "First pass: 1/4 - All files but mp4 and 360"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
-  '-directory<'"${processdir}"'/${FileType}/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'"${processdir}"'/${FileType}/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
@@ -688,7 +688,7 @@ function _process_media()
   --ext mp4 --ext 360\
   -api "${apifilter}"\
   -api largefilesupport=1\
-  "${importdir}" || {
+  "${importdir/#\~/$HOME}" || {
     # exiftool reported one or more errors
     exiftoolstatus=$?
     if [[ $exiftoolstatus = 2 ]]; then
@@ -703,12 +703,12 @@ function _process_media()
   _echo "Second pass: 2/4 - Only mp4 files"
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
-  '-directory<'"${processdir}"'/${FileType}/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'"${processdir}"'/${FileType}/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
@@ -721,7 +721,7 @@ function _process_media()
   -api "${apifilter}"\
   -api largefilesupport=1\
   -api QuickTimeHandler=1\
-  "${importdir}" || {
+  "${importdir/#\~/$HOME}" || {
     # exiftool reported one or more errors
     exiftoolstatus=$?
         if [[ $exiftoolstatus = 2 ]]; then
@@ -739,12 +739,12 @@ function _process_media()
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
 
 # exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
+  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename=P_%f.%e'\
-  '-directory<'"${processdir}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'"${processdir}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${processdir/#\~/$HOME}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   "${artist}"\
   "${author}"\
   "${xmpcopyright}"\
@@ -757,7 +757,7 @@ function _process_media()
   -api "${apifilter}"\
   -api largefilesupport=1\
   -api QuickTimeHandler=1\
-  "${importdir}" || {
+  "${importdir/#\~/$HOME}" || {
     # exiftool reported one or more errors
     exiftoolstatus=$?
     if [[ $exiftoolstatus = 2 ]]; then
@@ -784,7 +784,7 @@ function _process_media()
   -api largefilesupport=1\
   -api QuickTimeHandler=1\
   -api TimeZone=GMT\
-  "${processdir}" || {
+  "${processdir/#\~/$HOME}" || {
     # exiftool reported one or more errors
     exiftoolstatus=$?
     if [[ $exiftoolstatus = 2 ]]; then
