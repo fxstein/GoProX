@@ -459,7 +459,7 @@ function _import_media()
   # Remove previous import marker
   rm -f $source/$DEFAULT_IMPORTED_MARKER
 
-  exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir}"'/NODATE/'\
+  exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<${FileName}'\
@@ -472,8 +472,8 @@ function _import_media()
   '-filename<${CreateDate;DateFmt("%Y%m%d%H%M%S")}_'\
 '${Model;s/\s/_/g;}_'\
 '${CameraSerialNumber;$_=substr($_,-4);}_%f.%e'\
-  '-directory<'"${importdir}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
-  '-directory<'"${importdir}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${importdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+  '-directory<'"${importdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
   -if '$MIMEType=~/image/ or $MIMEType=~/video/'\
   --ext lrv --ext thm --ext xmp --ext . --ext tar --ext gz --ext zip --ext dmg\
   -api "${apifilter}"\
