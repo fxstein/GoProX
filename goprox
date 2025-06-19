@@ -302,14 +302,14 @@ function _validate_storage()
   _info "Validating storage hierarchy..."
 
     # Start with the root and validate its existence
-  _test_library_component "library" $library && validlibrary=true
+  _test_library_component "library" "${library/#\~/$HOME}" && validlibrary=true
 
   # Only test the subtree if the root library is valid
   if [[ $validlibrary = true ]] ; then
-    _test_library_component "archive" "$library/archive" && validarchive=true
-    _test_library_component "imported" "$library/imported" && validimported=true
-    _test_library_component "processed" "$library/processed" && validprocessed=true
-    _test_library_component "deleted" "$library/deleted" && validdeleted=true
+    _test_library_component "archive" "${library/#\~/$HOME}/archive" && validarchive=true
+    _test_library_component "imported" "${library/#\~/$HOME}/imported" && validimported=true
+    _test_library_component "processed" "${library/#\~/$HOME}/processed" && validprocessed=true
+    _test_library_component "deleted" "${library/#\~/$HOME}/deleted" && validdeleted=true
   fi
 
   _info "Finished storage hierarchy validation."
@@ -318,14 +318,14 @@ function _validate_storage()
 function _setup()
 {
   # check if file exists
-  if [[ -f "$config" ]]; then
+  if [[ -f "${config/#\~/$HOME}" ]]; then
     _info "Existing $config file."
     timestamp=`date +%s`
-    backup=$config.bak.$timestamp
+    backup="${config/#\~/$HOME}.bak.$timestamp"
     _info "Creating backup: $backup"
-    mv $config $backup
+    mv "${config/#\~/$HOME}" "${backup/#\~/$HOME}"
   fi
-  touch $config
+  touch "${config/#\~/$HOME}"
 
   if [ $? -ne 0 ]
   then
@@ -339,11 +339,11 @@ function _setup()
   _info "GeoNamesAcct: "$geonamesacct
 
   _info "Writing config file: $config"
-  echo "source="$source>>$config
-  echo "library=\""$library"\"">>$config
-  echo "copyright=\""$copyright"\"">>$config
-  echo "geonamesacct=\""$geonamesacct"\"">>$config
-  echo "mountoptions=(${mountoptions})">>$config
+  echo "source="$source>>"${config/#\~/$HOME}"
+  echo "library=\""$library"\"">>"${config/#\~/$HOME}"
+  echo "copyright=\""$copyright"\"">>"${config/#\~/$HOME}"
+  echo "geonamesacct=\""$geonamesacct"\"">>"${config/#\~/$HOME}"
+  echo "mountoptions=(${mountoptions})">>"${config/#\~/$HOME}"
   _info "Config saved as $config"
 
   # check if library exists, otherwise create the skeleton
@@ -451,8 +451,8 @@ function _import_media()
   fi
   importdir=$library/imported
   _echo "Starting media import..."
-  _info "Source: $source ($(realpath $source))"
-  _info "Library: $importdir ($(realpath $importdir))"
+  _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
+  _info "Library: $importdir ($(realpath "${importdir/#\~/$HOME}"))"
 
   # Remove previous import marker
   rm -f $source/$DEFAULT_IMPORTED_MARKER
@@ -892,8 +892,8 @@ function _archive_media()
 
   archivedir=$library/archive
   _echo "Starting media archive..."
-  _info "Source: $source ($(realpath $source))"
-  _info "Library: $archivedir ($(realpath $archivedir))"
+  _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
+  _info "Library: $archivedir ($(realpath "${archivedir/#\~/$HOME}"))"
 
   # Remove previous archive marker
   rm -f $source/$DEFAULT_ARCHIVED_MARKER
@@ -942,7 +942,7 @@ function _archive_media()
 function _clean_media()
 {
   _echo "Cleaning Source Media..."
-  _info "Source: $source ($(realpath $source))"
+  _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
 
   # Remove previous clean marker
   rm -f $source/$DEFAULT_CLEANED_MARKER
@@ -954,7 +954,7 @@ function _clean_media()
       # One more check to make sure any prior step did not result in an exiftool error
       _debug "exiftool status: $exiftoolstatus"
       if (( $exiftoolstatus )) then
-        _error "Will not clean ${source} ($(realpath $source)) due to exiftool error status: ${exiftoolstatus}"
+        _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) due to exiftool error status: ${exiftoolstatus}"
         _error "Please check output."
         exit 1
       fi
@@ -962,7 +962,7 @@ function _clean_media()
         _debug "Removing $source/DCIM"
         rm -rfv $source/DCIM || {
           # Cleanup failed
-          _error "Cleaning ${source} ($(realpath $source)) failed!"
+          _error "Cleaning ${source} ($(realpath "${source/#\~/$HOME}")) failed!"
           exit 1
         }
       fi
@@ -975,13 +975,13 @@ function _clean_media()
         }
       done
     else
-      _error "Will not clean ${source} ($(realpath $source)) without prior archive or import"
+      _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) without prior archive or import"
       _error "Run options --archive or --import and --clean together"
       exit 1
     fi
   else
-    _error "Will not clean ${source} ($(realpath $source)) cannot verify it is a GoPro storage device"
-    _error "Missing $source/MISC/version.txt ($(realpath $source)/MISC/version.txt)"
+    _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) cannot verify it is a GoPro storage device"
+    _error "Missing $source/MISC/version.txt ($(realpath "${source/#\~/$HOME}"/MISC/version.txt))"
     exit 1
   fi
 
@@ -994,7 +994,7 @@ function _clean_media()
 function _firmware()
 {
   _echo "Checking firmware..."
-  _info "Source: $source ($(realpath $source))"
+  _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
@@ -1367,8 +1367,8 @@ if [[ -n $geonamesopt ]]; then
   geonamesacct=$geonamesopt
 fi
 
-_debug "Source: $source ($(realpath $source))"
-_debug "Library: $library ($(realpath $library))"
+_debug "Source: $source ($(realpath "${source/#\~/$HOME}"))"
+_debug "Library: $library ($(realpath "${library/#\~/$HOME}"))"
 _debug "Copyright: $copyright"
 _debug "GeonamesAcct: $geonamesacct"
 
