@@ -517,10 +517,22 @@ function _process_media()
     # Get the latest modification date in the processdir
     # zsh -c 'zmodload zsh/stat; stat +mtime -- **/*(.om[1])'
     # -if '${FileModifyDate;DateFmt("%s")} gt '"\"$(stat -f %m temp)"\"...
-    lastprocess=$(stat +mtime -- "${processdir/#\~/$HOME}"/**/*(.om[1]))
+    lastprocess=""
+    if [[ -n $(find "${processdir/#\~/$HOME}" -type f 2>/dev/null | head -1) ]]; then
+      # Use setopt to prevent glob expansion errors
+      setopt +o nomatch
+      lastprocess=$(stat +mtime -- "${processdir/#\~/$HOME}"/**/*(.om[1]) 2>/dev/null)
+      setopt -o nomatch
+    fi
     _debug "Latest process timestamp: ${lastprocess}"
 
-    lastimport=$(stat +mtime -- "${importdir/#\~/$HOME}"/**/*(.om[1]))
+    lastimport=""
+    if [[ -n $(find "${importdir/#\~/$HOME}" -type f 2>/dev/null | head -1) ]]; then
+      # Use setopt to prevent glob expansion errors
+      setopt +o nomatch
+      lastimport=$(stat +mtime -- "${importdir/#\~/$HOME}"/**/*(.om[1]) 2>/dev/null)
+      setopt -o nomatch
+    fi
     _debug "Latest import timestamp: ${lastimport}"
 
     if [[ $processopt == "all" ]]; then
