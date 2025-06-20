@@ -672,16 +672,12 @@ function _process_media()
   # First pass - exlude mp4 and 360 files
   _echo "First pass: 1/4 - All files but mp4 and 360"
 
-# exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
   '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
-  "${artist}"\
-  "${author}"\
-  "${xmpcopyright}"\
   "${exififd[@]}"\
   "${taglist[@]}"\
   "${xmpdata[@]}"\
@@ -698,20 +694,44 @@ function _process_media()
     fi
   }
 
+  # Add copyright arguments only if they exist
+  if [[ -n $artist ]]; then
+    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    '-FileCreateDate<FileCreateDate'\
+    '-FileCreateDate<CreateDate'\
+    '-filename<P_%f.${FileTypeExtension}'\
+    '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+    '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+    "${artist}"\
+    "${author}"\
+    "${xmpcopyright}"\
+    "${exififd[@]}"\
+    "${taglist[@]}"\
+    "${xmpdata[@]}"\
+    --ext mp4 --ext 360\
+    -api "${apifilter}"\
+    -api largefilesupport=1\
+    "${importdir/#\~/$HOME}" || {
+      # exiftool reported one or more errors
+      exiftoolstatus=$?
+      if [[ $exiftoolstatus = 2 ]]; then
+        _warning "First pass: No files processed by exiftool."
+      else  
+        _warning "First pass: exiftool reported one or more errors. Please check output."
+      fi
+    }
+  fi
+
   # Second pass - only mp4 files
   # Need to apply different logic for various tags
   _echo "Second pass: 2/4 - Only mp4 files"
 
-# exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
   '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
-  "${artist}"\
-  "${author}"\
-  "${xmpcopyright}"\
   "${exififd[@]}"\
   "${taglist[@]}"\
   "${gpsdata[@]}"\
@@ -731,6 +751,37 @@ function _process_media()
     fi
   }
 
+  # Add copyright arguments only if they exist
+  if [[ -n $artist ]]; then
+    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    '-FileCreateDate<FileCreateDate'\
+    '-FileCreateDate<CreateDate'\
+    '-filename<P_%f.${FileTypeExtension}'\
+    '-directory<'"${processdir/#\~/$HOME}"'/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+    '-directory<'"${processdir/#\~/$HOME}"'/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+    "${artist}"\
+    "${author}"\
+    "${xmpcopyright}"\
+    "${exififd[@]}"\
+    "${taglist[@]}"\
+    "${gpsdata[@]}"\
+    "${quicktimedata[@]}"\
+    "${xmpdata[@]}"\
+    -ext mp4\
+    -api "${apifilter}"\
+    -api largefilesupport=1\
+    -api QuickTimeHandler=1\
+    "${importdir/#\~/$HOME}" || {
+      # exiftool reported one or more errors
+      exiftoolstatus=$?
+      if [[ $exiftoolstatus = 2 ]]; then
+        _warning "Second pass: No files processed by exiftool."
+      else  
+        _warning "Second pass: exiftool reported one or more errors. Please check output."
+      fi
+    }
+  fi
+
   # Third pass - only 360 files
   # Need to apply different logic for various tags and sort into 360 subtree
   _echo "Third pass: 3/4 - Only 360 files"
@@ -738,16 +789,12 @@ function _process_media()
   # Override - File name pattern is different for 360 media
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
 
-# exiftool -r -F -sep ", " -q -q -progress -addTagsFromFile @ -o "${processdir}"'/NODATE/'\
   exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename=P_%f.%e'\
   '-directory<'"${processdir/#\~/$HOME}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
   '-directory<'"${processdir/#\~/$HOME}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
-  "${artist}"\
-  "${author}"\
-  "${xmpcopyright}"\
   "${exififd[@]}"\
   "${taglist[@]}"\
   "${gpsdata[@]}"\
@@ -767,6 +814,37 @@ function _process_media()
     fi
   }
 
+  # Add copyright arguments only if they exist
+  if [[ -n $artist ]]; then
+    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    '-FileCreateDate<FileCreateDate'\
+    '-FileCreateDate<CreateDate'\
+    '-filename=P_%f.%e'\
+    '-directory<'"${processdir/#\~/$HOME}"'/%e/${FileCreateDate;DateFmt("%Y")}/${FileCreateDate;DateFmt("%Y%m%d")}'\
+    '-directory<'"${processdir/#\~/$HOME}"'/%e/${CreateDate;DateFmt("%Y")}/${CreateDate;DateFmt("%Y%m%d")}'\
+    "${artist}"\
+    "${author}"\
+    "${xmpcopyright}"\
+    "${exififd[@]}"\
+    "${taglist[@]}"\
+    "${gpsdata[@]}"\
+    "${quicktimedata[@]}"\
+    "${xmpdata[@]}"\
+    -ext 360\
+    -api "${apifilter}"\
+    -api largefilesupport=1\
+    -api QuickTimeHandler=1\
+    "${importdir/#\~/$HOME}" || {
+      # exiftool reported one or more errors
+      exiftoolstatus=$?
+      if [[ $exiftoolstatus = 2 ]]; then
+        _warning "Third pass: No files processed by exiftool."
+      else  
+        _warning "Third pass: exiftool reported one or more errors. Please check output."
+      fi
+    }
+  fi
+
   # Forth pass - timeshift gopro video files
   # To eliminate issues with Apple & Google photos we need to convert the QuickTime date/time 
   # fields into UTC. Since GoPro records those fields in local time of the camera, we need to 
@@ -774,7 +852,6 @@ function _process_media()
   # QuickTime tags by that amount.
   _echo "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
 
-# exiftool -r -wm w -ee -d '%s' -q -q -progress -P -overwrite_original_in_place\
   exiftool -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
   '-quicktime:time:all<${GPSDateTime;$_=$self->GetValue("CreateDate")+'\
 'int((($_-$self->GetValue("CreateDate"))/3600)+(($_-$self->GetValue("CreateDate"))/3600)/'\
