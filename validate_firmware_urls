@@ -3,7 +3,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2021-2025 by Oliver Ratzesberger
+# Copyright (c) 2025 by Oliver Ratzesberger
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -92,7 +92,7 @@ for urlfile in "${urlfiles[@]}"; do
     echo -n "Checking $urlfile ... "
   fi
   http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url")
-  if [[ "$http_code" == "200" ]]; then
+  if [[ "$http_code" == "200" || "$http_code" == "302" ]]; then
     if $debug; then
       echo "OK"
     else
