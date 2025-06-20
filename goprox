@@ -1107,7 +1107,6 @@ function _firmware()
     _info "Version: ${version}"
 
     # Get the latest firmware for the device
-
     _debug "GoProX home: $GOPROX_HOME"
     if [[ $firmwareopt == "labs" ]]; then
       firmwarebase="${GOPROX_HOME}/firmware.labs/${camera}"
@@ -1116,8 +1115,14 @@ function _firmware()
     fi
     _debug "Firmware base: $firmwarebase"
 
-    latestfirmware=`${firmwarebase}/*([-1])`
-    _debug "Latest firmware: " ${latestfirmware}
+    # Robustly find the latest firmware directory
+    latestfirmware=""
+    if [[ -d "$firmwarebase" ]]; then
+      latestfirmware=$(ls -1d "$firmwarebase"/*/ 2>/dev/null | sort | tail -n 1)
+      # Remove trailing slash if present
+      latestfirmware="${latestfirmware%/}"
+    fi
+    _debug "Latest firmware: $latestfirmware"
 
     if [[ -z "$latestfirmware" ]]; then
       echo "No firmware files found at ${firmwarebase}"
@@ -1125,15 +1130,22 @@ function _firmware()
       return
     fi
 
-    latestversion=`${latestfirmware:t}`
-    _debug "Latest version: " ${latestversion}
+    latestversion="${latestfirmware##*/}"
+    _debug "Latest version: $latestversion"
+
+    # Find the zip file inside the latest firmware directory
+    firmwarezip=$(ls -1 "$latestfirmware"/*.zip 2>/dev/null | head -n 1)
+    if [[ -z "$firmwarezip" ]]; then
+      echo "No firmware zip found in $latestfirmware"
+      return
+    fi
 
     if [[ $latestversion != $version ]]; then
       _warning "New firmware available: ${version} >> ${latestversion}"
       _warning "Transferring newer firmware to ${source}"
-      unzip -uj "${latestfirmware}"/*.zip -d "${source}/UPDATE" || {
+      unzip -uj "$firmwarezip" -d "${source}/UPDATE" || {
         # Unzip failed
-        _error "Unzip copy of firmware ${latestfirmware}/*.zip to ${source}/UPDATE failed!"
+        _error "Unzip copy of firmware $firmwarezip to ${source}/UPDATE failed!"
         exit 1
       }
       _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
