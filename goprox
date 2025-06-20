@@ -23,6 +23,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Ensure running under zsh
+if [ -z "$ZSH_VERSION" ]; then
+  exec zsh "$0" "$@"
+fi
+
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2021-2025 Oliver Ratzesberger'
 __license__='MIT'
@@ -49,8 +54,8 @@ Commands:
                         val[ymwdHMS]: process files modified within the specified time period
   --clean               clean up source sdcard
                         checks if source is a GoPro sdcard format
-  --firmware            update sdcard to the latest GoPro firmware version
-                        labs: use GoPro Labs firmware
+  --firmware            update sdcard to the latest GoPro official firmware version
+  --firmware-labs       update sdcard to the latest GoPro Labs firmware version
   --geonames            add geonames information to imported directories to enable time processing
   --mount               trigger mountpoint processing
                         will search for GoPro media card mountpoints and kick of processing
@@ -123,6 +128,9 @@ readonly DEFAULT_ARCHIVED_MARKER=".goprox.archived"
 readonly DEFAULT_IMPORTED_MARKER=".goprox.imported"
 readonly DEFAULT_CLEANED_MARKER=".goprox.cleaned"
 readonly DEFAULT_FWCHECKED_MARKER=".goprox.fwchecked"
+
+# Add new global for firmware cache directory
+readonly FIRMWARE_CACHE_DIR="$HOME/.cache/goprox/firmware"
 
 # Initializing...
 config=$DEFAULT_CONFIG
@@ -1082,6 +1090,57 @@ function _clean_media()
   touch $source/$DEFAULT_CLEANED_MARKER
 }
 
+function _clear_firmware_cache() {
+  _echo "Clearing firmware cache at $FIRMWARE_CACHE_DIR..."
+  if [[ -d "$FIRMWARE_CACHE_DIR" ]]; then
+    rm -rf "$FIRMWARE_CACHE_DIR"/*
+    _info "Firmware cache cleared."
+  else
+    _info "Firmware cache directory does not exist."
+  fi
+}
+
+function _fetch_and_cache_firmware_zip() {
+  # $1: firmware directory (e.g., .../firmware/HERO11 Black/H22.01.02.10.00)
+  # $2: cache_type (official or labs)
+  local firmware_dir="$1"
+  local cache_type="$2"
+  local url_file="$firmware_dir/download.url"
+  if [[ ! -f "$url_file" ]]; then
+    _error "No download.url found in $firmware_dir"
+    echo ""
+    return 1
+  fi
+  local firmware_url=$(cat "$url_file" | head -n 1)
+  if [[ -z "$firmware_url" ]]; then
+    _error "No URL found in $url_file"
+    echo ""
+    return 1
+  fi
+  local firmware_name="${firmware_dir##*/}"
+  local camera_name="$(basename $(dirname "$firmware_dir"))"
+  local cache_subdir="$FIRMWARE_CACHE_DIR/$cache_type/$camera_name/$firmware_name"
+  mkdir -p "$cache_subdir"
+  local zip_name="UPDATE.zip"
+  if [[ "$camera_name" == "The Remote" ]]; then
+    zip_name="REMOTE.UPDATE.zip"
+  fi
+  local cached_zip="$cache_subdir/$zip_name"
+  if [[ ! -f "$cached_zip" ]]; then
+    _info "Downloading firmware from $firmware_url to $cached_zip..." >&2
+    curl -L -o "$cached_zip" "$firmware_url" || {
+      _error "Failed to download firmware from $firmware_url"
+      rm -f "$cached_zip"
+      echo ""
+      return 1
+    }
+  else
+    _info "Using cached firmware: $cached_zip" >&2
+  fi
+  echo "$cached_zip"
+  return 0
+}
+
 function _firmware()
 {
   _echo "Checking firmware..."
@@ -1089,79 +1148,56 @@ function _firmware()
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
-    # Remove previous firmware marker
     rm -f $source/$DEFAULT_FWCHECKED_MARKER
-
-    # Extract camera model and firmware version
-    # Due to some broken version.txt files for some models and firmware versions
-    # we have to apply a rather complicated looking fix: remove comma from the
-    # end of the second to last line in the file:
-    # sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt
-    # Otherwise we could simply cat
-    # camera=$(cat MISC/version.txt | jq '."camera type"')
-    # camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d ./MISC/version.txt | jq '."camera type"')
     camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera type"')
     version=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."firmware version"')
-
     _info "Camera: ${camera}"
     _info "Version: ${version}"
-
-    # Get the latest firmware for the device
-    _debug "GoProX home: $GOPROX_HOME"
     if [[ $firmwareopt == "labs" ]]; then
       firmwarebase="${GOPROX_HOME}/firmware.labs/${camera}"
+      cache_type="labs"
     else
       firmwarebase="${GOPROX_HOME}/firmware/${camera}"
+      cache_type="official"
     fi
     _debug "Firmware base: $firmwarebase"
-
-    # Robustly find the latest firmware directory
     latestfirmware=""
     if [[ -d "$firmwarebase" ]]; then
       latestfirmware=$(ls -1d "$firmwarebase"/*/ 2>/dev/null | sort | tail -n 1)
-      # Remove trailing slash if present
       latestfirmware="${latestfirmware%/}"
     fi
     _debug "Latest firmware: $latestfirmware"
-
     if [[ -z "$latestfirmware" ]]; then
       echo "No firmware files found at ${firmwarebase}"
-      # nothing left todo
       return
     fi
-
     latestversion="${latestfirmware##*/}"
     _debug "Latest version: $latestversion"
-
-    # Find the zip file inside the latest firmware directory
-    firmwarezip=$(ls -1 "$latestfirmware"/*.zip 2>/dev/null | head -n 1)
+    # Fetch and cache the firmware zip
+    firmwarezip=$(_fetch_and_cache_firmware_zip "$latestfirmware" "$cache_type")
     if [[ -z "$firmwarezip" ]]; then
-      echo "No firmware zip found in $latestfirmware"
+      echo "No firmware zip found or downloaded for $latestfirmware"
       return
     fi
-
     if [[ $latestversion != $version ]]; then
       _warning "New firmware available: ${version} >> ${latestversion}"
       _warning "Transferring newer firmware to ${source}"
-      unzip -uj "$firmwarezip" -d "${source}/UPDATE" || {
-        # Unzip failed
+      rm -rf "${source}/UPDATE"
+      mkdir -p "${source}/UPDATE"
+      unzip -o -uj "$firmwarezip" -d "${source}/UPDATE" || {
         _error "Unzip copy of firmware $firmwarezip to ${source}/UPDATE failed!"
         exit 1
       }
       _info "Finished firmware transfer. Camera ${camera} will install upgrade during next power on."
-
     else
       _info "Camera ${camera} has the latest firmware: ${latestversion}"
     fi
-
-    # Leave a marker - but in this case only if we ran against a verified GoPro volume
     touch $source/$DEFAULT_FWCHECKED_MARKER
   else
     _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
     _error "Missing $(realpath ${source})/MISC/version.txt"
     exit 1
   fi
-
   _echo "Finished firmware check."
 }
 
@@ -1198,7 +1234,8 @@ zparseopts -D -E -F -A opts - \
             -created-after: \
             -created-before: \
             -debug \
-            -firmware:: \
+            -firmware \
+            -firmware-labs \
             -geonames:: \
             -if: \
             -modified-on: \
@@ -1209,6 +1246,7 @@ zparseopts -D -E -F -A opts - \
             -test \
             -time:: \
             -version \
+            -clear-firmware-cache \
 	          || {
     # Unknown option
     _error "Unknown option: $@"
@@ -1294,11 +1332,12 @@ for key val in "${(kv@)opts}"; do
       # For manual script wide override set the $debug variable to true
     ;;
     --firmware)
-      # setup firmware upgrade
       firmware=true
-      # optional paremeter: labs
-      # installs labs firmware for camera
-      firmwareopt=$val
+      firmwareopt=""
+    ;;
+    --firmware-labs)
+      firmware=true
+      firmwareopt="labs"
     ;;
     --geonames)
       geonames=true
@@ -1357,7 +1396,11 @@ for key val in "${(kv@)opts}"; do
         echo $VERSION_TEXT
         exit 0
       fi
-    ;
+    ;;
+    --clear-firmware-cache)
+      _clear_firmware_cache
+      exit 0
+    ;;
   esac
 done
 
