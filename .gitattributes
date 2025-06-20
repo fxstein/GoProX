@@ -19,6 +19,7 @@ H22.03.02.00.00 export-ignore
 H19.03.02.00.71 export-ignore
 H22.01.01.10.70 export-ignore
 H22.01.01.20.70 export-ignore
+*.zip filter=lfs diff=lfs merge=lfs -text
 test/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 test/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
 test/**/*.png filter=lfs diff=lfs merge=lfs -text
