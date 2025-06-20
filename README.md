@@ -26,42 +26,44 @@ The most common way to install `goprox` is via home-brew.
 
 To install `goprox` simply type
 
-```
+```zsh
 brew install fxstein/fxstein/goprox
 ```
 
 Alternatively, you can add the fxstein tap manually before installing goprox
 
-```
+```zsh
 brew tap fxstein/fxstein
 brew install goprox
 ```
 
 Once installed, you can upgrade `goprox` by simply running
 
-```
+```zsh
 brew upgrade goprox
 ```
 
 Alternatively, you can also uninstall and reinstall goprox in case of issues with the
 upgrade
 
-``` 
+```zsh
 brew uninstall goprox
 brew install goprox
 ```
 
-### Setup
+**Note:** Homebrew will install to `/opt/homebrew/bin/goprox` on Apple Silicon and `/usr/local/bin/goprox` on Intel Macs.
+
+## Setup
 To simplify repeat usage of `goprox` it supports saving its configuration in `~/.goprox`.
 To create this configurations file, simply execute `goprox` with its `--setup` option:
 
-```
+```zsh
 goprox --setup --library "/mylibrary/dir" --source "." --copyright "My Name"
 ```
 
 You can also create alternate configuration files by specifying the `--config` option:
 
-```
+```zsh
 goprox --config "myotherconfig" --setup --library "/myotherlibrary" --source "." --copyright "My Other Name"
 ```
 
@@ -78,7 +80,7 @@ encouraged as the data volumes will be very significant.
 
 This is the hierarchy of the `goprox` library:
 
-```
+```zsh
 goprox/ (named and placed as required)
 ├── archive/
 ├── imported/
@@ -124,7 +126,7 @@ that allows for testing and validation of changes with the `--test` option.
 
 ## Examples
 
-```
+```zsh
 goprox --import
 ```
 The `--import` option will read from `source` (default to the current directory `.`) and 
@@ -138,14 +140,14 @@ Alternatively `--import` can process a `tar.gz` archive directly. It will first 
 the contents into a temp directory and then import from there. This is helpful when 
 re-importing previously archived sd card data
 
-```
+```zsh
 goprox --archive
 ```
 The `--archive` option will create a full archive of the `source` folder as a tarball inside
 `library\archive` named like `20220802215621_GoPro_Hero10_2442.tar.gz`. This is useful to
 preserve the full content of the SD card before making any changes to it. 
 
-```
+```zsh
 goprox --archive --import --clean
 ```
 All the options can be performed in a single pass. In this example `goprox` will first
@@ -154,7 +156,7 @@ create a new `archive` of the `source`, then import all the media files containe
 only execute when combined with either `--archive` or `--import` or both to avoid 
 accidental deletion of media files. 
 
-```
+```zsh
 goprox --firmware
 ```
 The `--firmware` option will check the camera model and current firmware version of the sd card
@@ -166,7 +168,7 @@ The `labs` modifier: `goprox --firmware labs` will perform the same check for th
 Labs firmware version. Omitting the `labs` modifier in a later firmware check will return the
 camera to the latest official firmware.
 
-```
+```zsh
 goprox --import --time
 ```
 Adding the `--time` option creates a timestamped output of the `goprox` run to aid in logging
@@ -175,7 +177,7 @@ All output of `goprox` is getting timestamped like
 
 `[2022-08-04 12:15:09] Info: goprox v00.08.08`
 
-```
+```zsh
 goprox --archive --import --clean --time --firmware
 ```
 This example combines the most commonly used features for any import of media files directly
@@ -191,7 +193,7 @@ booted up. For this to function properly sd-cards of different cameras should no
 It is recommended to perform as many `import` tasks as you have cameras with new footage.
 Multiple camera sd-card can be imported simultaneously if a multi-card reader is available.
 
-```
+```zsh
 goprox --process --time
 ```
 The `--process` option takes unmodified imported media files and rewrites them with enhanced
@@ -217,7 +219,7 @@ running number and a file extension.
 
 Here are some examples of GoPro Filenames:
 
-```
+```zsh
 GOPR0001.JPG
 GH010008.MP4
 GX010408.MP4
@@ -228,7 +230,7 @@ GS013331.360
 If you happen to leverage the GoPro+ Cloud it gets a lot weirder with things
 like
 
-```
+```zsh
 GPTempDownload.jpg
 ```
 
@@ -252,7 +254,7 @@ sort and act on the filenames themselves.
 ### A better way to name files
 Let's take a look at the names of the files GoProX creates on `--import`:
 
-```
+```zsh
 20211010090947_GoPro_Hero10_7678_GOPR0768.JPG
 20160130223238_GoPro_Max_6013_GS__1596.JPG
 20210615110514_GoPro_Hero9_9650_GOPR1353.JPG
@@ -290,7 +292,7 @@ applications.
 Processed files get an additional `P_` prefix to delineate from the unmodified 
 imported files.
 
-```
+```zsh
 P_20210606094917_GoPro_Hero9_4139_GOPR0182.jpg
 P_20210806114935_GoPro_Hero9_4139_GOPR3422.jpg
 P_20220206144720_GoPro_Hero10_8034_GOPR2313.jpg
@@ -319,7 +321,8 @@ tags. That list Apple Photos converts to its tags when importing the media.
 
 Here is a list of tags that are being created by GoProX:
 
-```GoProX: version
+```zsh
+GoProX: version
 Make: ...
 Camera: ...
 Camera: ... ....
@@ -379,7 +382,7 @@ folder and rerun the process.
 and processing media files over time. By default, it creates the following structure on
 disk:
 
-```
+```zsh
 goprox/ (named and placed as required)
 ├── archive/
 ├── imported/
@@ -394,7 +397,7 @@ multiple devices but can be equally beneficial for processing performance.
 The following example keeps `archive` and `deleted` on the main drive while pointing 
 `imported` and `processed` to different locations.
 
-```
+```zsh
 goprox/ (named and placed as required)
 ├── archive/
 ├── imported -> /Volumes/Office G-RAID/goprox/imported/
@@ -406,7 +409,7 @@ To create this distributed structure, simply create another `goprox` library ske
 on any storage device of your choice (in this case `/Volumes/Office G-RAID/`) (only
 the portions of the structure you want to link to are required). For example:
 
-```
+```zsh
 /Volumes/Office G-RAID/goprox/ 
 ├── imported
 ├── processed
@@ -414,7 +417,7 @@ the portions of the structure you want to link to are required). For example:
 
 You could also consider putting `archive` on a dedicated low-cost storage device:
 
-```
+```zsh
 /Volumes/Office Dock/goprox/ 
 ├── archive
 ```
@@ -423,7 +426,7 @@ Once created, head over to the main library, remove the empty directories (if yo
 performing this as a migration see below) you would like to point to different 
 locations, and simple run:
 
-```
+```zsh
 ln -s /Volumes/Office\ G-RAID/goprox/imported/ imported
 ln -s /Volumes/Office\ G-RAID/goprox/processed/ processed
 ```
@@ -438,7 +441,7 @@ or simply not available when on the road.
 
 Simple run `goprox --verbose` with no other parameters to get the storage validation summary:
 
-```
+```zsh
 ...
 Info: Validating storage hierarchy... 
 Info: goprox library: /Users/xxxxxxx/goprox directory validated 
@@ -462,7 +465,7 @@ GoPro media data.
 
 Here is a sample summary of how `goprox` builds the tree inside the various components:
 
-```
+```zsh
 goprox/
 ├── archive/
 │   ├── 20221015125658_GoPro_Hero10_8034.tar.gz
@@ -545,7 +548,7 @@ If you need to migrate file structures from one device to another, it is highly
 recommended to bypass Finder and use `cp` in archive mode to maximize copy performance 
 but also preserve owner, date & time as well as other attributes in your library.
 
-```
+```zsh
 cp -RpPvn source target
 
 cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox
@@ -556,7 +559,7 @@ existing files (so you can re-run it in case of a failure) but it is important t
 capture and review its output, particularly the error out. For long-running migrations
 wrap in nohup:
 
-```
+```zsh
 nohup cp -RpPvn source target 1>>cp-progress.log 2>>cp-errors.log
 
 nohup cp -RpPvn /Volumes/Original/goprox/imported /Volumes/Office\ G-RAID/goprox 1>>goprox-cp-progress.log 2>>goprox-cp-errors.log 
@@ -612,3 +615,8 @@ Portions of code and documentation created with the help of
 ## Links & Resources
 
 Homebrew tap to enable the installation of `goprox`: [homebrew-fxstein](https://github.com/fxstein/homebrew-fxstein)
+
+## Developer Setup
+
+If you want to contribute to GoProX or run it from source, please see the [Developer Setup instructions in the GoProX Wiki](https://github.com/fxstein/GoProX/wiki/Home#developer-setup).
+This covers installing from source, running tests, and tips for a smooth development workflow.
