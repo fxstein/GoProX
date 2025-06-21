@@ -1,0 +1,300 @@
+name: Automated Release Process
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 00.61.00)'
+        required: true
+        type: string
+      prev_version:
+        description: 'Previous version for changelog'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (no actual release)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  validate-version:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Debug Information
+        run: |
+          echo "Current version: ${{ inputs.version }}"
+          echo "Previous version: ${{ inputs.prev_version }}"
+          echo "Dry run: ${{ inputs.dry_run }}"
+          echo "GitHub context:"
+          echo "${{ toJson(github) }}"
+      
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "Error: Version must be in format XX.XX.XX"
+            exit 1
+          fi
+          
+          CURRENT_VERSION=$(grep "__version__=" goprox | cut -d"'" -f2)
+          if [[ "$CURRENT_VERSION" != "${{ inputs.version }}" ]]; then
+            echo "Error: Version in goprox file ($CURRENT_VERSION) doesn't match input (${{ inputs.version }})"
+            exit 1
+          fi
+          
+          echo "Version validation passed: ${{ inputs.version }}"
+
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: validate-version
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup zsh
+        run: |
+          # Install zsh if not available
+          if ! command -v zsh &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y zsh
+          fi
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y exiftool
+      
+      - name: Run GoProX tests
+        run: |
+          chmod +x ./goprox
+          ./goprox --test
+      
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failures
+          path: test/
+
+  build-packages:
+    name: Build Packages
+    runs-on: ubuntu-latest
+    needs: [validate-version, run-tests]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create release tarball
+        run: |
+          VERSION="${{ inputs.version }}"
+          echo "Creating release tarball for version $VERSION"
+          
+          # Create tarball excluding unnecessary files
+          tar -czf "goprox-v${VERSION}.tar.gz" \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='test' \
+            --exclude='*.DS_Store' \
+            --exclude='.DS_Store' \
+            --exclude='*.log' \
+            .
+          
+          echo "Created goprox-v${VERSION}.tar.gz"
+          ls -la "goprox-v${VERSION}.tar.gz"
+      
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "SHA256: $SHA256"
+      
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: goprox-v${{ inputs.version }}.tar.gz
+
+  generate-release-notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    needs: [validate-version, run-tests]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_VERSION="${{ inputs.prev_version }}"
+          CURR_VERSION="${{ inputs.version }}"
+          
+          echo "Generating changelog from v${PREV_VERSION} to v${CURR_VERSION}"
+          
+          # Get commits since last release
+          COMMITS=$(git log --oneline --no-merges "v${PREV_VERSION}..HEAD" || git log --oneline --no-merges --all | head -20)
+          
+          # Get issues mentioned in commits
+          ISSUES=$(git log --oneline --no-merges "v${PREV_VERSION}..HEAD" | \
+            grep -o '#[0-9]*' | sort -u | tr '\n' ' ' || echo "No issues found")
+          
+          # Create release notes
+          cat > release_notes.md << EOF
+          # GoProX v${CURR_VERSION}
+          
+          ## Changes since v${PREV_VERSION}
+          
+          ### Commits
+          \`\`\`
+          ${COMMITS}
+          \`\`\`
+          
+          ### Issues Addressed
+          ${ISSUES}
+          
+          ## Installation
+          
+          \`\`\`bash
+          brew install fxstein/tap/goprox
+          \`\`\`
+          
+          ## SHA256
+          \`\`\`
+          TBD - Will be calculated during release
+          \`\`\`
+          EOF
+          
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "Generated release notes:"
+          cat release_notes.md
+      
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-packages, generate-release-notes]
+    if: inputs.dry_run != 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+      
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+      
+      - name: Update release notes with SHA256
+        run: |
+          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
+          sed -i "s/TBD - Will be calculated during release/$SHA256/" release_notes.md
+          echo "Updated release notes with SHA256: $SHA256"
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ inputs.version }}
+          release_name: GoProX v${{ inputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+      
+      - name: Upload release assets
+        run: |
+          echo "Uploading release assets..."
+          gh release upload v${{ inputs.version }} goprox-v${{ inputs.version }}.tar.gz
+
+  update-homebrew:
+    name: Update Homebrew
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    if: inputs.dry_run != 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+      
+      - name: Calculate SHA256
+        run: |
+          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_ENV
+          echo "Calculated SHA256: $SHA256"
+      
+      - name: Update Homebrew formula
+        run: |
+          echo "Updating Homebrew formula..."
+          
+          # Clone the homebrew tap repository
+          git clone https://github.com/fxstein/homebrew-fxstein.git
+          cd homebrew-fxstein
+          
+          # Update the formula
+          sed -i "s|url \".*\"|url \"https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz\"|" Formula/goprox.rb
+          sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/goprox.rb
+          
+          # Show the changes
+          echo "Changes to Formula/goprox.rb:"
+          git diff Formula/goprox.rb
+          
+          # Commit and push
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/goprox.rb
+          git commit -m "Update goprox to v${{ inputs.version }}"
+          git push
+          
+          echo "Homebrew formula updated successfully"
+
+  dry-run-summary:
+    name: Dry Run Summary
+    runs-on: ubuntu-latest
+    needs: [build-packages, generate-release-notes]
+    if: inputs.dry_run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+      
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+      
+      - name: Show dry run summary
+        run: |
+          echo "=== DRY RUN SUMMARY ==="
+          echo "Version: ${{ inputs.version }}"
+          echo "Previous version: ${{ inputs.prev_version }}"
+          echo ""
+          echo "Package created:"
+          ls -la goprox-v${{ inputs.version }}.tar.gz
+          echo ""
+          echo "SHA256:"
+          shasum -a 256 goprox-v${{ inputs.version }}.tar.gz
+          echo ""
+          echo "Release notes:"
+          cat release_notes.md
+          echo ""
+          echo "=== DRY RUN COMPLETED ==="
+          echo "No actual release was created. Run without dry_run=true to create the release." 

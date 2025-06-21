@@ -1,0 +1,236 @@
+#!/bin/zsh
+
+# GoProX Version Bump Script
+# This script helps bump the version in the goprox file
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to show usage
+show_usage() {
+    cat << EOF
+Usage: $0 [OPTIONS] NEW_VERSION
+
+Options:
+    -m, --message MESSAGE    Commit message (default: "Bump version to vNEW_VERSION")
+    -c, --commit            Automatically commit the change
+    -p, --push             Automatically push the commit (implies --commit)
+    -h, --help             Show this help message
+
+Arguments:
+    NEW_VERSION            New version in format XX.XX.XX (e.g., 00.61.00)
+
+Examples:
+    $0 00.61.00
+    $0 --message "Release v00.61.00 with new features" 00.61.00
+    $0 --commit 00.61.00
+    $0 --push 00.61.00
+EOF
+}
+
+# Function to get current version from goprox file
+get_current_version() {
+    if [[ -f "goprox" ]]; then
+        grep "__version__=" goprox | cut -d"'" -f2
+    else
+        print_error "goprox file not found in current directory"
+        exit 1
+    fi
+}
+
+# Function to validate version format
+validate_version() {
+    local version=$1
+    if [[ ! "$version" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+        print_error "Invalid version format: $version"
+        print_error "Version must be in format XX.XX.XX (e.g., 00.61.00)"
+        exit 1
+    fi
+}
+
+# Function to update version in goprox file
+update_version() {
+    local new_version=$1
+    local current_version=$(get_current_version)
+    
+    print_status "Updating version from $current_version to $new_version"
+    
+    # Update the version in goprox file
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "s/__version__='$current_version'/__version__='$new_version'/" goprox
+    else
+        # Linux
+        sed -i "s/__version__='$current_version'/__version__='$new_version'/" goprox
+    fi
+    
+    # Verify the change
+    local updated_version=$(get_current_version)
+    if [[ "$updated_version" == "$new_version" ]]; then
+        print_success "Version updated successfully in goprox file"
+    else
+        print_error "Failed to update version. Expected: $new_version, Got: $updated_version"
+        exit 1
+    fi
+}
+
+# Function to commit the change
+commit_change() {
+    local new_version=$1
+    local commit_message=$2
+    
+    if [[ -z "$commit_message" ]]; then
+        commit_message="Bump version to v$new_version"
+    fi
+    
+    print_status "Committing version change..."
+    
+    git add goprox
+    git commit -m "$commit_message"
+    
+    print_success "Version change committed"
+}
+
+# Function to push the commit
+push_commit() {
+    print_status "Pushing commit..."
+    
+    git push
+    
+    print_success "Commit pushed successfully"
+}
+
+# Main script logic
+main() {
+    local new_version=""
+    local commit_message=""
+    local auto_commit=false
+    local auto_push=false
+    
+    # Parse command line arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -m|--message)
+                commit_message="$2"
+                shift 2
+                ;;
+            -c|--commit)
+                auto_commit=true
+                shift
+                ;;
+            -p|--push)
+                auto_commit=true
+                auto_push=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                print_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+            *)
+                if [[ -z "$new_version" ]]; then
+                    new_version="$1"
+                else
+                    print_error "Multiple versions specified: $new_version and $1"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    # Check if version was provided
+    if [[ -z "$new_version" ]]; then
+        print_error "No version specified"
+        show_usage
+        exit 1
+    fi
+    
+    # Check if we're in a git repository
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        print_error "Not in a git repository"
+        exit 1
+    fi
+    
+    # Validate version format
+    validate_version "$new_version"
+    
+    # Get current version
+    local current_version=$(get_current_version)
+    print_status "Current version: $current_version"
+    print_status "New version: $new_version"
+    
+    # Check if version is actually changing
+    if [[ "$current_version" == "$new_version" ]]; then
+        print_warning "Version is already $new_version"
+        exit 0
+    fi
+    
+    # Confirm the version bump
+    echo
+    print_status "Version Bump Summary:"
+    echo "  Current version: $current_version"
+    echo "  New version: $new_version"
+    echo "  Auto commit: $auto_commit"
+    echo "  Auto push: $auto_push"
+    echo
+    
+    read -p "Proceed with version bump? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        print_status "Version bump cancelled"
+        exit 0
+    fi
+    
+    # Update the version
+    update_version "$new_version"
+    
+    # Commit if requested
+    if [[ "$auto_commit" == "true" ]]; then
+        commit_change "$new_version" "$commit_message"
+        
+        # Push if requested
+        if [[ "$auto_push" == "true" ]]; then
+            push_commit
+        fi
+    else
+        print_status "Version updated. Don't forget to commit the change:"
+        echo "  git add goprox"
+        echo "  git commit -m \"Bump version to v$new_version\""
+        if [[ "$auto_push" == "true" ]]; then
+            echo "  git push"
+        fi
+    fi
+    
+    print_success "Version bump completed successfully!"
+}
+
+# Run main function with all arguments
+main "$@" 
