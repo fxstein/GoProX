@@ -74,7 +74,15 @@ for urlfile in "${urlfiles[@]}"; do
   fi
   echo "[DOWNLOAD] $zipfile <- $url"
   if curl -L --fail -o "$zipfile" "$url"; then
-    downloaded+="$zipfile"
+    # Validate that the downloaded file is actually a ZIP archive
+    if file "$zipfile" | grep -q "Zip archive"; then
+      downloaded+="$zipfile"
+    else
+      echo "[ERROR] Downloaded file is not a valid ZIP archive: $zipfile"
+      echo "[ERROR] File type: $(file "$zipfile")"
+      failed+="$urlfile (invalid file type)"
+      rm -f "$zipfile"
+    fi
   else
     echo "[ERROR] Failed to download $url -> $zipfile"
     failed+="$urlfile (download failed)"
