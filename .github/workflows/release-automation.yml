@@ -90,6 +90,9 @@ jobs:
           VERSION="${{ inputs.version }}"
           echo "Creating release tarball for version $VERSION"
           
+          # Clean up any existing tarball
+          rm -f "goprox-v${VERSION}.tar.gz"
+          
           # Create tarball excluding unnecessary files
           tar -czf "goprox-v${VERSION}.tar.gz" \
             --exclude='.git' \
@@ -98,6 +101,7 @@ jobs:
             --exclude='*.DS_Store' \
             --exclude='.DS_Store' \
             --exclude='*.log' \
+            --exclude="goprox-v${VERSION}.tar.gz" \
             .
           
           echo "Created goprox-v${VERSION}.tar.gz"
