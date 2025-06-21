@@ -6,3 +6,6 @@ test/archive/
 
 # Backup directories
 backup-*/
+
+# Wiki repository (separate git repo)
+GoProX.wiki/
