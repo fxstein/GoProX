@@ -33,6 +33,8 @@ jobs:
       
       - name: Trigger Release Process
         if: steps.version-check.outputs.version_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Triggering release automation for version ${{ steps.version-check.outputs.new_version }}"
           gh workflow run release-automation.yml \
