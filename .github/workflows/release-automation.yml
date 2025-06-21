@@ -14,7 +14,7 @@ on:
         description: 'Dry run (no actual release)'
         required: false
         default: 'false'
-        type: boolean
+        type: string
 
 jobs:
   validate-version:
@@ -204,20 +204,16 @@ jobs:
           echo "Updated release notes with SHA256: $SHA256"
       
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ inputs.version }}
-          release_name: GoProX v${{ inputs.version }}
+          name: GoProX v${{ inputs.version }}
           body_path: release_notes.md
           draft: false
           prerelease: false
-      
-      - name: Upload release assets
-        run: |
-          echo "Uploading release assets..."
-          gh release upload v${{ inputs.version }} goprox-v${{ inputs.version }}.tar.gz
+          files: goprox-v${{ inputs.version }}.tar.gz
 
   update-homebrew:
     name: Update Homebrew
@@ -243,7 +239,7 @@ jobs:
           echo "Updating Homebrew formula..."
           
           # Clone the homebrew tap repository
-          git clone https://github.com/fxstein/homebrew-fxstein.git
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
           cd homebrew-fxstein
           
           # Update the formula
