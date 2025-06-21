@@ -93,16 +93,29 @@ jobs:
           # Clean up any existing tarball
           rm -f "goprox-v${VERSION}.tar.gz"
           
-          # Create tarball excluding unnecessary files
-          tar -czf "goprox-v${VERSION}.tar.gz" \
-            --exclude='.git' \
+          # Create a temporary directory for the release
+          mkdir -p /tmp/goprox-release
+          
+          # Copy files to temporary directory, excluding unnecessary files
+          rsync -av --exclude='.git' \
             --exclude='.github' \
             --exclude='test' \
             --exclude='*.DS_Store' \
             --exclude='.DS_Store' \
             --exclude='*.log' \
             --exclude="goprox-v${VERSION}.tar.gz" \
-            .
+            --exclude='.gitattributes' \
+            --exclude='.gitignore' \
+            --exclude='*.lfs' \
+            . /tmp/goprox-release/
+          
+          # Create tarball from temporary directory
+          cd /tmp/goprox-release
+          tar -czf "/tmp/goprox-v${VERSION}.tar.gz" .
+          
+          # Move tarball back to workspace
+          mv "/tmp/goprox-v${VERSION}.tar.gz" "$GITHUB_WORKSPACE/"
+          cd "$GITHUB_WORKSPACE"
           
           echo "Created goprox-v${VERSION}.tar.gz"
           ls -la "goprox-v${VERSION}.tar.gz"
