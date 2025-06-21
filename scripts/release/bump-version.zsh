@@ -227,7 +227,8 @@ main() {
     echo "  Auto push: $auto_push"
     echo
     
-    read -p "Proceed with version bump? (y/N): " confirm
+    echo -n "Proceed with version bump? (y/N): "
+    read confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_status "Version bump cancelled"
         exit 0

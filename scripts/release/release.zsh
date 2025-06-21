@@ -198,7 +198,8 @@ main() {
             print_status "Using previous version from latest tag: $prev_version"
         else
             print_warning "No git tags found. You'll need to specify the previous version manually."
-            read -p "Enter previous version (e.g., 00.60.00): " prev_version
+            echo -n "Enter previous version (e.g., 00.60.00): "
+            read prev_version
             if [[ -z "$prev_version" ]]; then
                 print_error "Previous version is required"
                 exit 1
@@ -224,7 +225,8 @@ main() {
         print_warning "This will create a REAL release on GitHub"
     fi
     
-    read -p "Proceed with release? (y/N): " confirm
+    echo -n "Proceed with release? (y/N): "
+    read confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_status "Release cancelled"
         exit 0
