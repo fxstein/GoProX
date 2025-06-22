@@ -60,6 +60,7 @@ Options:
     -p, --prev VERSION       Specify previous version for changelog
     -d, --dry-run           Run in dry-run mode (no actual release)
     -h, --help              Show this help message
+    -f, --force             Skip manual confirmation
 
 Examples:
     $0 --version 00.61.00 --prev 00.60.00
@@ -143,6 +144,7 @@ main() {
     local version=""
     local prev_version=""
     local dry_run="false"
+    local force=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -163,8 +165,12 @@ main() {
                 show_usage
                 exit 0
                 ;;
+            -f|--force)
+                force=true
+                shift
+                ;;
             *)
-                print_error "Unknown option: $1"
+                print_error "Unknown argument: $1"
                 show_usage
                 exit 1
                 ;;
@@ -225,11 +231,17 @@ main() {
         print_warning "This will create a REAL release on GitHub"
     fi
     
-    echo -n "Proceed with release? (y/N): "
-    read confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        print_status "Release cancelled"
-        exit 0
+    # Confirmation prompt
+    if [[ "$force" != true ]]; then
+        echo
+        echo "Proceed with release? (y/N): "
+        read confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            print_status "Operation cancelled"
+            exit 0
+        fi
+    else
+        print_status "--force specified, proceeding without confirmation."
     fi
     
     # Push version changes to GitHub before triggering release

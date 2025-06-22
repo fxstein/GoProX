@@ -171,6 +171,7 @@ main() {
     local auto_commit=false
     local auto_push=false
     local auto_increment=false
+    local force=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -195,6 +196,10 @@ main() {
             -h|--help)
                 show_usage
                 exit 0
+                ;;
+            --force)
+                force=true
+                shift
                 ;;
             -*)
                 print_error "Unknown option: $1"
@@ -253,19 +258,23 @@ main() {
     fi
     
     # Confirm the version bump
-    echo
-    print_status "Version Bump Summary:"
-    echo "  Current version: $current_version"
-    echo "  New version: $new_version"
-    echo "  Auto commit: $auto_commit"
-    echo "  Auto push: $auto_push"
-    echo
-    
-    echo -n "Proceed with version bump? (y/N): "
-    read confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        print_status "Version bump cancelled"
-        exit 0
+    if [[ "$force" != true ]]; then
+        echo
+        print_status "Version Bump Summary:"
+        echo "  Current version: $current_version"
+        echo "  New version: $new_version"
+        echo "  Auto commit: $auto_commit"
+        echo "  Auto push: $auto_push"
+        echo
+        
+        echo -n "Proceed with version bump? (y/N): "
+        read confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            print_status "Version bump cancelled"
+            exit 0
+        fi
+    else
+        print_status "--force specified, proceeding without confirmation."
     fi
     
     # Update the version

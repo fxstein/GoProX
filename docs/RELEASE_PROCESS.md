@@ -51,7 +51,7 @@ A comprehensive script for triggering releases manually.
 - Version format validation
 - GitHub CLI integration
 - Dry-run support
-- Interactive confirmation
+- Interactive confirmation (bypass with --force)
 
 **Usage**:
 ```zsh
@@ -64,6 +64,9 @@ A comprehensive script for triggering releases manually.
 # Dry run
 ./scripts/release/release.zsh --dry-run
 
+# Force (skip confirmation)
+./scripts/release/release.zsh --force
+
 # Help
 ./scripts/release/release.zsh --help
 ```
@@ -75,7 +78,7 @@ A script for bumping the version in the `goprox` file.
 **Features**:
 - Version format validation
 - Automatic commit and push options
-- Interactive confirmation
+- Interactive confirmation (bypass with --force)
 - Cross-platform sed compatibility
 - **Auto-increment functionality** - Automatically increment patch version by 1
 - **Backward compatibility** - Still supports manual version specification
@@ -97,6 +100,9 @@ A script for bumping the version in the `goprox` file.
 # Auto-commit and push
 ./scripts/release/bump-version.zsh --push 00.61.00
 
+# Force (skip confirmation)
+./scripts/release/bump-version.zsh --auto --push --force
+
 # Help
 ./scripts/release/bump-version.zsh --help
 ```
@@ -106,7 +112,7 @@ The `--auto` option automatically increments the patch version by 1. For example
 - Current version: `01.00.01` → New version: `01.00.02`
 - Current version: `00.61.00` → New version: `00.61.01`
 
-This is the recommended approach for routine releases as it eliminates manual version calculation.
+**Note:** The `--force` option skips the manual confirmation prompt and proceeds automatically. This is useful for automation or scripting scenarios.
 
 #### `scripts/release/monitor-release.zsh`
 
