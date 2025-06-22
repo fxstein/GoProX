@@ -40,7 +40,7 @@
 ## Release Workflow Automation
 
 - When the user requests a release, always perform the following steps in order:
-  1. Run the version bump script with `--auto --force` (e.g., `./scripts/release/bump-version.zsh --auto --force`).
+  1. Run the version bump script with `--auto --push --force` (e.g., `./scripts/release/bump-version.zsh --auto --push --force`).
   2. Run the release script with `--force` (e.g., `./scripts/release/release.zsh --force`).
   3. Start the release monitor for the specific release version (e.g., `./scripts/release/monitor-release.zsh <version>`).
 
