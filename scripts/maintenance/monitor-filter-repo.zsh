@@ -40,7 +40,7 @@ get_commit_count() {
 
 # Function to get process status
 get_process_status() {
-    local pid_file=".filter-repo.pid"
+    local pid_file="output/.filter-repo.pid"
     if [[ -f "$pid_file" ]]; then
         local pid=$(cat "$pid_file")
         if kill -0 "$pid" 2>/dev/null; then
@@ -55,8 +55,11 @@ get_process_status() {
 
 # Function to show progress
 show_progress() {
-    local log_file="${1:-filter-repo.log}"
-    local pid_file=".filter-repo.pid"
+    local log_file="${1:-output/filter-repo.log}"
+    local pid_file="output/.filter-repo.pid"
+    
+    # Ensure output directory exists
+    mkdir -p output
     
     print_status "Starting progress monitor..."
     print_status "Log file: $log_file"
@@ -144,18 +147,18 @@ show_usage() {
 Usage: $0 [OPTIONS]
 
 Options:
-    -l, --log-file FILE   Log file to monitor (default: "filter-repo.log")
+    -l, --log-file FILE   Log file to monitor (default: "output/filter-repo.log")
     -h, --help            Show this help message
 
 Examples:
     $0
-    $0 --log-file "my-filter.log"
+    $0 --log-file "output/my-filter.log"
 EOF
 }
 
 # Main script logic
 main() {
-    local log_file="filter-repo.log"
+    local log_file="output/filter-repo.log"
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do

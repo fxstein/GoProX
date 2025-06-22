@@ -133,7 +133,7 @@ A real-time monitoring script for tracking release workflow progress.
 - **Workflow Status**: Shows current status, conclusion, duration, branch, and commit
 - **Job Progress**: Real-time job status with visual indicators (✅ ❌ 🔄 ⏳)
 - **Summary Box**: Professional formatted summary with next steps
-- **File Output**: Saves summary to `release-summary.txt` for reference
+- **File Output**: Saves summary to `output/release-summary.txt` for reference
 
 **Job Status Indicators**:
 - ✅ **Success**: Job completed successfully
@@ -252,6 +252,16 @@ Examples:
    ```zsh
    chmod +x scripts/release/*.zsh
    ```
+
+## Output Directory
+
+The project uses an `output/` directory for transient files that are generated during script execution:
+
+- **`output/release-summary.txt`**: Summary files from release monitoring
+- **`output/filter-repo.log`**: Log files from git filter-repo operations
+- **`output/.filter-repo.pid`**: PID files for background processes
+
+This directory is automatically created by scripts and is ignored by git (added to `.gitignore`).
 
 ## Troubleshooting
 
@@ -498,7 +508,7 @@ The monitor provides:
 - **Real-time status updates** with professional formatting
 - **Job progress tracking** with visual indicators
 - **Automatic summary generation** when workflow completes
-- **Summary file output** for reference (`release-summary.txt`)
+- **Summary file output** for reference (`output/release-summary.txt`)
 
 **Job Status Indicators**:
 - ✅ **Success**: Job completed successfully
@@ -570,4 +580,4 @@ If the automated workflow fails, manual steps may be required:
 2. Download the GitHub-generated tarball
 3. Calculate SHA256: `curl -sL "https://codeload.github.com/fxstein/GoProX/tar.gz/refs/tags/vXX.XX.XX" | shasum -a 256`
 4. Update Homebrew formula manually
-5. Test Homebrew installation: `brew install fxstein/tap/goprox` 
+5. Test Homebrew installation: `brew install fxstein/tap/goprox`

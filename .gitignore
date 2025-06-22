@@ -9,3 +9,6 @@ backup-*/
 
 # Wiki repository (separate git repo)
 GoProX.wiki/
+
+# Transient output files
+output/

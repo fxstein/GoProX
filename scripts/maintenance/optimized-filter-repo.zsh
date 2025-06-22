@@ -102,6 +102,14 @@ run_filter_repo() {
     local background="$5"
     local log_file="$6"
     
+    # Ensure output directory exists
+    mkdir -p output
+    
+    # Update log file path to output directory
+    if [[ "$log_file" != *"/"* ]]; then
+        log_file="output/$log_file"
+    fi
+    
     print_status "Starting git filter-repo with optimized settings..."
     print_status "Path pattern: $path_pattern"
     print_status "Invert: $invert"
@@ -142,11 +150,11 @@ run_filter_repo() {
         nohup bash -c "$cmd" > "$log_file" 2>&1 &
         
         local pid=$!
-        echo $pid > .filter-repo.pid
+        echo $pid > output/.filter-repo.pid
         
         print_success "Git filter-repo started with PID: $pid"
         print_status "Log file: $log_file"
-        print_status "PID file: .filter-repo.pid"
+        print_status "PID file: output/.filter-repo.pid"
         
         # Show initial log output
         sleep 2
@@ -164,7 +172,7 @@ run_filter_repo() {
 # Function to monitor progress
 monitor_progress() {
     local log_file="$1"
-    local pid_file=".filter-repo.pid"
+    local pid_file="output/.filter-repo.pid"
     
     if [[ ! -f "$pid_file" ]]; then
         print_error "PID file not found. Process may not be running."

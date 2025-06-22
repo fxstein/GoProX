@@ -243,8 +243,9 @@ display_summary() {
     
     echo "└─────────────────────────────────────────────────────────────────┘"
     
-    # Save summary to file
-    cat > release-summary.txt << EOF
+    # Save summary to file in output directory
+    mkdir -p output
+    cat > output/release-summary.txt << EOF
 RELEASE SUMMARY
 ===============
 
@@ -259,7 +260,7 @@ Generated: $(date)
 EOF
     
     echo ""
-    echo "📄 Summary saved to: release-summary.txt"
+    echo "📄 Summary saved to: output/release-summary.txt"
 }
 
 # Main monitoring function
