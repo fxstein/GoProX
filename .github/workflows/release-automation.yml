@@ -232,6 +232,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create-release]
     if: inputs.dry_run != 'true'
+    env:
+      HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       
@@ -291,14 +293,14 @@ jobs:
           echo "Updating Homebrew formula..."
           
           # Use Personal Access Token for cross-repository access
-          if [[ -z "${{ secrets.HOMEBREW_TOKEN }}" ]]; then
+          if [[ -z "$HOMEBREW_TOKEN" ]]; then
             echo "Error: HOMEBREW_TOKEN not set. Cannot update Homebrew formula."
             echo "Please add a Personal Access Token with 'repo' scope as HOMEBREW_TOKEN secret."
             exit 1
           fi
           
           # Clone the homebrew tap repository with PAT
-          git clone https://x-access-token:${{ secrets.HOMEBREW_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
+          git clone https://x-access-token:$HOMEBREW_TOKEN@github.com/fxstein/homebrew-fxstein.git
           cd homebrew-fxstein
           
           # Update the formula with the correct SHA256 from codeload
