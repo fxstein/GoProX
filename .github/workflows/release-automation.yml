@@ -231,13 +231,24 @@ jobs:
           draft: false
           prerelease: false
           files: goprox-v${{ inputs.version }}.tar.gz
+      
+      - name: Homebrew Update Info
+        run: |
+          echo "=== HOMEBREW UPDATE REQUIRED ==="
+          echo "To update the Homebrew formula, manually update:"
+          echo "https://github.com/fxstein/homebrew-fxstein/blob/main/Formula/goprox.rb"
+          echo ""
+          echo "Update these values:"
+          echo "url: https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz"
+          echo "sha256: $(shasum -a 256 goprox-v${{ inputs.version }}.tar.gz | cut -d' ' -f1)"
+          echo ""
+          echo "Or use: brew bump-formula-pr --url=https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz --sha256=$(shasum -a 256 goprox-v${{ inputs.version }}.tar.gz | cut -d' ' -f1) goprox"
 
   update-homebrew:
     name: Update Homebrew
     runs-on: ubuntu-latest
     needs: [create-release]
     if: inputs.dry_run != 'true'
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       
@@ -256,17 +267,14 @@ jobs:
         run: |
           echo "Updating Homebrew formula..."
           
-          # Check if we have access to the homebrew repository
+          # Use Personal Access Token for cross-repository access
           if [[ -z "${{ secrets.HOMEBREW_TOKEN }}" ]]; then
-            echo "Warning: HOMEBREW_TOKEN not set. Skipping Homebrew update."
-            echo "To enable automatic Homebrew updates, add HOMEBREW_TOKEN to repository secrets."
-            echo "Manual Homebrew formula update required:"
-            echo "URL: https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz"
-            echo "SHA256: $SHA256"
-            exit 0
+            echo "Error: HOMEBREW_TOKEN not set. Cannot update Homebrew formula."
+            echo "Please add a Personal Access Token with 'repo' scope as HOMEBREW_TOKEN secret."
+            exit 1
           fi
           
-          # Clone the homebrew tap repository with token
+          # Clone the homebrew tap repository with PAT
           git clone https://x-access-token:${{ secrets.HOMEBREW_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
           cd homebrew-fxstein
           

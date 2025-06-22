@@ -232,6 +232,15 @@ main() {
         exit 0
     fi
     
+    # Push version changes to GitHub before triggering release
+    print_status "Pushing version changes to GitHub..."
+    if ! git push origin main; then
+        print_error "Failed to push version changes to GitHub"
+        print_error "Please ensure you have write access and the remote is configured correctly"
+        exit 1
+    fi
+    print_success "Version changes pushed successfully"
+    
     # Trigger the workflow
     trigger_workflow "$version" "$prev_version" "$dry_run"
 }
