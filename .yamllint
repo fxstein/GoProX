@@ -1,0 +1,49 @@
+extends: default
+
+rules:
+  # Line length
+  line-length:
+    max: 120
+    level: warning
+  
+  # Document start
+  document-start:
+    present: true
+    level: warning
+  
+  # Trailing spaces
+  trailing-spaces:
+    level: error
+  
+  # Truthy values
+  truthy:
+    check-keys: false
+    level: warning
+  
+  # Comments
+  comments:
+    min-spaces-from-content: 1
+    level: warning
+  
+  # Indentation
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    level: error
+  
+  # Empty lines
+  empty-lines:
+    max: 1
+    level: warning
+  
+  # Key ordering
+  key-ordering:
+    level: warning
+  
+  # Quoted strings
+  quoted-strings:
+    level: warning
+  
+  # Hyphens
+  hyphens:
+    level: warning 

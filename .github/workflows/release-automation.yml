@@ -1,3 +1,4 @@
+---
 name: Automated Release Process
 on:
   workflow_dispatch:

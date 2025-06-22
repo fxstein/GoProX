@@ -1,26 +1,29 @@
+---
 # release.yml - Automatic creation of sha256 for release tarball
 
-name: goprox release action
-run-name: ${{ github.actor }} is publishing release ${{ github.ref_name }}
+name: "goprox release action"
+run-name: "${{ github.actor }} is publishing release ${{ github.ref_name }}"
 on:
   release:
-    types: [published]
+    types: ["published"]
 jobs:
   debug:
-    name: Debug
-    runs-on: ubuntu-latest
+    name: "Debug"
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Dump env
+      - name: "Dump env"
         run: env | sort
-      - name: Dump GitHub context
+      - name: "Dump GitHub context"
         env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_CONTEXT: "${{ toJson(github) }}"
         run: echo "$GITHUB_CONTEXT"
   sha256:
-    name: sha256
-    runs-on: ubuntu-latest
+    name: "sha256"
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Tarball url
+      - name: "Tarball url"
         run: echo "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz"
-      - name: Tarball sha256 
-        run: curl -sL "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256 | cut -d " " -f 1
+      - name: "Tarball sha256"
+        run: |
+          curl -sL "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz" |
+            shasum -a 256 | cut -d " " -f 1

@@ -280,6 +280,64 @@ When referencing issues in commit messages and documentation, use the following 
 - **Single issue**: `(refs #n)` - e.g., `(refs #20)`
 - **Multiple issues**: `(refs #n #n ...)` - e.g., `(refs #20 #25 #30)`
 
+## YAML Linting Automation
+
+To maintain code quality and prevent YAML syntax issues, the project includes automated YAML linting:
+
+### 1. GitHub Actions Linting Workflow
+
+A dedicated workflow (`.github/workflows/lint.yml`) automatically lints YAML files on every PR and push:
+- Runs on all `.yml` and `.yaml` files
+- Uses `yamllint` with project-specific rules
+- Provides warnings for style issues
+- Fails on critical syntax errors
+
+### 2. Local Development Tools
+
+#### Pre-commit Hook
+Install automatic linting before commits:
+```zsh
+./scripts/setup-pre-commit.zsh
+```
+
+This will:
+- Install `yamllint` if not present
+- Create a pre-commit hook that lints staged YAML files
+- Prevent commits with YAML issues
+
+#### Manual Linting Script
+Lint YAML files on demand:
+```zsh
+# Lint workflow files only
+./scripts/lint-yaml.zsh
+
+# Lint and attempt to fix issues
+./scripts/lint-yaml.zsh --fix
+
+# Lint all YAML files in the project
+./scripts/lint-yaml.zsh --all
+
+# Use strict mode (fail on warnings)
+./scripts/lint-yaml.zsh --strict
+```
+
+### 3. YAML Linting Rules
+
+The project uses a custom `.yamllint` configuration with:
+- **Line length**: 120 characters (warning)
+- **Document start**: Required (warning)
+- **Trailing spaces**: Error
+- **Truthy values**: Warning (convert 'true'/'false' to true/false)
+- **Indentation**: 2 spaces (error)
+- **Empty lines**: Max 1 (warning)
+
+### 4. IDE Integration
+
+For Cursor IDE and other editors:
+- Install `yamllint` extension/plugin
+- Configure to use the project's `.yamllint` file
+- Enable real-time linting feedback
+
 ## Version Bumping
 
 ### Automatic Version Bumping
@@ -401,6 +459,12 @@ Common issues and solutions:
 - **Version not pushed**: Remember to use `--push` flag with bump script
 - **Version already exists**: Check if the version was already bumped and pushed
 - **Git status issues**: Ensure working directory is clean before bumping
+
+### YAML Linting Issues
+
+- **Pre-commit hook fails**: Run `./scripts/lint-yaml.zsh --fix` to auto-fix issues
+- **IDE shows warnings**: Install yamllint extension and configure to use `.yamllint`
+- **Workflow linting fails**: Check the GitHub Actions logs for specific YAML issues
 
 ## Manual Steps (if needed)
 
