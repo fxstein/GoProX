@@ -214,13 +214,6 @@ jobs:
         with:
           name: release-notes
       
-      - name: Update release notes with SHA256
-        run: |
-          # Calculate SHA256 from the GitHub-generated tarball, not the local one
-          GITHUB_SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
-          sed -i "s/TBD - Will be calculated during release/$GITHUB_SHA256/" release_notes.md
-          echo "Updated release notes with GitHub tarball SHA256: $GITHUB_SHA256"
-      
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
@@ -232,18 +225,6 @@ jobs:
           draft: false
           prerelease: false
           files: goprox-v${{ inputs.version }}.tar.gz
-      
-      - name: Homebrew Update Info
-        run: |
-          echo "=== HOMEBREW UPDATE REQUIRED ==="
-          echo "To update the Homebrew formula, manually update:"
-          echo "https://github.com/fxstein/homebrew-fxstein/blob/main/Formula/goprox.rb"
-          echo ""
-          echo "Update these values:"
-          echo "url: https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz"
-          echo "sha256: $GITHUB_SHA256"
-          echo ""
-          echo "Or use: brew bump-formula-pr --url=https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz --sha256=$GITHUB_SHA256 goprox"
 
   update-homebrew:
     name: Update Homebrew
@@ -262,27 +243,34 @@ jobs:
         run: |
           echo "Waiting for GitHub release to be fully propagated..."
           echo "This ensures the tarball is available before calculating SHA256"
-          sleep 30
+          sleep 60
       
-      - name: Calculate SHA256 with retry
+      - name: Calculate SHA256 from codeload tarball
+        id: sha256
         run: |
-          # Calculate SHA256 from the GitHub-generated tarball with retry mechanism
+          # Calculate SHA256 from the codeload tarball (same URL Homebrew uses)
           # GitHub tarball might not be immediately available after release creation
           MAX_RETRIES=5
-          RETRY_DELAY=10
+          RETRY_DELAY=15
           
           for i in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt $i of $MAX_RETRIES to calculate GitHub tarball SHA256..."
+            echo "Attempt $i of $MAX_RETRIES to calculate codeload tarball SHA256..."
             
-            # Try to download and calculate SHA256
-            if SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1); then
-              if [[ -n "$SHA256" && "$SHA256" != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
-                # e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 is the SHA256 of an empty file
-                echo "SHA256=$SHA256" >> $GITHUB_ENV
-                echo "Successfully calculated GitHub tarball SHA256: $SHA256"
-                break
+            # Download the tarball from codeload (same URL Homebrew uses)
+            if curl -sL "https://codeload.github.com/fxstein/GoProX/tar.gz/refs/tags/v${{ inputs.version }}" -o goprox-codeload.tar.gz; then
+              # Calculate SHA256 of the downloaded file
+              if SHA256=$(shasum -a 256 goprox-codeload.tar.gz | cut -d' ' -f1); then
+                if [[ -n "$SHA256" && "$SHA256" != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
+                  # e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 is the SHA256 of an empty file
+                  echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+                  echo "Successfully calculated codeload tarball SHA256: $SHA256"
+                  echo "File size: $(wc -c < goprox-codeload.tar.gz) bytes"
+                  break
+                else
+                  echo "Received empty or invalid response, retrying in $RETRY_DELAY seconds..."
+                fi
               else
-                echo "Received empty or invalid response, retrying in $RETRY_DELAY seconds..."
+                echo "Failed to calculate SHA256, retrying in $RETRY_DELAY seconds..."
               fi
             else
               echo "Failed to download tarball, retrying in $RETRY_DELAY seconds..."
@@ -312,9 +300,9 @@ jobs:
           git clone https://x-access-token:${{ secrets.HOMEBREW_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
           cd homebrew-fxstein
           
-          # Update the formula
+          # Update the formula with the correct SHA256 from codeload
           sed -i "s|url \".*\"|url \"https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz\"|" Formula/goprox.rb
-          sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/goprox.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${{ steps.sha256.outputs.sha256 }}\"|" Formula/goprox.rb
           
           # Show the changes
           echo "Changes to Formula/goprox.rb:"
@@ -327,7 +315,7 @@ jobs:
           git commit -m "Update goprox to v${{ inputs.version }}"
           git push
           
-          echo "Homebrew formula updated successfully"
+          echo "Homebrew formula updated successfully with SHA256: ${{ steps.sha256.outputs.sha256 }}"
 
   dry-run-summary:
     name: Dry Run Summary
