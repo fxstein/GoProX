@@ -6,27 +6,15 @@ This document describes the automated release process for GoProX, which handles 
 
 The release process consists of several components:
 
-1. **Version Bump Detection** - Automatically detects when the version in `goprox` changes
-2. **Release Automation Workflow** - GitHub Actions workflow that handles the entire release process
-3. **Manual Release Scripts** - Helper scripts for manual release management
-4. **Homebrew Integration** - Automatic updates to the Homebrew formula
+1. **Release Automation Workflow** - GitHub Actions workflow that handles the entire release process
+2. **Manual Release Scripts** - Helper scripts for manual release management
+3. **Homebrew Integration** - Automatic updates to the Homebrew formula
 
 ## Components
 
-### 1. Version Bump Detection (`.github/workflows/version-bump.yml`)
+### 1. Release Automation Workflow (`.github/workflows/release-automation.yml`)
 
-**Trigger**: Push to `main` branch that modifies the `goprox` file
-
-**What it does**:
-- Compares the version in the current `goprox` file with the previous commit
-- If a version change is detected, automatically triggers the release automation workflow
-- Passes the new and previous versions as parameters
-
-**Usage**: Automatic - no manual intervention required
-
-### 2. Release Automation Workflow (`.github/workflows/release-automation.yml`)
-
-**Trigger**: Manual dispatch or automatic from version bump detection
+**Trigger**: Manual dispatch via GitHub CLI or GitHub Actions UI
 
 **Jobs**:
 - **Validate Version**: Ensures version format is correct and matches the `goprox` file
@@ -49,7 +37,7 @@ The workflow now properly handles SHA256 calculations to prevent Homebrew upgrad
 - `prev_version`: Previous version for changelog generation
 - `dry_run`: Whether to perform a dry run (default: false)
 
-### 3. Manual Release Scripts
+### 2. Manual Release Scripts
 
 #### `scripts/release.zsh`
 
@@ -127,7 +115,10 @@ This is the recommended approach for routine releases as it eliminates manual ve
    ./scripts/bump-version.zsh --auto --push
    ```
 
-2. **Automatic Trigger**: The version bump detection workflow automatically triggers the release process
+2. **Trigger Release**: Use the release script to create the GitHub release
+   ```zsh
+   ./scripts/release.zsh
+   ```
 
 3. **Monitor**: Watch the GitHub Actions tab for progress
 
@@ -173,21 +164,16 @@ Examples:
 
 ## Prerequisites
 
-### For Automatic Releases
+### For Releases
 
 1. **GitHub Actions**: Must be enabled for the repository
 2. **GitHub CLI**: Must be installed and authenticated
-3. **Homebrew Tap**: The `fxstein/homebrew-fxstein` repository must exist
-
-### For Manual Releases
-
-1. **GitHub CLI**: Must be installed and authenticated
    ```zsh
    brew install gh
    gh auth login
    ```
-
-2. **Scripts**: Make sure the scripts are executable
+3. **Homebrew Tap**: The `fxstein/homebrew-fxstein` repository must exist
+4. **Scripts**: Make sure the scripts are executable
    ```zsh
    chmod +x scripts/*.zsh
    ```
