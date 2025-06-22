@@ -33,9 +33,16 @@ The release process consists of several components:
 - **Run Tests**: Executes GoProX tests to ensure quality
 - **Build Packages**: Creates release tarball and calculates SHA256
 - **Generate Release Notes**: Creates changelog from commits and issues
-- **Create Release**: Creates GitHub release with assets
-- **Update Homebrew**: Updates the Homebrew formula in the tap repository
+- **Create Release**: Creates GitHub release with assets and correct SHA256
+- **Update Homebrew**: Updates the Homebrew formula with proper SHA256 validation
 - **Dry Run Summary**: Shows what would happen in dry-run mode
+
+**SHA256 Handling**:
+The workflow now properly handles SHA256 calculations to prevent Homebrew upgrade failures:
+- **GitHub Tarball SHA256**: Uses the GitHub-generated tarball SHA256 for Homebrew formula updates
+- **Retry Mechanism**: Includes retry logic with delays to ensure GitHub tarball availability
+- **Validation**: Validates SHA256 values to prevent empty or invalid responses
+- **Propagation Delay**: Waits for GitHub release propagation before calculating SHA256
 
 **Inputs**:
 - `version`: Version to release (e.g., "00.61.00")
@@ -80,10 +87,15 @@ A script for bumping the version in the `goprox` file.
 - Automatic commit and push options
 - Interactive confirmation
 - Cross-platform sed compatibility
+- **Auto-increment functionality** - Automatically increment patch version by 1
+- **Backward compatibility** - Still supports manual version specification
 
 **Usage**:
 ```zsh
-# Basic version bump
+# Auto-increment patch version (NEW!)
+./scripts/bump-version.zsh --auto --push
+
+# Manual version bump
 ./scripts/bump-version.zsh 00.61.00
 
 # With custom commit message
@@ -99,13 +111,20 @@ A script for bumping the version in the `goprox` file.
 ./scripts/bump-version.zsh --help
 ```
 
+**Auto-increment Mode**:
+The `--auto` option automatically increments the patch version by 1. For example:
+- Current version: `01.00.01` → New version: `01.00.02`
+- Current version: `00.61.00` → New version: `00.61.01`
+
+This is the recommended approach for routine releases as it eliminates manual version calculation.
+
 ## Release Workflow
 
 ### Automatic Release (Recommended)
 
-1. **Bump Version**: Use the version bump script
+1. **Bump Version**: Use the auto-increment version bump script
    ```zsh
-   ./scripts/bump-version.zsh --push 00.61.00
+   ./scripts/bump-version.zsh --auto --push
    ```
 
 2. **Automatic Trigger**: The version bump detection workflow automatically triggers the release process
@@ -115,8 +134,15 @@ A script for bumping the version in the `goprox` file.
 ### Manual Release
 
 1. **Bump Version**: Update the version in `goprox` file
-2. **Commit**: Commit the version change
-3. **Trigger Release**: Use the release script
+   ```zsh
+   # Auto-increment (recommended)
+   ./scripts/bump-version.zsh --auto --push
+   
+   # Or manual version
+   ./scripts/bump-version.zsh --push 00.61.00
+   ```
+
+2. **Trigger Release**: Use the release script (if not using --push above)
    ```zsh
    ./scripts/release.zsh --version 00.61.00 --prev 00.60.00
    ```
@@ -189,6 +215,21 @@ Examples:
    - Check if `fxstein/homebrew-fxstein` repository exists
    - Verify GitHub token has write access to the tap repository
 
+5. **SHA256 Mismatch Errors**
+   - **Problem**: `Error: SHA256 mismatch` when running `brew upgrade goprox`
+   - **Cause**: Homebrew formula has incorrect SHA256 for the GitHub tarball
+   - **Solution**: 
+     - Clear Homebrew cache: `rm /Users/username/Library/Caches/Homebrew/downloads/*--GoProX-*.tar.gz`
+     - Update Homebrew: `brew update`
+     - Try upgrade again: `brew upgrade goprox`
+   - **Prevention**: The automated workflow now uses correct GitHub tarball SHA256
+
+6. **Release Workflow SHA256 Failures**
+   - **Problem**: Workflow fails during SHA256 calculation
+   - **Cause**: GitHub tarball not immediately available after release creation
+   - **Solution**: The workflow now includes retry mechanisms and propagation delays
+   - **Manual Fix**: If workflow fails, wait 5-10 minutes and retry the workflow
+
 ### Debug Mode
 
 For debugging, you can run individual components:
@@ -237,4 +278,11 @@ For issues with the release process:
 - Added version bump detection
 - Added comprehensive release automation
 - Added manual release scripts
-- Added Homebrew integration 
+- Added Homebrew integration
+- **v1.1.0**: Enhanced release reliability and automation
+- Added auto-increment functionality to bump-version script (`--auto` option)
+- Fixed SHA256 mismatch issues in automated workflow
+- Added retry mechanisms and propagation delays for GitHub tarball availability
+- Improved SHA256 validation and error handling
+- Enhanced Homebrew formula update reliability
+- Updated documentation with troubleshooting guides 
