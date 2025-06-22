@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# Usage: ./bump-version.zsh [OPTIONS] NEW_VERSION
+# Usage: ./bump-version.zsh [OPTIONS] [NEW_VERSION]
 #
 # GoProX Version Bump Script
 # This script helps bump the version in the goprox file
@@ -56,9 +56,10 @@ print_error() {
 # Function to show usage
 show_usage() {
     cat << EOF
-Usage: $0 [OPTIONS] NEW_VERSION
+Usage: $0 [OPTIONS] [NEW_VERSION]
 
 Options:
+    -a, --auto              Automatically increment patch version by 1
     -m, --message MESSAGE    Commit message (default: "Bump version to vNEW_VERSION")
     -c, --commit            Automatically commit the change
     -p, --push             Automatically push the commit (implies --commit)
@@ -66,9 +67,11 @@ Options:
 
 Arguments:
     NEW_VERSION            New version in format XX.XX.XX (e.g., 00.61.00)
+                          Required unless --auto is used
 
 Examples:
-    $0 00.61.00
+    $0 --auto --push                    # Auto increment and push
+    $0 00.61.00                        # Manual version bump
     $0 --message "Release v00.61.00 with new features" 00.61.00
     $0 --commit 00.61.00
     $0 --push 00.61.00
@@ -83,6 +86,20 @@ get_current_version() {
         print_error "goprox file not found in current directory"
         exit 1
     fi
+}
+
+# Function to increment version
+increment_version() {
+    local current_version=$1
+    local major=$(echo "$current_version" | cut -d. -f1)
+    local minor=$(echo "$current_version" | cut -d. -f2)
+    local patch=$(echo "$current_version" | cut -d. -f3)
+    
+    # Increment patch version
+    local new_patch=$((10#$patch + 1))
+    
+    # Format with leading zeros
+    printf "%02d.%02d.%02d" $major $minor $new_patch
 }
 
 # Function to validate version format
@@ -153,10 +170,15 @@ main() {
     local commit_message=""
     local auto_commit=false
     local auto_push=false
+    local auto_increment=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
+            -a|--auto)
+                auto_increment=true
+                shift
+                ;;
             -m|--message)
                 commit_message="$2"
                 shift 2
@@ -191,25 +213,37 @@ main() {
         esac
     done
     
-    # Check if version was provided
-    if [[ -z "$new_version" ]]; then
-        print_error "No version specified"
-        show_usage
-        exit 1
-    fi
-    
     # Check if we're in a git repository
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
         print_error "Not in a git repository"
         exit 1
     fi
     
-    # Validate version format
-    validate_version "$new_version"
-    
     # Get current version
     local current_version=$(get_current_version)
     print_status "Current version: $current_version"
+    
+    # Handle auto increment
+    if [[ "$auto_increment" == "true" ]]; then
+        if [[ -n "$new_version" ]]; then
+            print_error "Cannot specify both --auto and a version number"
+            show_usage
+            exit 1
+        fi
+        new_version=$(increment_version "$current_version")
+        print_status "Auto-incrementing to: $new_version"
+    else
+        # Check if version was provided
+        if [[ -z "$new_version" ]]; then
+            print_error "No version specified. Use --auto for automatic increment or specify a version"
+            show_usage
+            exit 1
+        fi
+    fi
+    
+    # Validate version format
+    validate_version "$new_version"
+    
     print_status "New version: $new_version"
     
     # Check if version is actually changing
