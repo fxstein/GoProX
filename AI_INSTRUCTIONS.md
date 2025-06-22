@@ -37,4 +37,20 @@
 - Treat this file as the canonical source for project-specific standards and instructions.
 - If a rule is ambiguous, ask for clarification before proceeding.
 
+## Release Workflow Automation
+
+- When the user requests a release, always perform the following steps in order:
+  1. Run the version bump script with `--auto --force` (e.g., `./scripts/release/bump-version.zsh --auto --force`).
+  2. Run the release script with `--force` (e.g., `./scripts/release/release.zsh --force`).
+  3. Start the release monitor for the specific release version (e.g., `./scripts/release/monitor-release.zsh <version>`).
+
+- Ensure these steps are followed automatically and in sequence unless the user explicitly requests a different workflow.
+
+## Issue Creation Automation
+
+- Whenever the user requests an issue to be created, always create it as a GitHub tracker issue.
+- Assign the issue to fxstein by default.
+- Use the latest issues as a template for formatting and structure.
+- When creating the issue statement, format the text using proper Markdown and multi-line input, avoiding explicit \n characters in the body.
+
 ## [Add more rules as needed...] 
