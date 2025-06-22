@@ -241,9 +241,9 @@ jobs:
           echo ""
           echo "Update these values:"
           echo "url: https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz"
-          echo "sha256: $(shasum -a 256 goprox-v${{ inputs.version }}.tar.gz | cut -d' ' -f1)"
+          echo "sha256: $GITHUB_SHA256"
           echo ""
-          echo "Or use: brew bump-formula-pr --url=https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz --sha256=$(shasum -a 256 goprox-v${{ inputs.version }}.tar.gz | cut -d' ' -f1) goprox"
+          echo "Or use: brew bump-formula-pr --url=https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz --sha256=$GITHUB_SHA256 goprox"
 
   update-homebrew:
     name: Update Homebrew
@@ -258,12 +258,44 @@ jobs:
         with:
           name: release-packages
       
-      - name: Calculate SHA256
+      - name: Wait for GitHub release propagation
         run: |
-          # Calculate SHA256 from the GitHub-generated tarball, not the local one
-          SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
-          echo "SHA256=$SHA256" >> $GITHUB_ENV
-          echo "Calculated GitHub tarball SHA256: $SHA256"
+          echo "Waiting for GitHub release to be fully propagated..."
+          echo "This ensures the tarball is available before calculating SHA256"
+          sleep 30
+      
+      - name: Calculate SHA256 with retry
+        run: |
+          # Calculate SHA256 from the GitHub-generated tarball with retry mechanism
+          # GitHub tarball might not be immediately available after release creation
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i of $MAX_RETRIES to calculate GitHub tarball SHA256..."
+            
+            # Try to download and calculate SHA256
+            if SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1); then
+              if [[ -n "$SHA256" && "$SHA256" != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
+                # e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 is the SHA256 of an empty file
+                echo "SHA256=$SHA256" >> $GITHUB_ENV
+                echo "Successfully calculated GitHub tarball SHA256: $SHA256"
+                break
+              else
+                echo "Received empty or invalid response, retrying in $RETRY_DELAY seconds..."
+              fi
+            else
+              echo "Failed to download tarball, retrying in $RETRY_DELAY seconds..."
+            fi
+            
+            if [[ $i -lt $MAX_RETRIES ]]; then
+              sleep $RETRY_DELAY
+            else
+              echo "Error: Failed to calculate SHA256 after $MAX_RETRIES attempts"
+              echo "GitHub tarball may not be available yet. Please retry the workflow."
+              exit 1
+            fi
+          done
       
       - name: Update Homebrew formula
         run: |
