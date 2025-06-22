@@ -1,0 +1,192 @@
+#!/bin/zsh
+#
+# full-release.zsh: Complete automated release process for GoProX
+#
+# Copyright (c) 2021-2025 by Oliver Ratzesberger
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# Usage: ./full-release.zsh
+#
+# GoProX Full Release Script
+# This script performs the complete release process:
+# 1. Bump version with --auto --push --force
+# 2. Trigger the release workflow
+# 3. Monitor the release process
+
+set -e
+
+# Remove color codes for Cursor IDE compatibility
+print_status() {
+    echo "[INFO] $1"
+}
+
+print_success() {
+    echo "[SUCCESS] $1"
+}
+
+print_warning() {
+    echo "[WARNING] $1"
+}
+
+print_error() {
+    echo "[ERROR] $1"
+}
+
+# Function to show usage
+show_usage() {
+    cat << EOF
+Usage: $0
+
+This script performs the complete GoProX release process:
+1. Bump version with --auto --push --force
+2. Trigger release workflow
+3. Monitor the release process
+
+The script is fully automated and requires no user interaction.
+EOF
+}
+
+# Function to check prerequisites
+check_prerequisites() {
+    print_status "Checking prerequisites..."
+    
+    # Check if we're in a git repository
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        print_error "Not in a git repository"
+        exit 1
+    fi
+    
+    # Check if gh CLI is available
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI (gh) is not installed. Please install it first: https://cli.github.com/"
+        exit 1
+    fi
+    
+    if ! gh auth status &> /dev/null; then
+        print_error "Not authenticated with GitHub CLI. Please run: gh auth login"
+        exit 1
+    fi
+    
+    # Check if required scripts exist
+    if [[ ! -f "scripts/release/bump-version.zsh" ]]; then
+        print_error "bump-version.zsh script not found"
+        exit 1
+    fi
+    
+    if [[ ! -f "scripts/release/release.zsh" ]]; then
+        print_error "release.zsh script not found"
+        exit 1
+    fi
+    
+    if [[ ! -f "scripts/release/monitor-release.zsh" ]]; then
+        print_error "monitor-release.zsh script not found"
+        exit 1
+    fi
+    
+    print_success "All prerequisites met"
+}
+
+# Function to get current version
+get_current_version() {
+    if [[ -f "goprox" ]]; then
+        grep "__version__=" goprox | cut -d"'" -f2
+    else
+        print_error "goprox file not found in current directory"
+        exit 1
+    fi
+}
+
+# Function to get the latest git tag
+get_latest_tag() {
+    git describe --tags --abbrev=0 2>/dev/null || echo "none"
+}
+
+# Main script logic
+main() {
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│                   GoProX Full Release                          │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    echo ""
+    
+    dry_run="false"
+    if [[ "$1" == "--dry-run" ]]; then
+        dry_run="true"
+    fi
+    
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        show_usage
+        exit 0
+    fi
+    
+    check_prerequisites
+    
+    local current_version=$(get_current_version)
+    print_status "Starting release process for version: $current_version"
+    
+    # Step 1: Bump version
+    print_status "Step 1: Bumping version..."
+    bump_args=(--auto --push --force)
+    if [[ "$dry_run" == "true" ]]; then
+        bump_args+=(--dry-run)
+    fi
+    bump_output=$(./scripts/release/bump-version.zsh "${bump_args[@]}" 2>&1)
+    echo "$bump_output"
+    if [[ $? -ne 0 ]]; then
+        print_error "Version bump failed"
+        exit 1
+    fi
+    
+    local new_version=$(get_current_version)
+    print_success "Version bumped to: $new_version"
+    
+    # Step 2: Trigger release workflow
+    print_status "Step 2: Triggering release workflow..."
+    release_args=(--force)
+    if [[ "$dry_run" == "true" ]]; then
+        release_args+=(--dry-run)
+    fi
+    release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1)
+    echo "$release_output"
+    if [[ $? -ne 0 ]]; then
+        print_error "Release workflow trigger failed"
+        exit 1
+    fi
+    print_success "Release workflow triggered successfully"
+    
+    # Step 3: Monitor the release
+    print_status "Step 3: Monitoring release process..."
+    print_status "Monitoring workflow for version: $new_version"
+    ./scripts/release/monitor-release.zsh "$new_version"
+    if [[ $? -ne 0 ]]; then
+        print_error "Release monitoring failed"
+        exit 1
+    fi
+    print_success "Release process completed!"
+    echo ""
+    print_status "Release Summary:"
+    echo "  Version: $new_version"
+    echo "  Status: Completed"
+    echo "  Monitor: Finished"
+    echo ""
+    print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
+}
+
+main "$@" 

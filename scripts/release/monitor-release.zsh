@@ -15,13 +15,20 @@ fi
 # GoProX Release Monitor
 # Monitors the release workflow in real-time and generates a summary
 
-# set -e  # Removed to avoid premature exit in loops
+set -e
 
 # Initialize summary variables
 SUMMARY_STATUS=""
 SUMMARY_DURATION=""
 SUMMARY_ISSUES=""
 SUMMARY_NEXT_STEPS=""
+
+show_usage() {
+    echo "Usage: $0 [<version>]"
+    echo "  <version>   Optional. Monitor the workflow for the specified release version (e.g., 01.00.07)."
+    echo "              If omitted, monitors the latest workflow run."
+    echo "  --test-output   Show test output formatting."
+}
 
 # Function to print plain output
 print_status() {
@@ -43,20 +50,28 @@ check_gh_cli() {
     fi
 }
 
-# Function to get workflow ID
+# Function to get workflow ID for a specific version (if provided)
 get_workflow_id() {
     local workflow_name="Automated Release Process"
-    local workflow_id
-    
-    print_status "" "Searching for latest '$workflow_name' workflow..."
-    
-    workflow_id=$(gh run list --workflow="$workflow_name" --limit=1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
-    
-    if [[ -z "$workflow_id" || "$workflow_id" == "null" ]]; then
-        echo "Error: No recent '$workflow_name' workflow found. Make sure the workflow has been triggered recently." >&2
-        exit 1
+    local version="$1"
+    local workflow_id=""
+    if [[ -n "$version" ]]; then
+        print_status "" "Searching for workflow run for version '$version'..."
+        # Search for workflow runs and find one with the version in the title or release notes
+        workflow_id=$(gh run list --workflow="$workflow_name" --json databaseId,displayTitle,headSha,headBranch,status,conclusion --limit 20 | \
+            jq -r --arg v "$version" '.[] | select(.displayTitle | test($v)) | .databaseId' | head -n1)
+        if [[ -z "$workflow_id" ]]; then
+            echo "Error: No workflow run found for version '$version'." >&2
+            exit 1
+        fi
+    else
+        print_status "" "Searching for latest '$workflow_name' workflow..."
+        workflow_id=$(gh run list --workflow="$workflow_name" --limit=1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+        if [[ -z "$workflow_id" || "$workflow_id" == "null" ]]; then
+            echo "Error: No recent '$workflow_name' workflow found. Make sure the workflow has been triggered recently." >&2
+            exit 1
+        fi
     fi
-    
     echo "$workflow_id"
 }
 
@@ -309,10 +324,14 @@ main() {
     echo "└─────────────────────────────────────────────────────────────────┘"
     echo ""
     
+    # Wait to ensure new workflow run has started
+    echo "[INFO] Waiting 15 seconds for workflow run to start..."
+    sleep 15
+    
     # Check prerequisites
     check_gh_cli
     
-    # Get workflow ID
+    # Always get the latest workflow ID
     local workflow_id
     workflow_id=$(get_workflow_id)
     print_status "" "Found workflow ID: $workflow_id"
@@ -322,11 +341,9 @@ main() {
     local wf_status
     local conclusion
     local jobs_data
-    
     workflow_data=$(get_workflow_status "$workflow_id")
     wf_status=$(echo "$workflow_data" | jq -r '.status')
     conclusion=$(echo "$workflow_data" | jq -r '.conclusion // "null"')
-    
     if [[ "$wf_status" == "completed" ]]; then
         print_status "" "Workflow is already completed. Showing final summary..."
         jobs_data=$(get_workflow_jobs "$workflow_id")
@@ -336,7 +353,6 @@ main() {
         display_summary
         exit 0
     fi
-    
     # Start monitoring
     monitor_workflow "$workflow_id"
 }

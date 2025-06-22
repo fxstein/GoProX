@@ -64,6 +64,7 @@ Options:
     -c, --commit            Automatically commit the change
     -p, --push             Automatically push the commit (implies --commit)
     -h, --help             Show this help message
+    --dry-run              Dry run mode: print what would be done but do not modify files, commit, or push
 
 Arguments:
     NEW_VERSION            New version in format XX.XX.XX (e.g., 00.61.00)
@@ -172,6 +173,7 @@ main() {
     local auto_push=false
     local auto_increment=false
     local force=false
+    local dry_run=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -199,6 +201,10 @@ main() {
                 ;;
             --force)
                 force=true
+                shift
+                ;;
+            --dry-run)
+                dry_run=true
                 shift
                 ;;
             -*)
@@ -257,6 +263,18 @@ main() {
         exit 0
     fi
     
+    if [[ "$dry_run" == true ]]; then
+        print_status "[DRY RUN] Would update version from $current_version to $new_version in goprox file."
+        if [[ "$auto_commit" == "true" ]]; then
+            print_status "[DRY RUN] Would commit version change."
+            if [[ "$auto_push" == "true" ]]; then
+                print_status "[DRY RUN] Would push commit to remote."
+            fi
+        fi
+        print_success "[DRY RUN] Version bump simulation completed successfully!"
+        exit 0
+    fi
+    
     # Confirm the version bump
     if [[ "$force" != true ]]; then
         echo
@@ -266,7 +284,6 @@ main() {
         echo "  Auto commit: $auto_commit"
         echo "  Auto push: $auto_push"
         echo
-        
         echo -n "Proceed with version bump? (y/N): "
         read confirm
         if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
@@ -283,7 +300,6 @@ main() {
     # Commit if requested
     if [[ "$auto_commit" == "true" ]]; then
         commit_change "$new_version" "$commit_message"
-        
         # Push if requested
         if [[ "$auto_push" == "true" ]]; then
             push_commit
