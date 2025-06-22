@@ -143,6 +143,14 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Setup zsh
+        run: |
+          # Install zsh if not available
+          if ! command -v zsh &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y zsh
+          fi
+      
       - name: Generate changelog
         id: changelog
         run: |
@@ -151,39 +159,13 @@ jobs:
           
           echo "Generating changelog from v${PREV_VERSION} to v${CURR_VERSION}"
           
-          # Get commits since last release
-          COMMITS=$(git log --oneline --no-merges "v${PREV_VERSION}..HEAD" || git log --oneline --no-merges --all | head -20)
+          # Make the script executable
+          chmod +x scripts/release/generate-release-notes.zsh
           
-          # Get issues mentioned in commits
-          ISSUES=$(git log --oneline --no-merges "v${PREV_VERSION}..HEAD" | \
-            grep -o '#[0-9]*' | sort -u | tr '\n' ' ' || echo "No issues found")
+          # Generate release notes using the new script
+          ./scripts/release/generate-release-notes.zsh "$CURR_VERSION" "$PREV_VERSION" release_notes.md
           
-          # Create release notes
-          cat > release_notes.md << EOF
-          # GoProX v${CURR_VERSION}
-          
-          ## Changes since v${PREV_VERSION}
-          
-          ### Commits
-          \`\`\`
-          ${COMMITS}
-          \`\`\`
-          
-          ### Issues Addressed
-          ${ISSUES}
-          
-          ## Installation
-          
-          \`\`\`bash
-          brew install fxstein/tap/goprox
-          \`\`\`
-          
-          ## SHA256
-          \`\`\`
-          TBD - Will be calculated during release
-          \`\`\`
-          EOF
-          
+          # Read the generated release notes for GitHub output
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
