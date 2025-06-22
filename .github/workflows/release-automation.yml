@@ -216,9 +216,10 @@ jobs:
       
       - name: Update release notes with SHA256
         run: |
-          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
-          sed -i "s/TBD - Will be calculated during release/$SHA256/" release_notes.md
-          echo "Updated release notes with SHA256: $SHA256"
+          # Calculate SHA256 from the GitHub-generated tarball, not the local one
+          GITHUB_SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
+          sed -i "s/TBD - Will be calculated during release/$GITHUB_SHA256/" release_notes.md
+          echo "Updated release notes with GitHub tarball SHA256: $GITHUB_SHA256"
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -259,9 +260,10 @@ jobs:
       
       - name: Calculate SHA256
         run: |
-          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
+          # Calculate SHA256 from the GitHub-generated tarball, not the local one
+          SHA256=$(curl -sL "https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
           echo "SHA256=$SHA256" >> $GITHUB_ENV
-          echo "Calculated SHA256: $SHA256"
+          echo "Calculated GitHub tarball SHA256: $SHA256"
       
       - name: Update Homebrew formula
         run: |
