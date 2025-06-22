@@ -1204,6 +1204,179 @@ function _firmware()
   _echo "Finished firmware check."
 }
 
+function _detect_and_rename_gopro_sd()
+{
+  _echo "Scanning for GoPro SD cards..."
+  
+  local found_gopro=false
+  local renamed_count=0
+  local already_correct_count=0
+  local firmware_updated_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        found_gopro=true
+        _echo "Found GoPro SD card: $volume_name"
+        
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+        
+        _echo "  Camera type: $camera_type"
+        _echo "  Serial number: $serial_number"
+        _echo "  Firmware version: $firmware_version"
+        
+        # Extract last 4 digits of serial number for shorter name
+        local short_serial=${serial_number: -4}
+        
+        # Create new volume name: CAMERA_TYPE-SERIAL_LAST_4
+        # Remove "Black" from camera type and clean up special characters
+        local clean_camera_type=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')
+        local new_volume_name="${clean_camera_type}-${short_serial}"
+        
+        # Check if new name is different from current name
+        if [[ "$volume_name" == "$new_volume_name" ]]; then
+          ((already_correct_count++))
+        else
+          _echo "  Proposed new name: $new_volume_name"
+        fi
+        
+        # Detect firmware type and check for updates
+        local firmware_type="official"
+        local firmware_suffix=${firmware_version: -2}
+        if [[ "$firmware_suffix" =~ ^7[0-9]$ ]]; then
+          firmware_type="labs"
+        fi
+        _echo "  Firmware type: $firmware_type"
+        
+        # Remove firmware checked marker to allow re-checking
+        rm -f "$volume/$DEFAULT_FWCHECKED_MARKER"
+        
+        # Check for newer firmware
+        local firmwarebase=""
+        local cache_type=""
+        if [[ "$firmware_type" == "labs" ]]; then
+          firmwarebase="${GOPROX_HOME}/firmware.labs/${camera_type}"
+          cache_type="labs"
+        else
+          firmwarebase="${GOPROX_HOME}/firmware/${camera_type}"
+          cache_type="official"
+        fi
+        
+        local latestfirmware=""
+        if [[ -d "$firmwarebase" ]]; then
+          latestfirmware=$(ls -1d "$firmwarebase"/*/ 2>/dev/null | sort | tail -n 1)
+          latestfirmware="${latestfirmware%/}"
+        fi
+        
+        if [[ -n "$latestfirmware" ]]; then
+          local latestversion="${latestfirmware##*/}"
+          if [[ "$latestversion" != "$firmware_version" ]]; then
+            # Check if firmware update files already exist
+            if [[ -d "$volume/UPDATE" ]] && [[ -f "$volume/UPDATE/DATA.bin" ]]; then
+              _echo "  Firmware update already prepared (UPDATE directory exists)"
+            else
+              _echo "  Newer $firmware_type firmware available: $firmware_version → $latestversion"
+              
+              # Offer to update firmware
+              echo
+              read -q "REPLY?Do you want to update to $latestversion? (y/N) "
+              echo
+              
+              if [[ $REPLY =~ ^[Yy]$ ]]; then
+                _info "Updating firmware..."
+                
+                # Fetch and cache the firmware zip
+                local firmwarezip=$(_fetch_and_cache_firmware_zip "$latestfirmware" "$cache_type")
+                if [[ -n "$firmwarezip" ]]; then
+                  rm -f "$volume/$DEFAULT_FWCHECKED_MARKER"
+                  rm -rf "$volume/UPDATE"
+                  mkdir -p "$volume/UPDATE"
+                  unzip -o -uj "$firmwarezip" -d "$volume/UPDATE" || {
+                    _error "Unzip copy of firmware $firmwarezip to $volume/UPDATE failed!"
+                    continue
+                  }
+                  touch "$volume/$DEFAULT_FWCHECKED_MARKER"
+                  _echo "Firmware update prepared. Camera will install upgrade during next power on."
+                  ((firmware_updated_count++))
+                else
+                  _error "Failed to download firmware zip for $latestfirmware"
+                fi
+              else
+                _info "Firmware update cancelled"
+              fi
+            fi
+          else
+            _echo "  Firmware is up to date ($firmware_type)"
+          fi
+        else
+          _echo "  No $firmware_type firmware found for $camera_type"
+        fi
+        
+        # Only proceed with rename logic if name needs to be changed
+        if [[ "$volume_name" != "$new_volume_name" ]]; then
+          # Check if new name already exists
+          if [[ -d "/Volumes/$new_volume_name" ]]; then
+            _warning "Volume name '$new_volume_name' already exists, skipping rename"
+            continue
+          fi
+          
+          # Confirm rename operation
+          echo
+          read -q "REPLY?Do you want to rename '$volume_name' to '$new_volume_name'? (y/N) "
+          echo
+          
+          if [[ $REPLY =~ ^[Yy]$ ]]; then
+            _info "Renaming volume..."
+            
+            # Get the device identifier for the volume
+            local device_id=$(diskutil info "$volume" | grep "Device Identifier" | awk '{print $3}')
+            
+            # Use diskutil to rename the volume using device identifier
+            if diskutil rename "$device_id" "$new_volume_name"; then
+              _echo "Successfully renamed '$volume_name' to '$new_volume_name'"
+              ((renamed_count++))
+            else
+              _error "Failed to rename volume"
+            fi
+          else
+            _info "Rename cancelled"
+          fi
+        fi
+        
+        echo
+      fi
+    fi
+  done
+  
+  if [[ "$found_gopro" == false ]]; then
+    _info "No GoPro SD cards found"
+  else
+    _echo "Summary: Found $((already_correct_count + renamed_count)) GoPro SD card(s)"
+    if [[ $already_correct_count -gt 0 ]]; then
+      _echo "  - $already_correct_count already correctly named"
+    fi
+    if [[ $renamed_count -gt 0 ]]; then
+      _echo "  - $renamed_count renamed"
+    fi
+    if [[ $firmware_updated_count -gt 0 ]]; then
+      _echo "  - $firmware_updated_count firmware updates prepared"
+    fi
+  fi
+  
+  _echo "SD card detection finished."
+}
 
 # Enable color output
 autoload colors
@@ -1212,10 +1385,10 @@ colors
 # enable built in stat
 zmodload zsh/stat
 
-# If no parameters have been provided display help and exit
+# If no parameters have been provided, scan for GoPro SD cards
 if [[ $# -eq 0 ]] ; then
-  _help
-  exit 1
+  _detect_and_rename_gopro_sd
+  exit 0
 fi
 
 # Parse options
