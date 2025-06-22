@@ -39,7 +39,9 @@ The workflow now properly handles SHA256 calculations to prevent Homebrew upgrad
 
 ### 2. Manual Release Scripts
 
-#### `scripts/release.zsh`
+All release-related scripts are located in the `scripts/release/` directory for better organization.
+
+#### `scripts/release/release.zsh`
 
 A comprehensive script for triggering releases manually.
 
@@ -54,19 +56,19 @@ A comprehensive script for triggering releases manually.
 **Usage**:
 ```zsh
 # Basic usage (auto-detects versions)
-./scripts/release.zsh
+./scripts/release/release.zsh
 
 # Specify versions manually
-./scripts/release.zsh --version 00.61.00 --prev 00.60.00
+./scripts/release/release.zsh --version 00.61.00 --prev 00.60.00
 
 # Dry run
-./scripts/release.zsh --dry-run
+./scripts/release/release.zsh --dry-run
 
 # Help
-./scripts/release.zsh --help
+./scripts/release/release.zsh --help
 ```
 
-#### `scripts/bump-version.zsh`
+#### `scripts/release/bump-version.zsh`
 
 A script for bumping the version in the `goprox` file.
 
@@ -81,22 +83,22 @@ A script for bumping the version in the `goprox` file.
 **Usage**:
 ```zsh
 # Auto-increment patch version (NEW!)
-./scripts/bump-version.zsh --auto --push
+./scripts/release/bump-version.zsh --auto --push
 
 # Manual version bump
-./scripts/bump-version.zsh 00.61.00
+./scripts/release/bump-version.zsh 00.61.00
 
 # With custom commit message
-./scripts/bump-version.zsh --message "Release v00.61.00 with new features" 00.61.00
+./scripts/release/bump-version.zsh --message "Release v00.61.00 with new features" 00.61.00
 
 # Auto-commit
-./scripts/bump-version.zsh --commit 00.61.00
+./scripts/release/bump-version.zsh --commit 00.61.00
 
 # Auto-commit and push
-./scripts/bump-version.zsh --push 00.61.00
+./scripts/release/bump-version.zsh --push 00.61.00
 
 # Help
-./scripts/bump-version.zsh --help
+./scripts/release/bump-version.zsh --help
 ```
 
 **Auto-increment Mode**:
@@ -106,18 +108,91 @@ The `--auto` option automatically increments the patch version by 1. For example
 
 This is the recommended approach for routine releases as it eliminates manual version calculation.
 
+#### `scripts/release/monitor-release.zsh`
+
+A real-time monitoring script for tracking release workflow progress.
+
+**Features**:
+- Real-time workflow status monitoring
+- Professional formatted output with box-drawing borders
+- Job status tracking with emoji indicators
+- Automatic summary generation
+- Cursor IDE compatibility (no color codes)
+- Summary file generation for reference
+
+**Usage**:
+```zsh
+# Monitor the latest release workflow
+./scripts/release/monitor-release.zsh
+
+# Test output formatting
+./scripts/release/monitor-release.zsh --test-output
+```
+
+**Output Features**:
+- **Workflow Status**: Shows current status, conclusion, duration, branch, and commit
+- **Job Progress**: Real-time job status with visual indicators (✅ ❌ 🔄 ⏳)
+- **Summary Box**: Professional formatted summary with next steps
+- **File Output**: Saves summary to `release-summary.txt` for reference
+
+**Job Status Indicators**:
+- ✅ **Success**: Job completed successfully
+- ❌ **Failure**: Job failed
+- 🔄 **Running**: Job currently in progress
+- ⏳ **Waiting**: Job queued or waiting
+
+#### `scripts/release/lint-yaml.zsh`
+
+A YAML linting script for maintaining code quality.
+
+**Features**:
+- Lint GitHub Actions workflows and other YAML files
+- Auto-fix capabilities for common issues
+- Strict mode for CI/CD environments
+- Project-specific linting rules
+
+**Usage**:
+```zsh
+# Lint workflow files only
+./scripts/release/lint-yaml.zsh
+
+# Lint and attempt to fix issues
+./scripts/release/lint-yaml.zsh --fix
+
+# Lint all YAML files in the project
+./scripts/release/lint-yaml.zsh --all
+
+# Use strict mode (fail on warnings)
+./scripts/release/lint-yaml.zsh --strict
+```
+
+#### `scripts/release/setup-pre-commit.zsh`
+
+A script for setting up pre-commit hooks for YAML linting.
+
+**Features**:
+- Installs `yamllint` if not present
+- Creates pre-commit hook for YAML validation
+- Prevents commits with YAML syntax issues
+
+**Usage**:
+```zsh
+# Install pre-commit hook
+./scripts/release/setup-pre-commit.zsh
+```
+
 ## Release Workflow
 
 ### Automatic Release (Recommended)
 
 1. **Bump Version**: Use the auto-increment version bump script
    ```zsh
-   ./scripts/bump-version.zsh --auto --push
+   ./scripts/release/bump-version.zsh --auto --push
    ```
 
 2. **Trigger Release**: Use the release script to create the GitHub release
    ```zsh
-   ./scripts/release.zsh
+   ./scripts/release/release.zsh
    ```
 
 3. **Monitor**: Watch the GitHub Actions tab for progress
@@ -127,15 +202,15 @@ This is the recommended approach for routine releases as it eliminates manual ve
 1. **Bump Version**: Update the version in `goprox` file
    ```zsh
    # Auto-increment (recommended)
-   ./scripts/bump-version.zsh --auto --push
+   ./scripts/release/bump-version.zsh --auto --push
    
    # Or manual version
-   ./scripts/bump-version.zsh --push 00.61.00
+   ./scripts/release/bump-version.zsh --push 00.61.00
    ```
 
 2. **Trigger Release**: Use the release script (if not using --push above)
    ```zsh
-   ./scripts/release.zsh --version 00.61.00 --prev 00.60.00
+   ./scripts/release/release.zsh --version 00.61.00 --prev 00.60.00
    ```
 
 ### Dry Run
@@ -143,7 +218,7 @@ This is the recommended approach for routine releases as it eliminates manual ve
 Always test the release process with a dry run first:
 
 ```zsh
-./scripts/release.zsh --dry-run
+./scripts/release/release.zsh --dry-run
 ```
 
 This will:
@@ -175,7 +250,7 @@ Examples:
 3. **Homebrew Tap**: The `fxstein/homebrew-fxstein` repository must exist
 4. **Scripts**: Make sure the scripts are executable
    ```zsh
-   chmod +x scripts/*.zsh
+   chmod +x scripts/release/*.zsh
    ```
 
 ## Troubleshooting
@@ -297,7 +372,7 @@ A dedicated workflow (`.github/workflows/lint.yml`) automatically lints YAML fil
 #### Pre-commit Hook
 Install automatic linting before commits:
 ```zsh
-./scripts/setup-pre-commit.zsh
+./scripts/release/setup-pre-commit.zsh
 ```
 
 This will:
@@ -309,16 +384,16 @@ This will:
 Lint YAML files on demand:
 ```zsh
 # Lint workflow files only
-./scripts/lint-yaml.zsh
+./scripts/release/lint-yaml.zsh
 
 # Lint and attempt to fix issues
-./scripts/lint-yaml.zsh --fix
+./scripts/release/lint-yaml.zsh --fix
 
 # Lint all YAML files in the project
-./scripts/lint-yaml.zsh --all
+./scripts/release/lint-yaml.zsh --all
 
 # Use strict mode (fail on warnings)
-./scripts/lint-yaml.zsh --strict
+./scripts/release/lint-yaml.zsh --strict
 ```
 
 ### 3. YAML Linting Rules
@@ -410,7 +485,28 @@ When manually triggering the workflow:
 - **prev_version**: Previous version for changelog (e.g., 01.00.03)
 - **dry_run**: Set to 'true' for testing without creating a release
 
-### 4. SHA256 Calculation Fix
+### 4. Monitoring Release Progress
+
+Use the monitor script to track release workflow progress in real-time:
+
+```zsh
+# Monitor the latest release workflow
+./scripts/release/monitor-release.zsh
+```
+
+The monitor provides:
+- **Real-time status updates** with professional formatting
+- **Job progress tracking** with visual indicators
+- **Automatic summary generation** when workflow completes
+- **Summary file output** for reference (`release-summary.txt`)
+
+**Job Status Indicators**:
+- ✅ **Success**: Job completed successfully
+- ❌ **Failure**: Job failed
+- 🔄 **Running**: Job currently in progress
+- ⏳ **Waiting**: Job queued or waiting
+
+### 5. SHA256 Calculation Fix
 
 The workflow now correctly calculates SHA256 by:
 1. Waiting for GitHub release propagation (60 seconds)
@@ -462,7 +558,7 @@ Common issues and solutions:
 
 ### YAML Linting Issues
 
-- **Pre-commit hook fails**: Run `./scripts/lint-yaml.zsh --fix` to auto-fix issues
+- **Pre-commit hook fails**: Run `./scripts/release/lint-yaml.zsh --fix` to auto-fix issues
 - **IDE shows warnings**: Install yamllint extension and configure to use `.yamllint`
 - **Workflow linting fails**: Check the GitHub Actions logs for specific YAML issues
 
