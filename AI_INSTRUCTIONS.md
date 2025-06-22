@@ -39,12 +39,9 @@
 
 ## Release Workflow Automation
 
-- When the user requests a release, always perform the following steps in order:
-  1. Run the version bump script with `--auto --push --force` (e.g., `./scripts/release/bump-version.zsh --auto --push --force`).
-  2. Run the release script with `--force` (e.g., `./scripts/release/release.zsh --force`).
-  3. Start the release monitor for the specific release version (e.g., `./scripts/release/monitor-release.zsh <version>`).
-
-- Ensure these steps are followed automatically and in sequence unless the user explicitly requests a different workflow.
+- When the user requests a release, always use the `./scripts/release/full-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
+- By default, all test runs should be performed as dry runs (using `--dry-run`), unless a real release is explicitly requested.
+- Do not run the bump-version, release, or monitor scripts individually unless specifically instructed.
 
 ## Issue Creation Automation
 
@@ -52,5 +49,9 @@
 - Assign the issue to fxstein by default.
 - Use the latest issues as a template for formatting and structure.
 - When creating the issue statement, format the text using proper Markdown and multi-line input, avoiding explicit \n characters in the body.
+
+## Release Testing
+
+- Always perform test runs for releases as dry runs by default (using the dry-run option), unless a real release is explicitly requested by the user.
 
 ## [Add more rules as needed...] 

@@ -1,238 +1,59 @@
 # GoProX Automated Release Process
 
-This document describes the automated release process for GoProX, which handles version bumping, testing, packaging, and distribution.
+This document describes the automated release process for GoProX, now unified under a single script for simplicity and reliability.
 
 ## Overview
 
-The release process consists of several components:
+The release process is now performed using the `full-release.zsh` script, which handles version bumping, workflow triggering, and monitoring in one automated step.
 
-1. **Release Automation Workflow** - GitHub Actions workflow that handles the entire release process
-2. **Manual Release Scripts** - Helper scripts for manual release management
-3. **Homebrew Integration** - Automatic updates to the Homebrew formula
+### 1. Full Release Script (`scripts/release/full-release.zsh`)
 
-## Components
-
-### 1. Release Automation Workflow (`.github/workflows/release-automation.yml`)
-
-**Trigger**: Manual dispatch via GitHub CLI or GitHub Actions UI
-
-**Jobs**:
-- **Validate Version**: Ensures version format is correct and matches the `goprox` file
-- **Run Tests**: Executes GoProX tests to ensure quality
-- **Build Packages**: Creates release tarball and calculates SHA256
-- **Generate Release Notes**: Creates changelog from commits and issues
-- **Create Release**: Creates GitHub release with assets and correct SHA256
-- **Update Homebrew**: Updates the Homebrew formula with proper SHA256 validation
-- **Dry Run Summary**: Shows what would happen in dry-run mode
-
-**SHA256 Handling**:
-The workflow now properly handles SHA256 calculations to prevent Homebrew upgrade failures:
-- **GitHub Tarball SHA256**: Uses the GitHub-generated tarball SHA256 for Homebrew formula updates
-- **Retry Mechanism**: Includes retry logic with delays to ensure GitHub tarball availability
-- **Validation**: Validates SHA256 values to prevent empty or invalid responses
-- **Propagation Delay**: Waits for GitHub release propagation before calculating SHA256
-
-**Inputs**:
-- `version`: Version to release (e.g., "00.61.00")
-- `prev_version`: Previous version for changelog generation
-- `dry_run`: Whether to perform a dry run (default: false)
-
-### 2. Manual Release Scripts
-
-All release-related scripts are located in the `scripts/release/` directory for better organization.
-
-#### `scripts/release/release.zsh`
-
-A comprehensive script for triggering releases manually.
-
-**Features**:
-- Automatic version detection from `goprox` file
-- Automatic previous version detection from git tags
-- Version format validation
-- GitHub CLI integration
-- Dry-run support
-- Interactive confirmation (bypass with --force)
-
-**Usage**:
-```zsh
-# Basic usage (auto-detects versions)
-./scripts/release/release.zsh
-
-# Specify versions manually
-./scripts/release/release.zsh --version 00.61.00 --prev 00.60.00
-
-# Dry run
-./scripts/release/release.zsh --dry-run
-
-# Force (skip confirmation)
-./scripts/release/release.zsh --force
-
-# Help
-./scripts/release/release.zsh --help
-```
-
-#### `scripts/release/bump-version.zsh`
-
-A script for bumping the version in the `goprox` file.
-
-**Features**:
-- Version format validation
-- Automatic commit and push options
-- Interactive confirmation (bypass with --force)
-- Cross-platform sed compatibility
-- **Auto-increment functionality** - Automatically increment patch version by 1
-- **Backward compatibility** - Still supports manual version specification
-
-**Usage**:
-```zsh
-# Auto-increment patch version (NEW!)
-./scripts/release/bump-version.zsh --auto --push
-
-# Manual version bump
-./scripts/release/bump-version.zsh 00.61.00
-
-# With custom commit message
-./scripts/release/bump-version.zsh --message "Release v00.61.00 with new features" 00.61.00
-
-# Auto-commit
-./scripts/release/bump-version.zsh --commit 00.61.00
-
-# Auto-commit and push
-./scripts/release/bump-version.zsh --push 00.61.00
-
-# Force (skip confirmation)
-./scripts/release/bump-version.zsh --auto --push --force
-
-# Help
-./scripts/release/bump-version.zsh --help
-```
-
-**Auto-increment Mode**:
-The `--auto` option automatically increments the patch version by 1. For example:
-- Current version: `01.00.01` → New version: `01.00.02`
-- Current version: `00.61.00` → New version: `00.61.01`
-
-**Note:** The `--force` option skips the manual confirmation prompt and proceeds automatically. This is useful for automation or scripting scenarios.
-
-#### `scripts/release/monitor-release.zsh`
-
-A real-time monitoring script for tracking release workflow progress.
-
-**Features**:
-- Real-time workflow status monitoring
-- Professional formatted output with box-drawing borders
-- Job status tracking with emoji indicators
-- Automatic summary generation
-- Cursor IDE compatibility (no color codes)
-- Summary file generation for reference
-
-**Usage**:
-```zsh
-# Monitor the latest release workflow
-./scripts/release/monitor-release.zsh
-
-# Test output formatting
-./scripts/release/monitor-release.zsh --test-output
-```
-
-**Output Features**:
-- **Workflow Status**: Shows current status, conclusion, duration, branch, and commit
-- **Job Progress**: Real-time job status with visual indicators (✅ ❌ 🔄 ⏳)
-- **Summary Box**: Professional formatted summary with next steps
-- **File Output**: Saves summary to `output/release-summary.txt` for reference
-
-**Job Status Indicators**:
-- ✅ **Success**: Job completed successfully
-- ❌ **Failure**: Job failed
-- 🔄 **Running**: Job currently in progress
-- ⏳ **Waiting**: Job queued or waiting
-
-#### `scripts/release/lint-yaml.zsh`
-
-A YAML linting script for maintaining code quality.
-
-**Features**:
-- Lint GitHub Actions workflows and other YAML files
-- Auto-fix capabilities for common issues
-- Strict mode for CI/CD environments
-- Project-specific linting rules
-
-**Usage**:
-```zsh
-# Lint workflow files only
-./scripts/release/lint-yaml.zsh
-
-# Lint and attempt to fix issues
-./scripts/release/lint-yaml.zsh --fix
-
-# Lint all YAML files in the project
-./scripts/release/lint-yaml.zsh --all
-
-# Use strict mode (fail on warnings)
-./scripts/release/lint-yaml.zsh --strict
-```
-
-#### `scripts/release/setup-pre-commit.zsh`
-
-A script for setting up pre-commit hooks for YAML linting.
-
-**Features**:
-- Installs `yamllint` if not present
-- Creates pre-commit hook for YAML validation
-- Prevents commits with YAML syntax issues
-
-**Usage**:
-```zsh
-# Install pre-commit hook
-./scripts/release/setup-pre-commit.zsh
-```
-
-## Release Workflow
-
-### Automatic Release (Recommended)
-
-1. **Bump Version**: Use the auto-increment version bump script
-   ```zsh
-   ./scripts/release/bump-version.zsh --auto --push
-   ```
-
-2. **Trigger Release**: Use the release script to create the GitHub release
-   ```zsh
-   ./scripts/release/release.zsh
-   ```
-
-3. **Monitor**: Watch the GitHub Actions tab for progress
-
-### Manual Release
-
-1. **Bump Version**: Update the version in `goprox` file
-   ```zsh
-   # Auto-increment (recommended)
-   ./scripts/release/bump-version.zsh --auto --push
-   
-   # Or manual version
-   ./scripts/release/bump-version.zsh --push 00.61.00
-   ```
-
-2. **Trigger Release**: Use the release script (if not using --push above)
-   ```zsh
-   ./scripts/release/release.zsh --version 00.61.00 --prev 00.60.00
-   ```
-
-### Dry Run
-
-Always test the release process with a dry run first:
+**Standard Usage:**
 
 ```zsh
-./scripts/release/release.zsh --dry-run
+./scripts/release/full-release.zsh --dry-run   # Recommended for test runs
+./scripts/release/full-release.zsh             # For real releases (explicitly requested)
 ```
 
-This will:
-- Validate the version
-- Run tests
-- Build packages
-- Generate release notes
-- Show what would happen without creating an actual release
+- **Dry Run:** By default, always use `--dry-run` for test runs. This simulates the entire process without making changes or triggering a real release.
+- **Real Release:** Only run without `--dry-run` when you intend to create a real release.
+
+**What it does:**
+- Bumps the version (simulated in dry-run mode)
+- Triggers the release workflow (in dry-run or real mode)
+- Monitors the workflow in real time and provides a summary
+
+### 2. Legacy Scripts (for reference only)
+
+The following scripts are now called internally by `full-release.zsh` and should not be run directly unless for advanced troubleshooting:
+- `scripts/release/bump-version.zsh`
+- `scripts/release/release.zsh`
+- `scripts/release/monitor-release.zsh`
+
+### 3. Monitoring Output
+
+The monitor now always attaches to the latest workflow run and waits 15 seconds before starting to ensure it tracks the correct run.
+
+## Example Workflow
+
+**Test (Dry Run):**
+```zsh
+./scripts/release/full-release.zsh --dry-run
+```
+
+**Real Release:**
+```zsh
+./scripts/release/full-release.zsh
+```
+
+## Troubleshooting
+- If you encounter errors, check the output for clear error messages.
+- For advanced debugging, you may run the legacy scripts individually, but this is not recommended for standard releases.
+
+## Changelog
+- Unified release process under `full-release.zsh`
+- Added robust dry-run support
+- Improved monitoring and output visibility
 
 ## Version Format
 
@@ -269,59 +90,6 @@ The project uses an `output/` directory for transient files that are generated d
 
 This directory is automatically created by scripts and is ignored by git (added to `.gitignore`).
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Version Format Error**
-   - Ensure version follows `XX.XX.XX` format
-   - Check for extra spaces or characters
-
-2. **GitHub CLI Not Authenticated**
-   ```zsh
-   gh auth status
-   gh auth login
-   ```
-
-3. **Workflow Fails**
-   - Check GitHub Actions logs for specific errors
-   - Ensure all dependencies are available
-   - Verify Homebrew tap repository exists
-
-4. **Homebrew Update Fails**
-   - Check if `fxstein/homebrew-fxstein` repository exists
-   - Verify GitHub token has write access to the tap repository
-
-5. **SHA256 Mismatch Errors**
-   - **Problem**: `Error: SHA256 mismatch` when running `brew upgrade goprox`
-   - **Cause**: Homebrew formula has incorrect SHA256 for the GitHub tarball
-   - **Solution**: 
-     - Clear Homebrew cache: `rm /Users/username/Library/Caches/Homebrew/downloads/*--GoProX-*.tar.gz`
-     - Update Homebrew: `brew update`
-     - Try upgrade again: `brew upgrade goprox`
-   - **Prevention**: The automated workflow now uses correct GitHub tarball SHA256
-
-6. **Release Workflow SHA256 Failures**
-   - **Problem**: Workflow fails during SHA256 calculation
-   - **Cause**: GitHub tarball not immediately available after release creation
-   - **Solution**: The workflow now includes retry mechanisms and propagation delays
-   - **Manual Fix**: If workflow fails, wait 5-10 minutes and retry the workflow
-
-### Debug Mode
-
-For debugging, you can run individual components:
-
-```zsh
-# Test version detection
-grep "__version__=" goprox
-
-# Test package creation
-tar -czf test.tar.gz --exclude='.git' --exclude='.github' .
-
-# Test SHA256 calculation
-shasum -a 256 test.tar.gz
-```
-
 ## Security Considerations
 
 1. **GitHub Token**: The workflow uses `GITHUB_TOKEN` which has limited permissions
@@ -348,21 +116,6 @@ For issues with the release process:
 2. Review this documentation
 3. Test with dry-run mode
 4. Create an issue in the repository
-
-## Changelog
-
-- **v1.0.0**: Initial automated release process
-- Added version bump detection
-- Added comprehensive release automation
-- Added manual release scripts
-- Added Homebrew integration
-- **v1.1.0**: Enhanced release reliability and automation
-- Added auto-increment functionality to bump-version script (`--auto` option)
-- Fixed SHA256 mismatch issues in automated workflow
-- Added retry mechanisms and propagation delays for GitHub tarball availability
-- Improved SHA256 validation and error handling
-- Enhanced Homebrew formula update reliability
-- Updated documentation with troubleshooting guides
 
 ## Issue Reference Format
 
