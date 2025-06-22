@@ -237,6 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create-release]
     if: inputs.dry_run != 'true'
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       
@@ -255,8 +256,18 @@ jobs:
         run: |
           echo "Updating Homebrew formula..."
           
-          # Clone the homebrew tap repository
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
+          # Check if we have access to the homebrew repository
+          if [[ -z "${{ secrets.HOMEBREW_TOKEN }}" ]]; then
+            echo "Warning: HOMEBREW_TOKEN not set. Skipping Homebrew update."
+            echo "To enable automatic Homebrew updates, add HOMEBREW_TOKEN to repository secrets."
+            echo "Manual Homebrew formula update required:"
+            echo "URL: https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz"
+            echo "SHA256: $SHA256"
+            exit 0
+          fi
+          
+          # Clone the homebrew tap repository with token
+          git clone https://x-access-token:${{ secrets.HOMEBREW_TOKEN }}@github.com/fxstein/homebrew-fxstein.git
           cd homebrew-fxstein
           
           # Update the formula
