@@ -128,7 +128,8 @@ trigger_workflow() {
     gh workflow run release-automation.yml \
         -f version="$version" \
         -f prev_version="$prev_version" \
-        -f dry_run="$dry_run"
+        -f dry_run="$dry_run" \
+        --run-name "Release v$version"
     
     if [[ $? -eq 0 ]]; then
         print_success "Workflow triggered successfully!"
