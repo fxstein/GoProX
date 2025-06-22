@@ -271,4 +271,143 @@ For issues with the release process:
 - Added retry mechanisms and propagation delays for GitHub tarball availability
 - Improved SHA256 validation and error handling
 - Enhanced Homebrew formula update reliability
-- Updated documentation with troubleshooting guides 
+- Updated documentation with troubleshooting guides
+
+## Issue Reference Format
+
+When referencing issues in commit messages and documentation, use the following format:
+
+- **Single issue**: `(refs #n)` - e.g., `(refs #20)`
+- **Multiple issues**: `(refs #n #n ...)` - e.g., `(refs #20 #25 #30)`
+
+## Version Bumping
+
+### Automatic Version Bumping
+
+The `bump-version.zsh` script can automatically increment the version:
+
+```zsh
+./scripts/release/bump-version.zsh --auto
+```
+
+**Important**: The `--auto` flag alone only increments the version and updates the file. It does NOT automatically commit or push the changes.
+
+To automatically commit and push:
+```zsh
+./scripts/release/bump-version.zsh --auto --push
+```
+
+This will:
+1. Increment the patch version (e.g., 01.00.03 → 01.00.04)
+2. Update the `__version__` variable in `goprox`
+3. Create a commit with the version bump
+4. Push the commit to the repository
+5. Create a tag for the new version
+
+### Manual Version Bumping
+
+For specific version numbers:
+
+```zsh
+./scripts/release/bump-version.zsh --version 01.00.04
+```
+
+To commit and push manually:
+```zsh
+./scripts/release/bump-version.zsh --version 01.00.04 --push
+```
+
+### Bump Script Options
+
+- **`--auto`**: Auto-increment patch version (does not commit/push)
+- **`--commit`**: Automatically commit the version change
+- **`--push`**: Automatically commit AND push the version change
+- **`--message "custom message"`**: Use custom commit message
+- **`--help`**: Show usage information
+
+**Note**: Always use `--push` when preparing for a release to ensure the version bump is pushed to the repository before triggering the release workflow.
+
+## Release Process
+
+### 1. Version Bump
+
+First, bump the version using the automatic or manual method above. **Remember to use `--push` to ensure the version is committed and pushed to the repository.**
+
+### 2. Automated Release Workflow
+
+The GitHub Actions workflow (`release-automation.yml`) handles:
+
+- **Validation**: Checks version format and consistency
+- **Testing**: Runs GoProX tests
+- **Packaging**: Creates release tarball
+- **Release Notes**: Generates changelog from commits
+- **GitHub Release**: Creates the release with assets
+- **Homebrew Update**: Updates the Homebrew formula with correct SHA256
+
+### 3. Workflow Inputs
+
+When manually triggering the workflow:
+
+- **version**: The version to release (e.g., 01.00.04)
+- **prev_version**: Previous version for changelog (e.g., 01.00.03)
+- **dry_run**: Set to 'true' for testing without creating a release
+
+### 4. SHA256 Calculation Fix
+
+The workflow now correctly calculates SHA256 by:
+1. Waiting for GitHub release propagation (60 seconds)
+2. Downloading the tarball from codeload URL (same as Homebrew)
+3. Calculating SHA256 from the actual downloaded file
+4. Updating the Homebrew formula with the correct hash
+
+## Testing
+
+### Dry Run
+
+Test the release process without creating an actual release:
+
+1. Bump version: `./scripts/release/bump-version.zsh --auto --push`
+2. Trigger workflow with `dry_run: true`
+3. Review the generated artifacts and logs
+
+### Full Release
+
+1. Bump version: `./scripts/release/bump-version.zsh --auto --push`
+2. Trigger workflow with `dry_run: false`
+3. Monitor the workflow execution
+4. Verify Homebrew formula update
+
+## Troubleshooting
+
+### SHA256 Mismatches
+
+If Homebrew reports SHA256 mismatches:
+
+1. Check that the workflow used the codeload URL
+2. Verify the wait time was sufficient (60 seconds)
+3. Ensure the HOMEBREW_TOKEN secret is set
+4. Check the workflow logs for retry attempts
+
+### Workflow Failures
+
+Common issues and solutions:
+
+- **Version validation fails**: Ensure version format is XX.XX.XX
+- **Tests fail**: Fix any test issues before releasing
+- **Homebrew update fails**: Check HOMEBREW_TOKEN permissions
+
+### Version Bump Issues
+
+- **Version not pushed**: Remember to use `--push` flag with bump script
+- **Version already exists**: Check if the version was already bumped and pushed
+- **Git status issues**: Ensure working directory is clean before bumping
+
+## Manual Steps (if needed)
+
+If the automated workflow fails, manual steps may be required:
+
+1. Create GitHub release manually
+2. Download the GitHub-generated tarball
+3. Calculate SHA256: `curl -sL "https://codeload.github.com/fxstein/GoProX/tar.gz/refs/tags/vXX.XX.XX" | shasum -a 256`
+4. Update Homebrew formula manually
+5. Test Homebrew installation: `brew install fxstein/tap/goprox` 
