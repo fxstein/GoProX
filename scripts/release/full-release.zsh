@@ -178,9 +178,38 @@ main() {
         print_error "Version bump failed"
         exit 1
     fi
-    
-    local new_version=$(get_current_version)
-    print_success "Version bumped to: $new_version"
+
+    # Parse intended new version from bump-version output
+    intended_new_version=$(echo "$bump_output" | grep -Eo 'Auto-incrementing to: [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $4}' | tail -n1)
+    if [[ -z "$intended_new_version" ]]; then
+        intended_new_version=$(get_current_version)
+        print_warning "Could not parse intended new version, falling back to current version: $intended_new_version"
+    fi
+    print_success "Intended new version: $intended_new_version"
+
+    # --- Major changes summary file handling ---
+    if [[ -n "$prev_version" ]]; then
+        local base_version="$prev_version"
+        local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
+        local new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
+        if [[ -f "$summary_file" ]]; then
+            print_status "Found $summary_file, renaming to $new_summary_file"
+            mv "$summary_file" "$new_summary_file"
+            git add "$new_summary_file"
+            git rm "$summary_file" 2>/dev/null || true
+            git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)"
+            git push
+            print_success "Committed and pushed $new_summary_file"
+        else
+            if [[ "$dry_run" == "true" ]]; then
+                print_warning "No major changes summary file found for base $base_version (dry run). Please create docs/release/latest-major-changes-since-${base_version}.md before running the release."
+            else
+                print_error "No major changes summary file found for base $base_version (real release). AI must create docs/release/latest-major-changes-since-${base_version}.md before resubmitting the release job."
+                exit 1
+            fi
+        fi
+    fi
+    # --- End major changes summary file handling ---
     
     # Step 2: Trigger release workflow
     print_status "Step 2: Triggering release workflow..."
@@ -204,8 +233,8 @@ main() {
     
     # Step 3: Monitor the release
     print_status "Step 3: Monitoring release process..."
-    print_status "Monitoring workflow for version: $new_version"
-    ./scripts/release/monitor-release.zsh "$new_version"
+    print_status "Monitoring workflow for version: $intended_new_version"
+    ./scripts/release/monitor-release.zsh "$intended_new_version"
     if [[ $? -ne 0 ]]; then
         print_error "Release monitoring failed"
         exit 1
@@ -213,14 +242,14 @@ main() {
     print_success "Release process completed!"
     echo ""
     print_status "Release Summary:"
-    echo "  Version: $new_version"
+    echo "  Version: $intended_new_version"
     echo "  Status: Completed"
     echo "  Monitor: Finished"
     echo ""
     print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
 
     # Fetch and display the latest release notes artifact
-    print_status "Fetching release notes artifact for version: $new_version..."
+    print_status "Fetching release notes artifact for version: $intended_new_version..."
     # Wait for the workflow to complete (polling for completion)
     run_id=""
     for i in {1..30}; do
@@ -255,9 +284,9 @@ main() {
     # Prepare output filename
     mkdir -p output
     if [[ "$dry_run" == "true" ]]; then
-        out_file="output/release-notes-${new_version}-dry-run.md"
+        out_file="output/release-notes-${intended_new_version}-dry-run.md"
     else
-        out_file="output/release-notes-${new_version}.md"
+        out_file="output/release-notes-${intended_new_version}.md"
     fi
     cp "$notes_file" "$out_file"
     print_success "Release notes saved to $out_file"
