@@ -179,6 +179,11 @@ main() {
         print_error "Uncommitted changes detected in scripts/release/. Please commit all changes in the release tree before running a release."
         exit 1
     fi
+    # Check for uncommitted changes in .github/workflows
+    if [[ -n $(git status --porcelain .github/workflows/) ]]; then
+        print_error "Uncommitted changes detected in .github/workflows/. Please commit all changes in the workflow tree before running a release."
+        exit 1
+    fi
 
     check_prerequisites
 
