@@ -74,7 +74,8 @@
 - Always use `scripts/release/full-release.zsh` for all release and dry-run operations. This script performs version bumping, workflow triggering, and monitoring in a single automated process.
 - For dry runs, use: `./scripts/release/full-release.zsh --dry-run` (this will run non-interactively and monitor the workflow).
 - Default to this format whenever the user requests a release or dry run of the release process.
-- **IMPORTANT**: After making any changes to release scripts, workflows, or release-related files, always commit and push the changes before performing a dry run. The GitHub workflow uses the repository state on GitHub, not local changes. Failure to commit and push will result in the workflow using outdated scripts.
+- **IMPORTANT**: Before any release or dry run, always check the entire `scripts/release/` directory for changes. Commit and push all changes in `scripts/release/` before running a release or dry run. The GitHub workflow uses the repository state on GitHub, not local changes. Failure to commit and push will result in the workflow using outdated scripts.
+- If a full release (without `--dry-run`) is requested and there are changes in `scripts/release/`, first commit and push those changes, then perform a dry run. Only proceed with the real release if the dry run completes successfully.
 
 ## GitHub Issue Management
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
