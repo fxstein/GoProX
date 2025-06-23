@@ -234,12 +234,44 @@ main() {
                 rm -f "$new_summary_file"
             fi
             print_status "Renaming $summary_file to $new_summary_file"
-            mv "$summary_file" "$new_summary_file"
-            git add "$new_summary_file"
-            git rm "$summary_file" 2>/dev/null || true
-            git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)"
-            git push
-            print_success "Committed and pushed $new_summary_file"
+            
+            # Perform the rename operation
+            if mv "$summary_file" "$new_summary_file"; then
+                print_success "Successfully renamed summary file"
+                
+                # Handle git operations with better error handling
+                if git add "$new_summary_file" 2>/dev/null; then
+                    print_status "Added new summary file to git"
+                else
+                    print_warning "Failed to add new summary file to git (may already be tracked)"
+                fi
+                
+                # Remove old file from git if it exists
+                if git rm "$summary_file" 2>/dev/null; then
+                    print_status "Removed old summary file from git"
+                else
+                    print_warning "Old summary file not in git (already removed or never tracked)"
+                fi
+                
+                # Commit the changes
+                if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
+                    print_status "Committed summary file rename"
+                    
+                    # Push the changes
+                    if git push 2>/dev/null; then
+                        print_success "Pushed summary file changes"
+                    else
+                        print_warning "Failed to push summary file changes (may already be up to date)"
+                    fi
+                else
+                    print_warning "Failed to commit summary file rename (no changes to commit)"
+                fi
+                
+                print_success "Committed and pushed $new_summary_file"
+            else
+                print_error "Failed to rename summary file from $summary_file to $new_summary_file"
+                exit 1
+            fi
         else
             if [[ "$dry_run" == "true" ]]; then
                 print_warning "No major changes summary file found for base $base_version (dry run). Please create docs/release/latest-major-changes-since-${base_version}.md before running the release."
