@@ -212,13 +212,22 @@ generate_release_notes() {
 
 EOF
     
+    # Insert major changes summary if available
+    local summary_file="docs/release/${current_version}-major-changes-since-${previous_version}.md"
+    if [[ -f "$summary_file" ]]; then
+        print_status "Inserting major changes summary from $summary_file"
+        cat "$summary_file" >> "$output_file"
+        echo "" >> "$output_file"
+    fi
+    
     # Add issue-based sections
     if [[ ${#issue_commits[@]} -gt 0 ]]; then
         echo "## Issues Addressed" >> "$output_file"
         echo "" >> "$output_file"
         
-        # Sort issues by number - use proper zsh array handling
-        local sorted_issues=(${(n)${(k)issue_commits}})
+        # Sort issues by number in descending order
+        local sorted_issues=(${(on)${(k)issue_commits}})
+        sorted_issues=(${(Oa)sorted_issues})
         
         for issue_num in $sorted_issues; do
             local title="${issue_titles[$issue_num]}"
