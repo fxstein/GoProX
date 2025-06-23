@@ -76,7 +76,7 @@
 - Default to this format whenever the user requests a release or dry run of the release process.
 - **IMPORTANT**: Before any release or dry run, always check the entire `scripts/release/` directory for changes. Commit and push all changes in `scripts/release/` before running a release or dry run. The GitHub workflow uses the repository state on GitHub, not local changes. Failure to commit and push will result in the workflow using outdated scripts.
 - If a full release (without `--dry-run`) is requested and there are changes in `scripts/release/`, first commit and push those changes, then perform a dry run. Only proceed with the real release if the dry run completes successfully.
-- **NEW**: Whenever the user requests a release run (dry-run or not), always create or update a file named `docs/release/latest-major-changes-since-<BASE>.md` (where `<BASE>` is the baseline version for the release) with a summary of major changes since that baseline, before proceeding with the release process.
+- Whenever a release is requested (dry-run or real), always create or update a file in `docs/release` with a summary of major changes since the requested previous release. The filename must match the convention used by the release process: `docs/release/latest-major-changes-since-<BASE>.md` (where `<BASE>` is the previous version, no leading 'v'). This file must be created every time a release is requested, before the release process starts.
 
 ## GitHub Issue Management
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
