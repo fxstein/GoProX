@@ -155,7 +155,7 @@ display_progress() {
         elif [[ "$job_status" == "queued" ]]; then
             icon="⏳"
         fi
-        print_status "" "$icon $job_name: $job_status ($job_conclusion)"
+        echo "$icon $job_name: $job_status ($job_conclusion)"
     done < <(echo "$jobs_data" | jq -r '.jobs[] | "\(.name): \(.status) (\(.conclusion // "running"))"')
     echo "└─────────────────────────────────────────────────────────────────┘"
     
