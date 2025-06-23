@@ -276,7 +276,13 @@ EOF
         
         for issue_num in $sorted_issues; do
             local title="${issue_titles[$issue_num]}"
-            echo "### $title" >> "$output_file"
+            # If title is in the format 'Issue #n: Title', split it
+            if [[ "$title" =~ ^Issue\ #[0-9]+: ]]; then
+                local header="$title"
+            else
+                local header="Issue #$issue_num: $title"
+            fi
+            echo "### $header" >> "$output_file"
             echo "" >> "$output_file"
             
             # Add commits for this issue - use zsh-compatible approach
@@ -290,30 +296,55 @@ EOF
         done
     fi
     
-    # Add other commits section
+    # Add other commits section after issues
     if [[ ${#other_commits[@]} -gt 0 ]]; then
-        echo "## Others" >> "$output_file"
+        echo "## Other Commits" >> "$output_file"
         echo "" >> "$output_file"
-        
         for commit in "${other_commits[@]}"; do
-            echo "- $commit" >> "$output_file"
+            if [[ -n "$commit" ]]; then
+                echo "- $commit" >> "$output_file"
+            fi
         done
         echo "" >> "$output_file"
     fi
     
-    # Add installation and SHA256 sections
+    # Add improved installation section
     cat >> "$output_file" << EOF
 ## Installation
 
-\`\`\`bash
-brew install fxstein/tap/goprox
-\`\`\`
+The recommended way to install or update GoProX is via Homebrew:
 
-## SHA256
+```zsh
+brew install fxstein/fxstein/goprox
+```
 
-\`\`\`
-TBD - Will be calculated during release
-\`\`\`
+Or, add the tap manually and then install:
+
+```zsh
+brew tap fxstein/fxstein
+brew install goprox
+```
+
+To upgrade to the latest version:
+
+```zsh
+brew upgrade goprox
+```
+
+If you encounter issues, you can uninstall and reinstall:
+
+```zsh
+brew uninstall goprox
+brew install goprox
+```
+
+> **Note:** Homebrew installs to `/opt/homebrew/bin/goprox` on Apple Silicon and `/usr/local/bin/goprox` on Intel Macs.
+
+For configuration and advanced setup, see the project README or run:
+
+```zsh
+goprox --setup
+```
 EOF
     
     print_success "Release notes generated: $output_file"

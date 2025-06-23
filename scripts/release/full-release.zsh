@@ -126,18 +126,43 @@ main() {
     echo "└─────────────────────────────────────────────────────────────────┘"
     echo ""
     
+    # Argument parsing
     dry_run="false"
-    if [[ "$1" == "--dry-run" ]]; then
-        dry_run="true"
-    fi
+    prev_version=""
+    version=""
+    force="false"
     
-    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-        show_usage
-        exit 0
-    fi
-    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            --prev|-p)
+                prev_version="$2"
+                shift 2
+                ;;
+            --version|-v)
+                version="$2"
+                shift 2
+                ;;
+            --force|-f)
+                force="true"
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                print_warning "Unknown argument: $1"
+                shift
+                ;;
+        esac
+    done
+
     check_prerequisites
-    
+
     local current_version=$(get_current_version)
     print_status "Starting release process for version: $current_version"
     
@@ -162,6 +187,12 @@ main() {
     release_args=(--force)
     if [[ "$dry_run" == "true" ]]; then
         release_args+=(--dry-run)
+    fi
+    if [[ -n "$prev_version" ]]; then
+        release_args+=(--prev "$prev_version")
+    fi
+    if [[ -n "$version" ]]; then
+        release_args+=(--version "$version")
     fi
     release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1)
     echo "$release_output"
