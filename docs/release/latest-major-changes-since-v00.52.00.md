@@ -1,4 +1,4 @@
-# GoProX v01.00.14 – Major Changes Since v00.52.00
+# GoProX – Major Changes Since v00.52.00
 
 This document summarizes the major changes, enhancements, and fixes introduced in GoProX since version 00.52.00.
 
