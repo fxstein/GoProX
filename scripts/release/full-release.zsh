@@ -131,6 +131,7 @@ main() {
     prev_version=""
     version=""
     force="false"
+    bump_type="minor"
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -148,6 +149,18 @@ main() {
                 ;;
             --force|-f)
                 force="true"
+                shift
+                ;;
+            --major)
+                bump_type="major"
+                shift
+                ;;
+            --minor)
+                bump_type="minor"
+                shift
+                ;;
+            --patch)
+                bump_type="patch"
                 shift
                 ;;
             -h|--help)
@@ -174,7 +187,7 @@ main() {
     
     # Step 1: Bump version
     print_status "Step 1: Bumping version..."
-    bump_args=(--auto --push --force)
+    bump_args=(--$bump_type --push --force)
     if [[ "$dry_run" == "true" ]]; then
         bump_args+=(--dry-run)
     fi
