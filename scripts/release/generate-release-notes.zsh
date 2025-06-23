@@ -145,7 +145,14 @@ extract_issue_numbers() {
 validate_output_location() {
     local output_file="$1"
     
-    # Ensure output file is in the output/ directory
+    # Check if we're running in GitHub Actions
+    if [[ -n "$GITHUB_WORKSPACE" ]]; then
+        # In GitHub Actions, allow output to workspace root for artifacts
+        print_status "Running in GitHub Actions - allowing workspace root output"
+        return 0
+    fi
+    
+    # For local development, ensure output file is in the output/ directory
     if [[ ! "$output_file" =~ ^output/ ]]; then
         print_error "Output file must be in the output/ directory"
         print_error "Current: $output_file"
