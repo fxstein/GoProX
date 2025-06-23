@@ -135,9 +135,9 @@ display_progress() {
     echo "│                       JOBS STATUS                               │"
     echo "├─────────────────────────────────────────────────────────────────┤"
     while read -r job_info; do
-        local job_name=$(echo "$job_info" | cut -d: -f1)
-        local job_status=$(echo "$job_info" | cut -d: -f2 | xargs)
-        local job_conclusion=$(echo "$job_info" | cut -d: -f3 | tr -d '()' | xargs)
+        local job_name=$(echo "$job_info" | jq -r '.name')
+        local job_status=$(echo "$job_info" | jq -r '.status')
+        local job_conclusion=$(echo "$job_info" | jq -r '.conclusion // "running"')
 
         local icon="⏳"  # Default: hourglass for running/queued
         if [[ "$job_status" == "completed" ]]; then
@@ -155,8 +155,8 @@ display_progress() {
         elif [[ "$job_status" == "queued" ]]; then
             icon="⏳"
         fi
-        echo "$icon $job_name: $job_status ($job_conclusion)"
-    done < <(echo "$jobs_data" | jq -r '.jobs[] | "\(.name): \(.status) (\(.conclusion // "running"))"')
+        echo "[$(date '+%H:%M:%S')] $icon $job_name: $job_status ($job_conclusion)"
+    done < <(echo "$jobs_data" | jq -c '.jobs[]')
     echo "└─────────────────────────────────────────────────────────────────┘"
     
     # Store summary data
