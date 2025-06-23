@@ -276,7 +276,7 @@ EOF
         
         for issue_num in $sorted_issues; do
             local title="${issue_titles[$issue_num]}"
-            # If title is in the format 'Issue #n: Title', split it
+            # If title is in the format 'Issue #n: Title', use it; otherwise, fallback
             if [[ "$title" =~ ^Issue\ #[0-9]+: ]]; then
                 local header="$title"
             else
