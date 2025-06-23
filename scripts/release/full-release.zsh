@@ -229,47 +229,61 @@ main() {
         local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
         local new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
         if [[ -f "$summary_file" ]]; then
+            # Always remove the target file if it exists to ensure clean rename
             if [[ -f "$new_summary_file" ]]; then
-                print_warning "$new_summary_file already exists. Overwriting with latest summary."
+                print_warning "$new_summary_file already exists. Removing existing file."
                 rm -f "$new_summary_file"
+                if [[ -f "$new_summary_file" ]]; then
+                    print_error "Failed to remove existing file: $new_summary_file"
+                    exit 1
+                fi
             fi
+            
             print_status "Renaming $summary_file to $new_summary_file"
             
-            # Perform the rename operation
-            if mv "$summary_file" "$new_summary_file"; then
-                print_success "Successfully renamed summary file"
-                
-                # Handle git operations with better error handling
-                if git add "$new_summary_file" 2>/dev/null; then
-                    print_status "Added new summary file to git"
-                else
-                    print_warning "Failed to add new summary file to git (may already be tracked)"
-                fi
-                
-                # Remove old file from git if it exists
-                if git rm "$summary_file" 2>/dev/null; then
-                    print_status "Removed old summary file from git"
-                else
-                    print_warning "Old summary file not in git (already removed or never tracked)"
-                fi
-                
-                # Commit the changes
-                if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
-                    print_status "Committed summary file rename"
+            # Perform the rename operation with explicit error checking
+            if mv "$summary_file" "$new_summary_file" 2>/dev/null; then
+                # Verify the rename actually succeeded
+                if [[ -f "$new_summary_file" && ! -f "$summary_file" ]]; then
+                    print_success "Successfully renamed summary file"
                     
-                    # Push the changes
-                    if git push 2>/dev/null; then
-                        print_success "Pushed summary file changes"
+                    # Handle git operations with better error handling
+                    if git add "$new_summary_file" 2>/dev/null; then
+                        print_status "Added new summary file to git"
                     else
-                        print_warning "Failed to push summary file changes (may already be up to date)"
+                        print_warning "Failed to add new summary file to git (may already be tracked)"
                     fi
+                    
+                    # Remove old file from git if it exists
+                    if git rm "$summary_file" 2>/dev/null; then
+                        print_status "Removed old summary file from git"
+                    else
+                        print_warning "Old summary file not in git (already removed or never tracked)"
+                    fi
+                    
+                    # Commit the changes
+                    if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
+                        print_status "Committed summary file rename"
+                        
+                        # Push the changes
+                        if git push 2>/dev/null; then
+                            print_success "Pushed summary file changes"
+                        else
+                            print_warning "Failed to push summary file changes (may already be up to date)"
+                        fi
+                    else
+                        print_warning "Failed to commit summary file rename (no changes to commit)"
+                    fi
+                    
+                    print_success "Committed and pushed $new_summary_file"
                 else
-                    print_warning "Failed to commit summary file rename (no changes to commit)"
+                    print_error "Rename operation appeared to succeed but file verification failed"
+                    print_error "Expected: $new_summary_file to exist and $summary_file to not exist"
+                    exit 1
                 fi
-                
-                print_success "Committed and pushed $new_summary_file"
             else
                 print_error "Failed to rename summary file from $summary_file to $new_summary_file"
+                print_error "This may be due to file system permissions or the target file being locked"
                 exit 1
             fi
         else
