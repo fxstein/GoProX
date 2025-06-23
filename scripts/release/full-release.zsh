@@ -199,7 +199,11 @@ main() {
         local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
         local new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
         if [[ -f "$summary_file" ]]; then
-            print_status "Found $summary_file, renaming to $new_summary_file"
+            if [[ -f "$new_summary_file" ]]; then
+                print_warning "$new_summary_file already exists. Overwriting with latest summary."
+                rm -f "$new_summary_file"
+            fi
+            print_status "Renaming $summary_file to $new_summary_file"
             mv "$summary_file" "$new_summary_file"
             git add "$new_summary_file"
             git rm "$summary_file" 2>/dev/null || true
