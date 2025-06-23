@@ -90,6 +90,13 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Check git history depth and configuration
+    print_status "Git repository information:"
+    echo "  Repository: $(git remote get-url origin 2>/dev/null || echo 'No remote')"
+    echo "  Current branch: $(git branch --show-current)"
+    echo "  Commit count: $(git rev-list --count HEAD 2>/dev/null || echo 'Unknown')"
+    echo "  Latest tag: $(git describe --tags --abbrev=0 2>/dev/null || echo 'No tags')"
+    
     # Check if gh CLI is available for GitHub API access
     if ! command -v gh &> /dev/null; then
         print_warning "GitHub CLI (gh) not found. Issue titles will not be fetched."
@@ -172,20 +179,43 @@ generate_release_notes() {
     
     print_status "Generating release notes from v${previous_version} to v${current_version}"
     
-    # Get commits since last release
+    # Get commits since last release with better error handling
     local commit_range="v${previous_version}..HEAD"
+    local commits=""
+    
+    # First, verify the previous version tag exists
     if ! git rev-parse "v${previous_version}" &>/dev/null; then
-        print_warning "Previous version tag v${previous_version} not found, using all commits"
-        commit_range="HEAD"
+        print_error "Previous version tag v${previous_version} not found"
+        print_error "Available tags:"
+        git tag --list "v*" | head -10
+        exit 1
     fi
     
-    # Get all commits in the range
-    local commits=$(git log --oneline --no-merges "$commit_range" 2>/dev/null || git log --oneline --no-merges --all | head -20)
+    # Try to get commits in the range
+    print_status "Getting commits in range: $commit_range"
+    commits=$(git log --oneline --no-merges "$commit_range" 2>/dev/null)
     
     if [[ -z "$commits" ]]; then
         print_warning "No commits found in range $commit_range"
-        commits="No commits found"
+        print_status "Checking if we're on the correct branch..."
+        
+        # Check current branch and available branches
+        local current_branch=$(git branch --show-current)
+        print_status "Current branch: $current_branch"
+        
+        # Try to get commits from the current branch since the tag
+        commits=$(git log --oneline --no-merges "v${previous_version}..$current_branch" 2>/dev/null)
+        
+        if [[ -z "$commits" ]]; then
+            print_error "No commits found between v${previous_version} and current HEAD"
+            print_error "This might indicate a shallow clone or missing history"
+            print_error "Available commits since tag:"
+            git log --oneline "v${previous_version}" | head -5
+            exit 1
+        fi
     fi
+    
+    print_success "Found $(echo "$commits" | wc -l | tr -d ' ') commits in range"
     
     # Parse commits and group by issues
     typeset -A issue_commits
