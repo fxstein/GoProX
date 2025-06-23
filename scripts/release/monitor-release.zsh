@@ -138,18 +138,24 @@ display_progress() {
         local job_name=$(echo "$job_info" | cut -d: -f1)
         local job_status=$(echo "$job_info" | cut -d: -f2 | xargs)
         local job_conclusion=$(echo "$job_info" | cut -d: -f3 | tr -d '()' | xargs)
-        
+
+        local icon="⏳"  # Default: hourglass for running/queued
         if [[ "$job_status" == "completed" ]]; then
             if [[ "$job_conclusion" == "success" ]]; then
-                print_status "" "✅ $job_name: $job_status ($job_conclusion)"
-            else
-                print_status "" "❌ $job_name: $job_status ($job_conclusion)"
+                icon="✅"
+            elif [[ "$job_conclusion" == "failure" ]]; then
+                icon="❌"
+            elif [[ "$job_conclusion" == "skipped" ]]; then
+                icon="🐐"
+            elif [[ "$job_conclusion" == "cancelled" ]]; then
+                icon="⚠️"
             fi
         elif [[ "$job_status" == "in_progress" ]]; then
-            print_status "" "🔄 $job_name: $job_status"
-        else
-            print_status "" "⏳ $job_name: $job_status"
+            icon="⏳"
+        elif [[ "$job_status" == "queued" ]]; then
+            icon="⏳"
         fi
+        print_status "" "$icon $job_name: $job_status ($job_conclusion)"
     done < <(echo "$jobs_data" | jq -r '.jobs[] | "\(.name): \(.status) (\(.conclusion // "running"))"')
     echo "└─────────────────────────────────────────────────────────────────┘"
     
