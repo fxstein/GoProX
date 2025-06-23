@@ -59,20 +59,24 @@ show_usage() {
 Usage: $0 [OPTIONS] [NEW_VERSION]
 
 Options:
-    -a, --auto              Automatically increment patch version by 1
-    -m, --message MESSAGE    Commit message (default: "Bump version to vNEW_VERSION")
+    --major                 Increment major version (first pair, resets others to 00)
+    --minor                 Increment minor version (middle pair, resets last to 00) [default]
+    --patch                 Increment patch version (last pair)
+    -m, --message MESSAGE   Commit message (default: "Bump version to vNEW_VERSION")
     -c, --commit            Automatically commit the change
-    -p, --push             Automatically push the commit (implies --commit)
-    -h, --help             Show this help message
-    --dry-run              Dry run mode: print what would be done but do not modify files, commit, or push
+    -p, --push              Automatically push the commit (implies --commit)
+    -h, --help              Show this help message
+    --dry-run               Dry run mode: print what would be done but do not modify files, commit, or push
 
 Arguments:
-    NEW_VERSION            New version in format XX.XX.XX (e.g., 00.61.00)
-                          Required unless --auto is used
+    NEW_VERSION             New version in format XX.XX.XX (e.g., 00.61.00)
+                            Required unless a bump option is used
 
 Examples:
-    $0 --auto --push                    # Auto increment and push
-    $0 00.61.00                        # Manual version bump
+    $0 --major --push                    # Bump major version and push
+    $0 --minor --push                    # Bump minor version and push
+    $0 --patch --push                    # Bump patch version and push
+    $0 00.61.00                          # Manual version bump
     $0 --message "Release v00.61.00 with new features" 00.61.00
     $0 --commit 00.61.00
     $0 --push 00.61.00
@@ -92,15 +96,25 @@ get_current_version() {
 # Function to increment version
 increment_version() {
     local current_version=$1
+    local bump_type=$2
     local major=$(echo "$current_version" | cut -d. -f1)
     local minor=$(echo "$current_version" | cut -d. -f2)
     local patch=$(echo "$current_version" | cut -d. -f3)
-    
-    # Increment patch version
-    local new_patch=$((10#$patch + 1))
-    
-    # Format with leading zeros
-    printf "%02d.%02d.%02d" $major $minor $new_patch
+
+    if [[ "$bump_type" == "major" ]]; then
+        major=$(printf "%02d" $((10#$major + 1)))
+        minor="00"
+        patch="00"
+        print_status "Bumping MAJOR version: $major.00.00"
+    elif [[ "$bump_type" == "minor" ]]; then
+        minor=$(printf "%02d" $((10#$minor + 1)))
+        patch="00"
+        print_status "Bumping MINOR version: $major.$minor.00"
+    else
+        patch=$(printf "%02d" $((10#$patch + 1)))
+        print_status "Bumping PATCH version: $major.$minor.$patch"
+    fi
+    printf "%02d.%02d.%02d" $major $minor $patch
 }
 
 # Function to validate version format
@@ -171,15 +185,23 @@ main() {
     local commit_message=""
     local auto_commit=false
     local auto_push=false
-    local auto_increment=false
+    local bump_type="minor"
     local force=false
     local dry_run=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
-            -a|--auto)
-                auto_increment=true
+            --major)
+                bump_type="major"
+                shift
+                ;;
+            --minor)
+                bump_type="minor"
+                shift
+                ;;
+            --patch)
+                bump_type="patch"
                 shift
                 ;;
             -m|--message)
@@ -207,8 +229,8 @@ main() {
                 dry_run=true
                 shift
                 ;;
-            -*)
-                print_error "Unknown option: $1"
+            -*|--auto)
+                print_error "Unknown or deprecated option: $1"
                 show_usage
                 exit 1
                 ;;
@@ -234,22 +256,10 @@ main() {
     local current_version=$(get_current_version)
     print_status "Current version: $current_version"
     
-    # Handle auto increment
-    if [[ "$auto_increment" == "true" ]]; then
-        if [[ -n "$new_version" ]]; then
-            print_error "Cannot specify both --auto and a version number"
-            show_usage
-            exit 1
-        fi
-        new_version=$(increment_version "$current_version")
-        print_status "Auto-incrementing to: $new_version"
-    else
-        # Check if version was provided
-        if [[ -z "$new_version" ]]; then
-            print_error "No version specified. Use --auto for automatic increment or specify a version"
-            show_usage
-            exit 1
-        fi
+    # Handle bump type if no version specified
+    if [[ -z "$new_version" ]]; then
+        new_version=$(increment_version "$current_version" "$bump_type" | tail -n1)
+        print_status "Auto-incrementing ($bump_type) to: $new_version"
     fi
     
     # Validate version format
