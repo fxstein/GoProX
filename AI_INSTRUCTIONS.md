@@ -70,4 +70,12 @@
 - Reference the correct issue numbers and titles when performing work, making suggestions, or committing changes.
 - Use this awareness to ensure all work is properly linked to relevant issues and to provide accurate context during development and communication.
 
+## Release Script Automation
+- When running `release.zsh` in dry-run mode, always use the `--force` flag (i.e., `--dry-run --force`) to ensure the script runs non-interactively and does not wait for user input.
+- Default to this format whenever the user requests a dry run of the release process.
+
+## GitHub Issue Management
+- Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
+- After generating the issue list, read the output file (`output/github_issues.md`) to ensure you are memorizing and referencing the latest issues in all future work and communication.
+
 ## [Add more rules as needed...] 
