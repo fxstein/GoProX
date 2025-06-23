@@ -236,10 +236,10 @@ main() {
         echo
         echo "Proceed with release? (y/N): "
         read confirm
-        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
             print_status "Operation cancelled"
-            exit 0
-        fi
+        exit 0
+    fi
     else
         print_status "--force specified, proceeding without confirmation."
     fi

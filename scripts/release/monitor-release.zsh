@@ -66,10 +66,10 @@ get_workflow_id() {
         fi
     else
         print_status "" "Searching for latest '$workflow_name' workflow..."
-        workflow_id=$(gh run list --workflow="$workflow_name" --limit=1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
-        if [[ -z "$workflow_id" || "$workflow_id" == "null" ]]; then
+    workflow_id=$(gh run list --workflow="$workflow_name" --limit=1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+    if [[ -z "$workflow_id" || "$workflow_id" == "null" ]]; then
             echo "Error: No recent '$workflow_name' workflow found. Make sure the workflow has been triggered recently." >&2
-            exit 1
+        exit 1
         fi
     fi
     echo "$workflow_id"
@@ -295,20 +295,18 @@ monitor_workflow() {
         local current_status=$(echo "$workflow_data" | jq -r '.status')
         local current_conclusion=$(echo "$workflow_data" | jq -r '.conclusion // "null"')
         
-        # Check if status changed
-        if [[ "$current_status" != "$last_status" || "$current_conclusion" != "$last_conclusion" ]]; then
-            display_progress "$workflow_id" "$workflow_data" "$jobs_data"
-            check_for_issues "$workflow_id" "$jobs_data"
-            generate_next_steps "$workflow_data" "$jobs_data"
-            
-            last_status="$current_status"
-            last_conclusion="$current_conclusion"
-            
-            # If workflow is completed, show final summary and exit
-            if [[ "$current_status" == "completed" ]]; then
-                display_summary
-                break
-            fi
+        # Always print progress, even if nothing changed (for testing)
+        display_progress "$workflow_id" "$workflow_data" "$jobs_data"
+        check_for_issues "$workflow_id" "$jobs_data"
+        generate_next_steps "$workflow_data" "$jobs_data"
+        
+        last_status="$current_status"
+        last_conclusion="$current_conclusion"
+        
+        # If workflow is completed, show final summary and exit
+        if [[ "$current_status" == "completed" ]]; then
+            display_summary
+            break
         fi
         
         # Wait before next check
@@ -358,4 +356,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"
