@@ -12,3 +12,6 @@ GoProX.wiki/
 
 # Transient output files
 output/
+
+# GitHub backup files
+*.tar.gz
