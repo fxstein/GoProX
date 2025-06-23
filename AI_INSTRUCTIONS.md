@@ -13,6 +13,11 @@
    - Replace `<BASE>` with the previous version (no leading 'v')
    - This file MUST exist before the release process starts
    - The full-release script will error out if this file is missing
+   - **CRITICAL CONTENT PRIORITY**: When creating the major changes summary, prioritize GoProX functionality above all else:
+     - **Primary focus**: SD card management, firmware updates, core goprox tool functionality
+     - **Secondary focus**: CI/CD improvements, release process automation, and other infrastructure changes
+     - Always lead with user-facing features and core tool capabilities
+     - Keep process improvements as a minor part of the summary
 
 2. **Check for Uncommitted Changes**
    - Ensure `scripts/release/` directory is clean (no uncommitted changes)
