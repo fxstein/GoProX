@@ -139,32 +139,6 @@ extract_issue_numbers() {
     echo "$commit_msg" | grep -o '#[0-9]*' | sort -u | tr '\n' ' '
 }
 
-# Function to generate AI summary of addressed issues
-generate_ai_summary() {
-    local issue_numbers=$1
-    local output_file=$2
-    
-    print_status "Generating AI summary for issues: $issue_numbers"
-    
-    # Check if AI summary script exists
-    if [[ ! -f "scripts/release/generate-ai-summary.zsh" ]]; then
-        print_warning "AI summary script not found, skipping AI summary"
-        return 1
-    fi
-    
-    # Make sure the script is executable
-    chmod +x scripts/release/generate-ai-summary.zsh
-    
-    # Generate AI summary
-    if ./scripts/release/generate-ai-summary.zsh "$issue_numbers" "$output_file"; then
-        print_success "AI summary generated successfully"
-        return 0
-    else
-        print_warning "Failed to generate AI summary, continuing without it"
-        return 1
-    fi
-}
-
 # Function to generate release notes
 generate_release_notes() {
     local current_version=$1
@@ -228,26 +202,6 @@ generate_release_notes() {
         fi
     done <<< "$commits"
     
-    # Collect all unique issue numbers for AI summary
-    local all_issue_numbers=""
-    for issue_num in ${(k)issue_commits}; do
-        if [[ "$issue_num" =~ ^[0-9]+$ ]]; then
-            all_issue_numbers+="$issue_num "
-        fi
-    done
-    all_issue_numbers=$(echo "$all_issue_numbers" | xargs)
-    
-    # Generate AI summary if we have issues
-    local ai_summary_file=""
-    if [[ -n "$all_issue_numbers" ]]; then
-        ai_summary_file=$(mktemp)
-        if generate_ai_summary "$all_issue_numbers" "$ai_summary_file"; then
-            print_status "AI summary will be included in release notes"
-        else
-            ai_summary_file=""
-        fi
-    fi
-    
     # Generate the release notes content
     print_status "Generating release notes content..."
     
@@ -258,35 +212,30 @@ generate_release_notes() {
 
 EOF
     
-    # Add AI summary if available
-    if [[ -n "$ai_summary_file" && -f "$ai_summary_file" ]]; then
-        echo "" >> "$output_file"
-        cat "$ai_summary_file" >> "$output_file"
-        echo "" >> "$output_file"
-        rm -f "$ai_summary_file"
-    fi
-    
     # Add issue-based sections
     if [[ ${#issue_commits[@]} -gt 0 ]]; then
         echo "## Issues Addressed" >> "$output_file"
         echo "" >> "$output_file"
         
-        # Sort issues by number - use zsh-compatible approach
-        local sorted_issues=($(for k in ${(k)issue_commits}; do echo "$k"; done | sort -n))
+        # Sort issues by number - use proper zsh array handling
+        local sorted_issues=(${(n)${(k)issue_commits}})
         
         for issue_num in $sorted_issues; do
             local title="${issue_titles[$issue_num]}"
+            
             # If title is in the format 'Issue #n: Title', use it; otherwise, fallback
             if [[ "$title" =~ ^Issue\ #[0-9]+: ]]; then
                 local header="$title"
             else
                 local header="Issue #$issue_num: $title"
             fi
+            
             echo "### $header" >> "$output_file"
             echo "" >> "$output_file"
             
             # Add commits for this issue - use zsh-compatible approach
             local commits_for_issue="${issue_commits[$issue_num]}"
+            
             while IFS= read -r commit; do
                 if [[ -n "$commit" ]]; then
                     echo "- $commit" >> "$output_file"
@@ -309,7 +258,7 @@ EOF
     fi
     
     # Add improved installation section
-    cat >> "$output_file" << EOF
+    cat >> "$output_file" << 'EOF'
 ## Installation
 
 The recommended way to install or update GoProX is via Homebrew:
