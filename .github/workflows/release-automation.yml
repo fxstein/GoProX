@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Debug Information
         run: |
@@ -53,6 +55,8 @@ jobs:
     needs: validate-version
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Setup zsh
         run: |
@@ -85,6 +89,8 @@ jobs:
     needs: [validate-version, run-tests]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Create release tarball
         run: |
@@ -143,6 +149,49 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Verify Git History
+        run: |
+          echo "=== GIT HISTORY VERIFICATION ==="
+          echo "Checking if we have the correct rewritten history..."
+          
+          # Check if filter-repo evidence exists
+          if [[ -d ".git/filter-repo" ]]; then
+            echo "✅ Filter-repo evidence found - using rewritten history"
+          else
+            echo "❌ No filter-repo evidence found - may be using old history"
+          fi
+          
+          # Verify the tag exists and is reachable
+          if git rev-parse v${{ inputs.prev_version }} >/dev/null 2>&1; then
+            echo "✅ Tag v${{ inputs.prev_version }} exists and is reachable"
+          else
+            echo "❌ Tag v${{ inputs.prev_version }} not found or not reachable"
+            exit 1
+          fi
+          
+          # Show commit range analysis
+          echo ""
+          echo "=== COMMIT RANGE ANALYSIS ==="
+          echo "Base version: v${{ inputs.prev_version }}"
+          echo "Current version: v${{ inputs.version }}"
+          echo ""
+          echo "Total commits since v${{ inputs.prev_version }}:"
+          git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l
+          echo ""
+          echo "Commits with issue references:"
+          git log --oneline v${{ inputs.prev_version }}..HEAD | grep "(refs #" | wc -l
+          echo ""
+          echo "Unique issues referenced:"
+          git log --oneline v${{ inputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq | wc -l
+          echo ""
+          echo "Issues with commits since v${{ inputs.prev_version }}:"
+          git log --oneline v${{ inputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq
+          
+          # Force garbage collection to ensure clean state
+          git gc --prune=now
+          echo ""
+          echo "✅ Git history verification completed"
+      
       - name: Setup zsh
         run: |
           # Install zsh if not available
@@ -181,6 +230,18 @@ jobs:
           # Generate release notes using the new script
           ./scripts/release/generate-release-notes.zsh "$CURR_VERSION" "$PREV_VERSION" release_notes.md
           
+          # Verify the generated release notes
+          echo ""
+          echo "=== RELEASE NOTES VERIFICATION ==="
+          echo "Issues included in release notes:"
+          grep -o "Issue #[0-9]*" release_notes.md | sort | uniq | wc -l
+          echo ""
+          echo "Issues in release notes:"
+          grep -o "Issue #[0-9]*" release_notes.md | sort | uniq
+          echo ""
+          echo "Expected issues (from git log):"
+          git log --oneline v${PREV_VERSION}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq
+          
           # Read the generated release notes for GitHub output
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
@@ -202,6 +263,8 @@ jobs:
     if: inputs.dry_run != 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -234,6 +297,8 @@ jobs:
       HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -325,6 +390,8 @@ jobs:
     if: inputs.dry_run == 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Download artifacts
         uses: actions/download-artifact@v4
