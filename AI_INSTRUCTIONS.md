@@ -18,6 +18,17 @@
      - **Secondary focus**: CI/CD improvements, release process automation, and other infrastructure changes
      - Always lead with user-facing features and core tool capabilities
      - Keep process improvements as a minor part of the summary
+   - **REQUIRED CONTENT SECTIONS**:
+     - **New GoPro Models**: List any new GoPro camera models added since the base release
+     - **Official Firmware**: List new official firmware releases added, grouped by model
+     - **Labs Firmware**: List new GoPro Labs firmware releases added, grouped by model
+     - **Core Functionality**: SD card management, firmware updates, tool improvements
+     - **Infrastructure**: CI/CD and process improvements (minor section)
+   - **FORMATTING REQUIREMENTS**:
+     - **DO NOT** include a main header (e.g., "# Major Changes Since vXX.XX.XX") - the main process creates this
+     - Start directly with section headers (e.g., "## New GoPro Models")
+     - Use bullet points for all lists
+     - Group firmware by model and type (Official vs Labs)
 
 2. **Check for Uncommitted Changes**
    - Ensure `scripts/release/` directory is clean (no uncommitted changes)
