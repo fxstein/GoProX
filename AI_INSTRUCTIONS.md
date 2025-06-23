@@ -23,6 +23,13 @@
    - Always use `scripts/release/full-release.zsh` for releases
    - Never run individual scripts unless specifically instructed
 
+4. **Output File Requirements** (CRITICAL)
+   - ALL transient output files MUST be placed in the `output/` directory
+   - NEVER create test files, logs, or any output in the repo root
+   - This includes release notes, test files, debug output, etc.
+   - The `output/` directory is in `.gitignore` for a reason
+   - Violation of this rule will result in immediate cleanup and correction
+
 **FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN RELEASE FAILURE**
 
 ## Issue Reference Format

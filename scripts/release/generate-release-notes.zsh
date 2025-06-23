@@ -66,16 +66,17 @@ Usage: $SCRIPT_NAME <current_version> <previous_version> [output_file]
 Arguments:
     current_version    The version being released (e.g., 00.61.00)
     previous_version   The previous version for changelog (e.g., 00.60.00)
-    output_file        Optional output file (default: release_notes.md)
+    output_file        Optional output file (default: output/release_notes.md)
 
 Examples:
     $SCRIPT_NAME 00.61.00 00.60.00
-    $SCRIPT_NAME 00.61.00 00.60.00 my_release_notes.md
+    $SCRIPT_NAME 00.61.00 00.60.00 output/my_release_notes.md
 
 This script generates release notes that summarize commits by issue:
 - Commits with issue references are grouped under issue headers with issue numbers and names
 - Commits without issue references are grouped under "Others"
 - Uses GitHub API to fetch issue titles when available
+- Output files MUST be placed in the output/ directory
 EOF
 }
 
@@ -138,6 +139,22 @@ extract_issue_numbers() {
     # Extract issue numbers from various formats: #123, (refs #123), (refs #123 #456)
     # Return each number on a separate line to avoid concatenation
     echo "$commit_msg" | grep -o '#[0-9]*' | sed 's/#//' | sort -u
+}
+
+# Function to validate output file location
+validate_output_location() {
+    local output_file="$1"
+    
+    # Ensure output file is in the output/ directory
+    if [[ ! "$output_file" =~ ^output/ ]]; then
+        print_error "Output file must be in the output/ directory"
+        print_error "Current: $output_file"
+        print_error "Expected: output/$(basename "$output_file")"
+        exit 1
+    fi
+    
+    # Ensure output directory exists
+    mkdir -p "$(dirname "$output_file")"
 }
 
 # Function to generate release notes
@@ -352,7 +369,7 @@ main() {
     
     local current_version="$1"
     local previous_version="$2"
-    local output_file="${3:-release_notes.md}"
+    local output_file="${3:-output/release_notes.md}"
     
     # Validate versions
     validate_version "$current_version"
@@ -360,6 +377,9 @@ main() {
     
     # Check prerequisites
     check_prerequisites
+    
+    # Validate output file location
+    validate_output_location "$output_file"
     
     # Generate release notes
     generate_release_notes "$current_version" "$previous_version" "$output_file"
