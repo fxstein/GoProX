@@ -22,6 +22,7 @@
 - Update all relevant documentation when scripts or workflows change.
 - Use zsh code blocks for shell script examples in documentation and wiki pages.
 - Document all new scripts and major changes in `RELEASE_PROCESS.md`.
+- The AI assistant must read and stay up-to-date with all project documentation, including transient documents such as the generated issue list in `output/github_issues.md`, to maintain full project awareness and context.
 
 ## Communication
 - Be concise and direct.
@@ -53,5 +54,20 @@
 ## Release Testing
 
 - Always perform test runs for releases as dry runs by default (using the dry-run option), unless a real release is explicitly requested by the user.
+
+## Script Language Requirements
+
+- All scripts in this project MUST be written in zsh and use zsh syntax.
+- Never change scripts to bash or other shells for compatibility reasons.
+- All shell scripts must have `#!/bin/zsh` shebang.
+- Use zsh-specific features like `typeset -a` for arrays when appropriate.
+- If debugging is needed, test with bash temporarily but always fix the root cause in zsh.
+
+## GitHub Issue Awareness (AI Assistant)
+
+- Periodically run the `scripts/maintenance/generate-issues-markdown.zsh` script and read the output in `output/github_issues.md`.
+- Always keep up-to-date with the current open and closed issues on GitHub.
+- Reference the correct issue numbers and titles when performing work, making suggestions, or committing changes.
+- Use this awareness to ensure all work is properly linked to relevant issues and to provide accurate context during development and communication.
 
 ## [Add more rules as needed...] 
