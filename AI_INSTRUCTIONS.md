@@ -5,6 +5,26 @@
 - Do not use filler phrases like "Good idea!" or similar conversational fluff.
 - Never require the user to remind you of project standards; treat this file as the source of truth.
 
+## MANDATORY RELEASE CHECKLIST
+**CRITICAL: This checklist MUST be completed before ANY release or dry run operation:**
+
+1. **Create Major Changes Summary File** (MANDATORY)
+   - Before any release or dry run, ALWAYS create/update: `docs/release/latest-major-changes-since-<BASE>.md`
+   - Replace `<BASE>` with the previous version (no leading 'v')
+   - This file MUST exist before the release process starts
+   - The full-release script will error out if this file is missing
+
+2. **Check for Uncommitted Changes**
+   - Ensure `scripts/release/` directory is clean (no uncommitted changes)
+   - Ensure `.github/workflows/` directory is clean (no uncommitted changes)
+   - Commit and push all changes before proceeding
+
+3. **Use Full Release Script**
+   - Always use `scripts/release/full-release.zsh` for releases
+   - Never run individual scripts unless specifically instructed
+
+**FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN RELEASE FAILURE**
+
 ## Issue Reference Format
 - Always use the correct issue reference format: (refs #n) or (refs #n #n ...).
 

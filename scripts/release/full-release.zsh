@@ -185,6 +185,18 @@ main() {
         exit 1
     fi
 
+    # Check for required major changes summary file
+    if [[ -n "$prev_version" ]]; then
+        local required_summary_file="docs/release/latest-major-changes-since-${prev_version}.md"
+        if [[ ! -f "$required_summary_file" ]]; then
+            print_error "Required major changes summary file missing: $required_summary_file"
+            print_error "AI must create this file before any release or dry run."
+            print_error "This file must contain a summary of major changes since version $prev_version."
+            exit 1
+        fi
+        print_success "Found required summary file: $required_summary_file"
+    fi
+
     check_prerequisites
 
     local current_version=$(get_current_version)
