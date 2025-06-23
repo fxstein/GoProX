@@ -161,6 +161,12 @@ main() {
         esac
     done
 
+    # Check for uncommitted changes in scripts/release/
+    if [[ -n $(git status --porcelain scripts/release/) ]]; then
+        print_error "Uncommitted changes detected in scripts/release/. Please commit all changes in the release tree before running a release."
+        exit 1
+    fi
+
     check_prerequisites
 
     local current_version=$(get_current_version)
