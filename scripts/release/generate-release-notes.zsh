@@ -125,8 +125,8 @@ get_issue_title() {
     
     # Try to get issue title from GitHub API
     local title=$(gh api "repos/$repo/issues/$issue_number" --jq '.title' 2>/dev/null || echo "")
-    if [[ -n "$title" ]]; then
-        echo "Issue #$issue_number: $title"
+    if [[ -n "$title" && "$title" != "null" && ! "$title" =~ "message.*Not Found" ]]; then
+        echo "$title"
     else
         echo "Issue #$issue_number"
     fi
@@ -136,7 +136,8 @@ get_issue_title() {
 extract_issue_numbers() {
     local commit_msg="$1"
     # Extract issue numbers from various formats: #123, (refs #123), (refs #123 #456)
-    echo "$commit_msg" | grep -o '#[0-9]*' | sort -u | tr '\n' ' '
+    # Return each number on a separate line to avoid concatenation
+    echo "$commit_msg" | grep -o '#[0-9]*' | sed 's/#//' | sort -u
 }
 
 # Function to generate release notes
@@ -181,21 +182,24 @@ generate_release_notes() {
         
         if [[ -n "$issue_numbers" ]]; then
             # Commit has issue references
-            for issue_num in $issue_numbers; do
-                # Remove # prefix for processing and clean up
-                local clean_issue_num=${issue_num#\#}
-                clean_issue_num=$(echo "$clean_issue_num" | tr -d ' ')
-                
-                # Only process if it's a valid number
-                if [[ "$clean_issue_num" =~ ^[0-9]+$ ]]; then
-                    issue_commits["$clean_issue_num"]+="$commit"$'\n'
+            while IFS= read -r issue_num; do
+                if [[ -n "$issue_num" ]]; then
+                    # Clean up the issue number
+                    local clean_issue_num=$(echo "$issue_num" | tr -d ' ')
                     
-                    # Get issue title if not already cached
-                    if [[ -z "${issue_titles[$clean_issue_num]}" ]]; then
-                        issue_titles["$clean_issue_num"]=$(get_issue_title "$clean_issue_num")
+                    # Only process if it's a valid number
+                    if [[ "$clean_issue_num" =~ ^[0-9]+$ ]]; then
+                        # Ensure clean key without quotes
+                        local key="$clean_issue_num"
+                        issue_commits[$key]+="$commit"$'\n'
+                        
+                        # Get issue title if not already cached
+                        if [[ -z "${issue_titles[$key]}" ]]; then
+                            issue_titles[$key]=$(get_issue_title "$clean_issue_num")
+                        fi
                     fi
                 fi
-            done
+            done <<< "$issue_numbers"
         else
             # Commit has no issue references
             other_commits+=("$commit")
@@ -232,10 +236,12 @@ EOF
         for issue_num in $sorted_issues; do
             local title="${issue_titles[$issue_num]}"
             
-            # If title is in the format 'Issue #n: Title', use it; otherwise, fallback
-            if [[ "$title" =~ ^Issue\ #[0-9]+: ]]; then
+            # Format the header properly
+            if [[ "$title" =~ ^Issue\ #[0-9]+$ ]]; then
+                # Fallback format when no title was found
                 local header="$title"
             else
+                # Use the actual title from GitHub API
                 local header="Issue #$issue_num: $title"
             fi
             
