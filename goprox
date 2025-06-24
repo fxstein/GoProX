@@ -352,17 +352,82 @@ function _setup()
   _info "GeoNamesAcct: "$geonamesacct
 
   _info "Writing config file: $config"
-  echo "source="$source>>"${config/#\~/$HOME}"
-  echo "library=\""$library"\"">>"${config/#\~/$HOME}"
-  echo "copyright=\""$copyright"\"">>"${config/#\~/$HOME}"
-  echo "geonamesacct=\""$geonamesacct"\"">>"${config/#\~/$HOME}"
-  echo "mountoptions=(${mountoptions})">>"${config/#\~/$HOME}"
+  
+  # Write example configuration as comments at the top
+  cat > "${config/#\~/$HOME}" << 'EOF'
+# GoProX Configuration File
+# Example configuration with all possible entries:
+# source="."
+# library="~/goprox"
+# copyright="Your Name or Organization"
+# geonamesacct="your_geonames_username"
+# mountoptions=(--archive --import --clean --firmware)
+
+EOF
+
+  # Write actual configuration values with standardized quoting
+  echo "source=\"$source\"" >> "${config/#\~/$HOME}"
+  echo "library=\"$library\"" >> "${config/#\~/$HOME}"
+  echo "copyright=\"$copyright\"" >> "${config/#\~/$HOME}"
+  echo "geonamesacct=\"$geonamesacct\"" >> "${config/#\~/$HOME}"
+  echo "mountoptions=(${mountoptions})" >> "${config/#\~/$HOME}"
+  
   _info "Config saved as $config"
 
   # check if library exists, otherwise create the skeleton
   _validate_storage
 
   _info "Finished setup task."
+}
+
+function _validate_config()
+{
+  # Validate configuration values after loading
+  _debug "Validating configuration values..."
+  
+  # Validate source directory
+  if [[ -n "$source" && "$source" != "." ]]; then
+    if [[ ! -d "${source/#\~/$HOME}" ]]; then
+      _warning "Source directory does not exist: $source"
+      _warning "Using current directory (.) as source"
+      source="."
+    fi
+  fi
+  
+  # Validate library directory
+  if [[ -n "$library" ]]; then
+    if [[ ! -d "${library/#\~/$HOME}" ]]; then
+      _info "Library directory does not exist, will be created: $library"
+    fi
+  else
+    _warning "Library not specified, using default: $DEFAULT_LIBRARY"
+    library="$DEFAULT_LIBRARY"
+  fi
+  
+  # Validate mountoptions array
+  if [[ -n "$mountoptions" ]]; then
+    # Check if mountoptions is a valid array format
+    if [[ ! "$mountoptions" =~ '^\(.*\)$' ]]; then
+      _warning "Invalid mountoptions format: $mountoptions"
+      _warning "Using default mount options"
+      mountoptions="$DEFAULT_MOUNTOPTIONS"
+    fi
+  else
+    _info "Mount options not specified, using defaults"
+    mountoptions="$DEFAULT_MOUNTOPTIONS"
+  fi
+  
+  # Validate geonamesacct (optional)
+  if [[ -n "$geonamesacct" ]]; then
+    # Basic validation - should not contain spaces or special characters
+    if [[ "$geonamesacct" =~ '[[:space:]&\|;`$(){}\[\]"'\''\\]' ]]; then
+      _warning "GeoNames account contains invalid characters: $geonamesacct"
+      _warning "Clearing GeoNames account"
+      geonamesacct=""
+    fi
+  fi
+  
+  _debug "Configuration validation completed"
 }
 
 function _create_timefilter()
@@ -1621,6 +1686,8 @@ if [[ -f "$config" ]]; then
   _info "Loading config file: $config"
   [[ $loglevel -le 1 ]] && tail $config
   source $config
+  # Validate configuration values after loading
+  _validate_config
 fi
 
 _debug "SourceOpt: $sourceopt"
