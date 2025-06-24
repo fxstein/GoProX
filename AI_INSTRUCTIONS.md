@@ -125,4 +125,8 @@
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
 - After generating the issue list, read the output file (`output/github_issues.md`) to ensure you are memorizing and referencing the latest issues in all future work and communication.
 
+## Release Summary File Creation
+- Never copy an existing release summary file to create the required latest major changes file (e.g., `docs/release/latest-major-changes-since-<BASE>.md`).
+- Always create or update this file through the AI, ensuring it is up-to-date and accurate for the requested release base.
+
 ## [Add more rules as needed...] 
