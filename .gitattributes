@@ -19,3 +19,7 @@ test/**/*.360 filter=lfs diff=lfs merge=lfs -text
 test/**/*.dng filter=lfs diff=lfs merge=lfs -text
 test/**/*.insp filter=lfs diff=lfs merge=lfs -text
 test/**/*.insv filter=lfs diff=lfs merge=lfs -text
+test/**/*.lrv filter=lfs diff=lfs merge=lfs -text
+test/**/*.thm filter=lfs diff=lfs merge=lfs -text
+test/**/*.LRV filter=lfs diff=lfs merge=lfs -text
+test/**/*.THM filter=lfs diff=lfs merge=lfs -text
