@@ -1,6 +1,20 @@
 # GoProX Automated Release Process
 
-This document describes the automated release process for GoProX, now unified under a single script for simplicity and reliability.
+**NEW: The release script now uses strict parameter validation. Only the following options are accepted:**
+
+- `-h`, `--help` — show help
+- `--dry-run` — perform a dry run (no actual release)
+- `--prev <version>` — specify previous version for changelog
+- `--base <version>` — alias for `--prev` (backward compatibility)
+- `--version <version>` — specify version to release (default: auto-increment)
+- `--force` — force execution without confirmation
+- `--major` — bump major version (default: minor)
+- `--minor` — bump minor version (default)
+- `--patch` — bump patch version
+
+**Passing any unknown parameter will cause the script to fail with an error.**
+
+_This matches the robust argument handling of the main `goprox` tool._
 
 ## Overview
 
@@ -13,6 +27,8 @@ The release process is now performed using the `full-release.zsh` script, which 
 ```zsh
 ./scripts/release/full-release.zsh --dry-run   # Recommended for test runs
 ./scripts/release/full-release.zsh             # For real releases (explicitly requested)
+./scripts/release/full-release.zsh --dry-run --prev 00.52.00
+./scripts/release/full-release.zsh --dry-run --base 00.52.00
 ```
 
 - **Dry Run:** By default, always use `--dry-run` for test runs. This simulates the entire process without making changes or triggering a real release.

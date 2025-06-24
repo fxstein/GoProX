@@ -51,13 +51,31 @@ print_error() {
 
 # Function to show usage
 show_usage() {
+    local script_name="${0##*/}"
     cat << EOF
-Usage: $0
+Usage: $script_name [options]
 
 This script performs the complete GoProX release process:
 1. Bump version with --auto --push --force
 2. Trigger release workflow
 3. Monitor the release process
+
+Options:
+  -h, --help            show this help message and exit
+  --dry-run             perform a dry run (no actual release)
+  --prev <version>      specify previous version for changelog
+  --base <version>      alias for --prev (backward compatibility)
+  --version <version>   specify version to release (default: auto-increment)
+  --force               force execution without confirmation
+  --major               bump major version (default: minor)
+  --minor               bump minor version (default)
+  --patch               bump patch version
+
+Examples:
+  $script_name --dry-run --prev 00.52.00
+  $script_name --dry-run --base 00.52.00
+  $script_name --prev 00.52.00 --version 01.00.15
+  $script_name --dry-run --prev 01.00.13 --patch
 
 The script is fully automated and requires no user interaction.
 EOF
@@ -126,50 +144,59 @@ main() {
     echo "└─────────────────────────────────────────────────────────────────┘"
     echo ""
     
-    # Argument parsing
+    # Initialize variables
     dry_run="false"
     prev_version=""
     version=""
     force="false"
     bump_type="minor"
     
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --dry-run)
-                dry_run="true"
-                shift
-                ;;
-            --prev|-p)
-                prev_version="$2"
-                shift 2
-                ;;
-            --version|-v)
-                version="$2"
-                shift 2
-                ;;
-            --force|-f)
-                force="true"
-                shift
-                ;;
-            --major)
-                bump_type="major"
-                shift
-                ;;
-            --minor)
-                bump_type="minor"
-                shift
-                ;;
-            --patch)
-                bump_type="patch"
-                shift
-                ;;
+    # Parse options using zparseopts for strict parameter validation
+    declare -A opts
+    zparseopts -D -E -F -A opts - \
+                h -help \
+                -dry-run \
+                -prev: \
+                -base: \
+                -version: \
+                -force \
+                -major \
+                -minor \
+                -patch \
+                || {
+        # Unknown option
+        print_error "Unknown option: $@"
+        print_error "Use --help for usage information"
+        exit 1
+    }
+    
+    # Process parsed options
+    for key val in "${(kv@)opts}"; do
+        case $key in
             -h|--help)
                 show_usage
                 exit 0
                 ;;
-            *)
-                print_warning "Unknown argument: $1"
-                shift
+            --dry-run)
+                dry_run="true"
+                ;;
+            --prev|--base)
+                prev_version="$val"
+                ;;
+            --version)
+                version="$val"
+                ;;
+            --force)
+                force="true"
+                ;;
+            --major)
+                bump_type="major"
+                ;;
+            --minor)
+                bump_type="minor"
+                ;;
+            --patch)
+                bump_type="patch"
                 ;;
         esac
     done
