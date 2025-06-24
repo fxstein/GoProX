@@ -1,14 +1,22 @@
 ---
-name: "Lint YAML Files"
+name: "Lint and Test"
 on:
   pull_request:
     paths:
       - "**.yml"
       - "**.yaml"
+      - "**.zsh"
+      - "goprox"
   push:
     paths:
       - "**.yml"
       - "**.yaml"
+      - "**.zsh"
+      - "goprox"
+    branches:
+      - main
+      - develop
+
 jobs:
   yaml-lint:
     name: "YAML Lint"
@@ -22,4 +30,28 @@ jobs:
       - name: "Lint YAML files with strict rules"
         run: |
           echo "Running strict YAML linting..."
-          yamllint -f parsable -c .yamllint .github/workflows/ 
+          yamllint -f parsable -c .yamllint .github/workflows/
+
+  shell-test:
+    name: "Shell Script Tests"
+    runs-on: "ubuntu-latest"
+    if: contains(github.event.head_commit.modified, 'goprox') || contains(github.event.head_commit.modified, '.zsh')
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Setup zsh"
+        run: |
+          echo "Using zsh version:"
+          zsh --version
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y exiftool jq
+      - name: "Make scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+          chmod +x goprox
+      - name: "Run shell script tests"
+        run: |
+          echo "🧪 Testing shell scripts..."
+          ./scripts/testing/run-tests.zsh --params
+          ./scripts/testing/run-tests.zsh --config 

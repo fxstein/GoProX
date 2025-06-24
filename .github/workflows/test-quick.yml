@@ -1,0 +1,61 @@
+---
+name: "Quick Tests"
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+    branches:
+      - main
+      - develop
+
+jobs:
+  quick-test:
+    name: "Quick Test Run"
+    runs-on: "ubuntu-latest"
+    
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+        
+      - name: "Setup zsh"
+        run: |
+          echo "Using zsh version:"
+          zsh --version
+          
+      - name: "Install dependencies"
+        run: |
+          # Install exiftool
+          sudo apt-get update
+          sudo apt-get install -y exiftool
+          
+          # Install jq
+          sudo apt-get install -y jq
+          
+          # Verify installations
+          echo "exiftool version:"
+          exiftool -ver
+          echo "jq version:"
+          jq --version
+          
+      - name: "Make test scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+          chmod +x goprox
+          
+      - name: "Run all tests"
+        run: |
+          echo "🧪 Running comprehensive test suite..."
+          ./scripts/testing/run-tests.zsh --all
+          
+      - name: "Upload test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "quick-test-results"
+          path: "output/test-results/"
+          retention-days: 7 
