@@ -165,4 +165,15 @@ This document establishes the foundational architectural decisions and design pa
 - When implementing new features, always ask if dedicated tests should be created
 - Follow the testing standards outlined in the Design Principles document
 
+## Comprehensive Testing Framework
+- Use the new testing framework in `scripts/testing/` for all new tests
+- Run tests using `./scripts/testing/run-tests.zsh` with appropriate options
+- Test suites are organized by functionality: config, params, storage, integration
+- Each test should include both success and failure scenarios
+- Tests run in isolated temporary directories with automatic cleanup
+- Use assertion functions: `assert_equal`, `assert_file_exists`, `assert_contains`, etc.
+- Test reports are generated in `output/test-results/` directory
+- Follow the patterns established in `scripts/testing/test-suites.zsh`
+- Reference `docs/testing/TESTING_FRAMEWORK.md` for complete documentation
+
 ## [Add more rules as needed...] 
