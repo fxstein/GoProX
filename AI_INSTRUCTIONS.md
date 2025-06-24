@@ -1,5 +1,19 @@
 # AI Instructions for GoProX Project
 
+## Design Principles and Architecture
+**CRITICAL: Before beginning any work on this project, you MUST read and understand the Design Principles document: `docs/architecture/DESIGN_PRINCIPLES.md`**
+
+This document establishes the foundational architectural decisions and design patterns that guide all development work. It covers:
+- Simplicity as the core principle
+- Consistent parameter processing using zparseopts
+- Human-readable configuration management
+- Progressive enhancement approach
+- Platform consistency requirements
+- Error handling and recovery patterns
+- Documentation-driven development
+
+**IMPORTANT:** When making any significant design or architectural decisions, always ask if the decision should be documented in the Design Principles document for future reference and consistency.
+
 ## General Principles
 - Always follow the standards and conventions in this file for all code, documentation, and communication.
 - Do not use filler phrases like "Good idea!" or similar conversational fluff.
@@ -128,5 +142,16 @@
 ## Release Summary File Creation
 - Never copy an existing release summary file to create the required latest major changes file (e.g., `docs/release/latest-major-changes-since-<BASE>.md`).
 - Always create or update this file through the AI, ensuring it is up-to-date and accurate for the requested release base.
+
+## Design Decision Documentation
+- When implementing new features or making architectural changes, always consider whether the decision should be documented in `docs/architecture/DESIGN_PRINCIPLES.md`.
+- Ask the user if any design decisions made during implementation should be added to the Design Principles document.
+- Focus on decisions that:
+  - Establish new patterns or conventions
+  - Affect multiple components or scripts
+  - Impact user experience or configuration
+  - Define new architectural approaches
+  - Set precedents for future development
+- Document decisions with rationale, implementation guidelines, and examples where appropriate.
 
 ## [Add more rules as needed...] 
