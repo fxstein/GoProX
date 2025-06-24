@@ -154,4 +154,15 @@ This document establishes the foundational architectural decisions and design pa
   - Set precedents for future development
 - Document decisions with rationale, implementation guidelines, and examples where appropriate.
 
+## Testing Requirements
+- All new features and capabilities MUST include dedicated tests
+- Tests must be executable on demand via command-line
+- Tests must be integrated into CI/CD build processes
+- Test coverage should include both positive and negative scenarios
+- Tests must be documented with clear descriptions of what they validate
+- Failed tests must provide clear, actionable error messages
+- Test data should be version-controlled and minimal
+- When implementing new features, always ask if dedicated tests should be created
+- Follow the testing standards outlined in the Design Principles document
+
 ## [Add more rules as needed...] 

@@ -180,6 +180,49 @@ mountoptions=(--archive --import --clean --firmware)
 - Provide examples and use cases in documentation
 - Keep documentation close to the code it describes
 
+### 8. Comprehensive Testing Framework
+
+**Principle:** All new features and capabilities must have dedicated tests that are executed on demand and during build processes.
+
+**Rationale:** Comprehensive testing ensures code quality, prevents regressions, and provides confidence in the reliability of the software. It enables safe refactoring and helps catch issues early in the development cycle.
+
+**Implementation Requirements:**
+- Every new feature must include dedicated test cases
+- Tests must be executable on demand via command-line
+- Tests must be integrated into CI/CD build processes
+- Test coverage should include both positive and negative scenarios
+- Tests must be documented with clear descriptions of what they validate
+- Failed tests must provide clear, actionable error messages
+- Test data should be version-controlled and minimal
+
+**Current Implementation:**
+- GoProX includes a `--test` option for running comprehensive tests
+- Test data is stored in `test/` directory with sample media files
+- Tests validate import, process, archive, and firmware functionality
+- Tests compare output against expected results using git diff
+
+**Test Categories Required:**
+- **Unit Tests:** Test individual functions and components in isolation
+- **Integration Tests:** Test interactions between components
+- **Functional Tests:** Test complete workflows and user scenarios
+- **Regression Tests:** Ensure existing functionality continues to work
+- **Platform Tests:** Validate behavior across supported platforms
+- **Configuration Tests:** Test various configuration scenarios
+- **Error Handling Tests:** Verify proper error messages and recovery
+
+**Testing Standards:**
+- Tests must be deterministic and repeatable
+- Tests should not depend on external services unless explicitly testing integration
+- Test execution time should be reasonable (under 5 minutes for full suite)
+- Tests must clean up after themselves
+- Test output should be clear and actionable
+
+**Examples in GoProX:**
+- `goprox --test` runs the complete test suite
+- Tests validate file renaming, metadata extraction, and directory structure
+- Tests ensure firmware detection and processing works correctly
+- Tests verify configuration loading and validation
+
 ## Decision Recording Process
 
 When making significant design or architectural decisions:
