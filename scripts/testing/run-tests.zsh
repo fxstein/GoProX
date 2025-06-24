@@ -28,6 +28,10 @@ RUN_CONFIG_TESTS=false
 RUN_PARAM_TESTS=false
 RUN_STORAGE_TESTS=false
 RUN_INTEGRATION_TESTS=false
+RUN_ENHANCED_TESTS=false
+RUN_MEDIA_TESTS=false
+RUN_ERROR_TESTS=false
+RUN_WORKFLOW_TESTS=false
 VERBOSE=false
 QUIET=false
 
@@ -55,6 +59,22 @@ function parse_options() {
                 RUN_INTEGRATION_TESTS=true
                 shift
                 ;;
+            --enhanced)
+                RUN_ENHANCED_TESTS=true
+                shift
+                ;;
+            --media)
+                RUN_MEDIA_TESTS=true
+                shift
+                ;;
+            --error)
+                RUN_ERROR_TESTS=true
+                shift
+                ;;
+            --workflow)
+                RUN_WORKFLOW_TESTS=true
+                shift
+                ;;
             --verbose|-v)
                 VERBOSE=true
                 shift
@@ -78,7 +98,9 @@ function parse_options() {
     # Default to all tests if no specific test type is selected
     if [[ "$RUN_ALL_TESTS" == false && "$RUN_CONFIG_TESTS" == false && \
           "$RUN_PARAM_TESTS" == false && "$RUN_STORAGE_TESTS" == false && \
-          "$RUN_INTEGRATION_TESTS" == false ]]; then
+          "$RUN_INTEGRATION_TESTS" == false && "$RUN_ENHANCED_TESTS" == false && \
+          "$RUN_MEDIA_TESTS" == false && "$RUN_ERROR_TESTS" == false && \
+          "$RUN_WORKFLOW_TESTS" == false ]]; then
         RUN_ALL_TESTS=true
     fi
 }
@@ -95,6 +117,10 @@ function show_help() {
     echo "  --params           Run parameter processing tests only"
     echo "  --storage          Run storage validation tests only"
     echo "  --integration      Run integration tests only"
+    echo "  --enhanced         Run enhanced tests only"
+    echo "  --media            Run media tests only"
+    echo "  --error            Run error handling tests only"
+    echo "  --workflow         Run workflow tests only"
     echo "  --verbose, -v      Enable verbose output"
     echo "  --quiet, -q        Suppress output except for failures"
     echo "  --help, -h         Show this help message"
@@ -150,6 +176,7 @@ function run_selected_tests() {
     # Source the test framework and suites from SCRIPT_DIR
     source "$SCRIPT_DIR/test-framework.zsh"
     source "$SCRIPT_DIR/test-suites.zsh"
+    source "$SCRIPT_DIR/enhanced-test-suites.zsh"
     
     # Initialize test framework
     test_init
@@ -169,6 +196,22 @@ function run_selected_tests() {
     
     if [[ "$RUN_ALL_TESTS" == true || "$RUN_INTEGRATION_TESTS" == true ]]; then
         test_suite "Integration Tests" test_integration_suite
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_ENHANCED_TESTS" == true ]]; then
+        test_suite "Enhanced Functionality Tests" test_enhanced_functionality_suite
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_MEDIA_TESTS" == true ]]; then
+        test_suite "Media Processing Tests" test_media_processing_suite
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_ERROR_TESTS" == true ]]; then
+        test_suite "Error Handling Tests" test_error_handling_suite
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_WORKFLOW_TESTS" == true ]]; then
+        test_suite "Integration Workflow Tests" test_integration_workflows_suite
     fi
     
     # Generate report and summary

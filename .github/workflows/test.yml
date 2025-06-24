@@ -20,7 +20,7 @@ jobs:
     
     strategy:
       matrix:
-        test-suite: [config, params, storage, integration, all]
+        test-suite: [config, params, storage, integration, enhanced, media, error, workflow, all]
     
     steps:
       - name: "Checkout code"
