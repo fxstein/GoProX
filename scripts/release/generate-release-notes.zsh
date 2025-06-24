@@ -305,11 +305,13 @@ EOF
             # Add commits for this issue - use zsh-compatible approach
             local commits_for_issue="${issue_commits[$issue_num]}"
             
+            echo '```' >> "$output_file"
             while IFS= read -r commit; do
                 if [[ -n "$commit" ]]; then
-                    echo "- $commit" >> "$output_file"
+                    echo "$commit" >> "$output_file"
                 fi
             done <<< "$commits_for_issue"
+            echo '```' >> "$output_file"
             echo "" >> "$output_file"
         done
     fi
@@ -318,11 +320,13 @@ EOF
     if [[ ${#other_commits[@]} -gt 0 ]]; then
         echo "## Other Commits" >> "$output_file"
         echo "" >> "$output_file"
+        echo '```' >> "$output_file"
         for commit in "${other_commits[@]}"; do
             if [[ -n "$commit" ]]; then
-                echo "- $commit" >> "$output_file"
+                echo "$commit" >> "$output_file"
             fi
         done
+        echo '```' >> "$output_file"
         echo "" >> "$output_file"
     fi
     
