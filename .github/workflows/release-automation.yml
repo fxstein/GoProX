@@ -149,6 +149,42 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Force Rewritten History
+        run: |
+          echo "=== FORCING REWRITTEN HISTORY ==="
+          
+          # Force fetch all refs to ensure we have the latest history
+          git fetch --all --tags --force
+          
+          # Verify we have the correct history
+          echo "Current HEAD: $(git rev-parse HEAD)"
+          echo "Tag v${{ inputs.prev_version }}: $(git rev-parse v${{ inputs.prev_version }})"
+          
+          # Check if we're using the rewritten history
+          if git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l | grep -q "397"; then
+            echo "❌ Still using old history (397 commits detected)"
+            echo "Attempting to force rewritten history..."
+            
+            # Try to fetch the rewritten history explicitly
+            git fetch origin --force
+            git reset --hard origin/main
+            git fetch --all --tags --force
+            
+            # Verify again
+            COMMIT_COUNT=$(git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l)
+            echo "Commit count after force fetch: $COMMIT_COUNT"
+            
+            if [[ $COMMIT_COUNT -gt 200 ]]; then
+              echo "❌ Still using old history. Manual intervention required."
+              echo "The repository may need to be re-pushed with the rewritten history."
+              exit 1
+            else
+              echo "✅ Now using rewritten history"
+            fi
+          else
+            echo "✅ Using rewritten history"
+          fi
+      
       - name: Verify Git History
         run: |
           echo "=== GIT HISTORY VERIFICATION ==="
