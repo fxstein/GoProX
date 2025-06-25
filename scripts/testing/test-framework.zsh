@@ -299,10 +299,4 @@ function run_all_tests() {
     print_test_summary
     
     return $TEST_FAILED
-}
-
-# Export functions for use in test files
-export -f assert_equal assert_not_equal assert_file_exists assert_file_not_exists
-export -f assert_directory_exists assert_contains assert_exit_code
-export -f run_test skip_test test_suite
-export -f create_test_config create_test_media_file cleanup_test_files 
+} 
