@@ -258,4 +258,34 @@ run_terminal_cmd "test_command" "is_background" "False"
 - Acknowledge planning vs implementation distinction
 - Focus on actual working code rather than documentation
 
+## Next Steps Tracking
+**CRITICAL: Always consult `docs/NEXT_STEPS.md` before starting new work or providing progress updates.**
+
+**Rationale**: The Next Steps document tracks current priorities, dependencies, and progress. It ensures continuity across development sessions and prevents duplicate work or missed dependencies.
+
+**Requirements**:
+- **Read the document** before starting any new work
+- **Update the document** when work is completed or priorities change
+- **Reference the document** when providing progress updates
+- **Follow the dependency chain** outlined in the document
+- **Use the validation process** described in the document
+
+**Document Structure**:
+- **Current Status Summary**: Validated completed work and identified gaps
+- **Immediate Priority**: Foundation-first approach with clear phases
+- **Implementation Guidelines**: Work order, validation, and documentation requirements
+- **Recent Changes**: Track of updates and decisions made
+
+**Update Process**:
+1. **Before Starting Work**: Read current priorities and dependencies
+2. **During Implementation**: Track progress against planned work
+3. **After Completion**: Update status and mark as completed
+4. **When Priorities Change**: Update the document and commit changes
+
+**Integration with Progress Assessment**:
+- Use the Next Steps document as the source of truth for current priorities
+- Validate claimed completions against the document
+- Update the document when new gaps are identified
+- Ensure all progress updates align with documented priorities
+
 ## [Add more rules as needed...] 
