@@ -202,4 +202,60 @@ This document establishes the foundational architectural decisions and design pa
 - Focus on the logical order and dependencies rather than the time estimates
 - Emphasize that our actual development pace is much faster
 
+## Progress Assessment and Validation
+**CRITICAL: When creating progress updates or status reports, perform detailed validation of claimed accomplishments.**
+
+**Rationale**: Accurate progress assessment is essential for project planning and decision-making. Claims of completed work must be verified against actual implementation to avoid misinformed planning and expectations.
+
+**Validation Requirements**:
+- **Search the codebase** for actual implementation evidence before claiming work is completed
+- **Verify file existence** and content for claimed implementations
+- **Check for functional code** rather than just documentation or planning
+- **Distinguish between planning documents and actual implementation**
+- **Use concrete evidence** rather than assumptions or wishful thinking
+
+**Validation Process for Each Claimed Accomplishment**:
+1. **Code Search**: Use `grep_search` or `codebase_search` to find actual implementation
+2. **File Verification**: Check if claimed files/scripts actually exist and contain functional code
+3. **Functionality Test**: Verify that claimed features actually work, not just planned
+4. **Documentation vs Implementation**: Distinguish between planning documents and working code
+5. **Evidence-Based Claims**: Only claim completion with concrete evidence
+
+**Examples of Proper Validation**:
+- ✅ **Valid Claim**: "Testing framework completed" - Verified by existence of `scripts/testing/test-framework.zsh` with functional code
+- ❌ **Invalid Claim**: "Platform abstraction completed" - No evidence found in codebase search
+- ✅ **Valid Claim**: "Repository cleanup completed" - Verified by new directory structure and Git LFS implementation
+- ❌ **Invalid Claim**: "Configuration management system completed" - Only found simple key=value config, no structured system
+
+**Progress Update Structure**:
+1. **Actually Completed (Validated)**: List only items with concrete evidence
+2. **In Progress**: Items currently being worked on
+3. **Not Started**: Items that exist only in planning documents
+4. **Next Steps**: Prioritized based on actual current state
+
+**Validation Commands to Use**:
+```zsh
+# Search for actual implementation
+grep_search "feature_name" "*.zsh"
+codebase_search "implementation details"
+
+# Check file existence and content
+read_file "claimed_file.zsh" "should_read_entire_file" "False" "start_line_one_indexed" "1" "end_line_one_indexed" "50"
+
+# Verify functionality
+run_terminal_cmd "test_command" "is_background" "False"
+```
+
+**Red Flags Indicating Need for Validation**:
+- Claims of "completed" infrastructure without code evidence
+- References to planning documents as "implementation"
+- Vague descriptions without specific file/function names
+- Claims that don't match the actual codebase state
+
+**When in Doubt**:
+- Mark items as "Not Implemented" rather than "Completed"
+- Provide specific evidence requirements for completion claims
+- Acknowledge planning vs implementation distinction
+- Focus on actual working code rather than documentation
+
 ## [Add more rules as needed...] 
