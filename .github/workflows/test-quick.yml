@@ -52,15 +52,15 @@ jobs:
           echo "🧪 Running validation..."
           ./scripts/testing/simple-validate.zsh
           
-      - name: "Run all tests"
+      - name: "Run CI/CD validation"
         run: |
-          echo "🧪 Running comprehensive test suite..."
-          ./scripts/testing/run-tests.zsh --all
+          echo "🧪 Running CI/CD validation..."
+          ./scripts/testing/validate-ci.zsh
           
-      - name: "Upload test results"
+      - name: "Upload validation results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "quick-test-results"
-          path: "output/test-results/"
+          name: "validation-results"
+          path: "output/"
           retention-days: 7 
