@@ -114,6 +114,30 @@ mountoptions=(--archive --import --clean --firmware)
 - Users can see all available options at a glance
 - Examples show proper syntax and formatting
 
+### 3a. Configuration-Driven Release Management
+
+**Principle:** All release and CI/CD automation is managed through configuration files, ensuring traceability, auditability, and flexibility in the release process.
+
+**Rationale:** By centralizing release management settings (such as the current release tracking issue) in a dedicated YAML config file, GoProX ensures that all version bump and release automation is both reproducible and easily auditable. This approach supports compliance with commit standards and enables seamless updates to release management practices.
+
+**Implementation Guidelines:**
+- Store all release management and CI/CD configuration in the `config/` directory
+- Use YAML for internal automation/config files (not end-user facing)
+- Track the current release management issue in `config/release-issue.yaml` (e.g., `release_issue: 72`)
+- All version bump and release commits must reference the current release management issue from this config
+- Update the config file whenever a new release management issue is created
+- Document this process in both AI_INSTRUCTIONS.md and CONTRIBUTING.md
+
+**Benefits:**
+- Ensures every release and version bump is traceable to a single management issue
+- Simplifies updates to release tracking and automation
+- Supports compliance with project commit message standards
+- Provides a clear audit trail for all release activities
+
+**Reference:**
+- [Release Management and Tracking Issue #72](https://github.com/fxstein/GoProX/issues/72)
+- See also: `config/release-issue.yaml`
+
 ### 4. Progressive Enhancement
 
 **Principle:** Start with simple, working functionality and enhance it progressively based on user needs and feedback.
