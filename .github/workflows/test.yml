@@ -26,21 +26,21 @@ jobs:
       - name: "Checkout code"
         uses: actions/checkout@v4
         
-      - name: "Setup zsh"
-        run: |
-          echo "Using zsh version:"
-          zsh --version
-          
       - name: "Install dependencies"
         run: |
-          # Install exiftool
+          # Install zsh
           sudo apt-get update
+          sudo apt-get install -y zsh
+          
+          # Install exiftool
           sudo apt-get install -y exiftool
           
           # Install jq
           sudo apt-get install -y jq
           
           # Verify installations
+          echo "zsh version:"
+          zsh --version
           echo "exiftool version:"
           exiftool -ver
           echo "jq version:"
