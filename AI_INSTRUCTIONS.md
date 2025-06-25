@@ -176,4 +176,30 @@ This document establishes the foundational architectural decisions and design pa
 - Follow the patterns established in `scripts/testing/test-suites.zsh`
 - Reference `docs/testing/TESTING_FRAMEWORK.md` for complete documentation
 
+## Work Planning and Time Estimates
+**CRITICAL: Do NOT quote weeks, week numbers, or traditional time estimates when proposing work order or implementation plans.**
+
+**Rationale**: The GoProX development pace is significantly faster than traditional software development estimates. We have accomplished in single days what traditional estimates would allocate weeks for. Time-based estimates are not relevant to our actual development velocity.
+
+**Implementation Guidelines**:
+- Focus on logical work order and dependencies rather than time estimates
+- Use priority-based ordering (High, Medium, Low) instead of time-based phases
+- Group work by functionality and dependencies
+- Emphasize immediate next steps rather than long-term timelines
+- When discussing progress, focus on completed work rather than time spent
+
+**Examples of Acceptable Planning Language**:
+- ✅ "Next priority should be implementing core user-facing features"
+- ✅ "Start with the highest-impact features that build on our foundation"
+- ✅ "Immediate priority: Complete Phase 2 core features"
+- ✅ "Medium term: Storage optimization and advanced features"
+- ❌ "Week 1-2: Enhanced Default Behavior" (avoid time estimates)
+- ❌ "Phase 1: Foundation (Weeks 1-4)" (avoid week numbers)
+- ❌ "This will take 2-3 weeks to implement" (avoid time predictions)
+
+**When Referencing Existing Documentation**:
+- If the feature analysis document contains week-based estimates, acknowledge them but do not repeat them
+- Focus on the logical order and dependencies rather than the time estimates
+- Emphasize that our actual development pace is much faster
+
 ## [Add more rules as needed...] 
