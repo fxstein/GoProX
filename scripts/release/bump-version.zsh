@@ -157,16 +157,16 @@ update_version() {
 commit_change() {
     local new_version=$1
     local commit_message=$2
-    
     if [[ -z "$commit_message" ]]; then
         commit_message="Bump version to v$new_version"
     fi
-    
+    # Ensure commit message contains (refs #<issue>)
+    if [[ ! "$commit_message" =~ \(refs\s+# ]]; then
+        commit_message="$commit_message (refs #$RELEASE_ISSUE)"
+    fi
     print_status "Committing version change..."
-    
     git add goprox
     git commit -m "$commit_message"
-    
     print_success "Version change committed"
 }
 
@@ -178,6 +178,18 @@ push_commit() {
     
     print_success "Commit pushed successfully"
 }
+
+# --- Release Issue Tracking ---
+RELEASE_ISSUE_FILE="config/release-issue.yaml"
+RELEASE_ISSUE=""
+if [[ -f "$RELEASE_ISSUE_FILE" ]]; then
+  RELEASE_ISSUE=$(grep '^release_issue:' "$RELEASE_ISSUE_FILE" | awk '{print $2}')
+fi
+if [[ -z "$RELEASE_ISSUE" ]]; then
+  print_error "Release issue number not found in $RELEASE_ISSUE_FILE. Please set release_issue: <number> in the YAML config."
+  exit 1
+fi
+print_status "Using release management issue: #$RELEASE_ISSUE"
 
 # Main script logic
 main() {
