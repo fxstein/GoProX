@@ -279,6 +279,19 @@ mountoptions=(--archive --import --clean --firmware)
 - Clear error messages guide developers to specific line numbers and issues
 - Integration with existing commit message validation workflow
 
+### 10. Homebrew Standardization for Dependencies
+
+**Principle:** Always standardize on Homebrew (brew) for installation of all local dependencies on supported platforms.
+
+**Rationale:** Using a single, widely adopted package manager ensures consistency, simplifies onboarding, and reduces environment drift. Homebrew is the de facto standard for macOS and is well-supported on Linux, making it the preferred choice for managing dependencies in the GoProX project.
+
+**Implementation Guidelines:**
+- All required tools and dependencies (e.g., yamllint, jsonlint, exiftool, jq) should be installed via Homebrew whenever possible
+- Documentation and setup scripts must reference Homebrew as the installation method
+- Avoid mixing package managers (e.g., npm, pip, apt) for core dependencies unless absolutely necessary
+- If a dependency is not available via Homebrew, document the alternative installation method and rationale
+- Ensure CI/CD and local environments use the same dependency installation approach for consistency
+
 ## Decision Recording Process
 
 When making significant design or architectural decisions:

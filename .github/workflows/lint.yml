@@ -32,6 +32,19 @@ jobs:
           echo "Running strict YAML linting..."
           yamllint -f parsable -c .yamllint .github/workflows/
 
+  json-lint:
+    name: "JSON Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Install jsonlint"
+        run: |
+          npm install -g jsonlint
+      - name: "Lint all JSON files in repo"
+        run: |
+          echo "Running JSON linting..."
+          find . -name '*.json' -print0 | xargs -0 -r jsonlint -q
+
   shell-test:
     name: "Shell Script Tests"
     runs-on: "ubuntu-latest"

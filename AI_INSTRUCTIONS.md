@@ -288,4 +288,13 @@ run_terminal_cmd "test_command" "is_background" "False"
 - Update the document when new gaps are identified
 - Ensure all progress updates align with documented priorities
 
+## CI/CD Monitoring Requirement
+- The AI assistant must periodically, and at a minimum once per day, check the status of all GitHub Actions workflows for failures or errors. If any issues are detected, they must be investigated and fixed as a priority to ensure CI/CD reliability and rapid feedback for the team.
+
+## JSON Linting Requirement
+- All present and future JSON files in the repository must be linted for syntax and formatting errors.
+- JSON linting must be enforced both locally (pre-commit or pre-push) and in CI/CD workflows.
+- The linting setup for JSON files must be kept in sync between local and CI/CD environments, just like YAML linting.
+- If new JSON files are added, update the linting configuration and scripts to include them automatically.
+
 ## [Add more rules as needed...] 
