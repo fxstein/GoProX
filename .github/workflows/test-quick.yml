@@ -17,23 +17,23 @@ jobs:
   quick-test:
     name: "Quick Test Run"
     runs-on: "ubuntu-latest"
-    
+
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v4
-        
+
       - name: "Install dependencies"
         run: |
           # Install zsh
           sudo apt-get update
           sudo apt-get install -y zsh
-          
+
           # Install exiftool
           sudo apt-get install -y exiftool
-          
+
           # Install jq
           sudo apt-get install -y jq
-          
+
           # Verify installations
           echo "zsh version:"
           zsh --version
@@ -41,31 +41,31 @@ jobs:
           exiftool -ver
           echo "jq version:"
           jq --version
-          
+
       - name: "Make test scripts executable"
         run: |
           chmod +x scripts/testing/*.zsh
           chmod +x goprox
-          
+
       - name: "Setup output directories"
         run: |
           mkdir -p output/test-results
           mkdir -p output/test-temp
-          
+
       - name: "Run validation"
         run: |
           echo "🧪 Running validation..."
           ./scripts/testing/simple-validate.zsh
-          
+
       - name: "Run CI/CD validation"
         run: |
           echo "🧪 Running CI/CD validation..."
           ./scripts/testing/validate-ci.zsh
-          
+
       - name: "Upload validation results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: "validation-results"
           path: "output/"
-          retention-days: 7 
+          retention-days: 7
