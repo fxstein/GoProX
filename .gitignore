@@ -4,6 +4,10 @@ goprox.log
 test/originals/.goprox.*
 test/archive/
 
+# Generated test output directories
+test/imported/
+test/processed/
+
 # Backup directories
 backup-*/
 
