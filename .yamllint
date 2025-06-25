@@ -15,6 +15,10 @@ rules:
   trailing-spaces:
     level: error
   
+  # New line at end of file
+  new-line-at-end-of-file:
+    level: error
+  
   # Truthy values
   truthy:
     check-keys: false

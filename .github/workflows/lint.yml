@@ -54,4 +54,4 @@ jobs:
         run: |
           echo "🧪 Testing shell scripts..."
           ./scripts/testing/run-tests.zsh --params
-          ./scripts/testing/run-tests.zsh --config 
+          ./scripts/testing/run-tests.zsh --config

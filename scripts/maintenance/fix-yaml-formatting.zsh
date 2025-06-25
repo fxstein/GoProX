@@ -5,9 +5,7 @@
 
 set -e
 
-echo "🔧 GoProX YAML Formatting Fixer"
-echo "================================"
-echo ""
+echo "🔧 Fixing YAML formatting issues..."
 
 # Check if yamllint is available
 if ! command -v yamllint >/dev/null 2>&1; then
@@ -16,86 +14,71 @@ if ! command -v yamllint >/dev/null 2>&1; then
     exit 1
 fi
 
-# Get all workflow files
-workflow_files=(.github/workflows/*.yml)
+# Find all workflow files
+workflow_files=($(find .github/workflows/ -name "*.yml" 2>/dev/null))
 
 if [[ ${#workflow_files[@]} -eq 0 ]]; then
     echo "❌ No workflow files found in .github/workflows/"
     exit 1
 fi
 
-echo "📋 Found ${#workflow_files[@]} workflow files:"
-for file in $workflow_files; do
-    echo "  - $file"
-done
-echo ""
+echo "📋 Found ${#workflow_files[@]} workflow file(s)"
 
-# Function to fix common YAML issues
-fix_yaml_file() {
-    local file="$1"
-    local temp_file="${file}.tmp"
-    local original_file="${file}.bak"
+# Fix common issues
+fixed_files=0
+for file in "${workflow_files[@]}"; do
+    echo "🔧 Processing $file..."
     
-    echo "🔧 Fixing $file..."
+    # Create a backup
+    cp "$file" "${file}.bak"
     
-    # Create backup
-    cp "$file" "$original_file"
+    # Fix trailing spaces
+    sed -i '' 's/[[:space:]]*$//' "$file"
     
-    # Read the file and apply fixes
-    {
-        # Remove trailing spaces and ensure newline at end
-        cat "$file" | sed 's/[[:space:]]*$//' | sed '$a\'
-    } > "$temp_file"
+    # Ensure newline at end of file
+    if [[ $(tail -c1 "$file" 2>/dev/null | wc -l) -eq 0 ]]; then
+        echo "" >> "$file"
+    fi
     
-    # Replace original with fixed version
-    mv "$temp_file" "$file"
+    # Check if file was actually modified
+    if ! diff -q "${file}.bak" "$file" >/dev/null 2>&1; then
+        echo "  ✅ Fixed formatting issues in $file"
+        fixed_files=$((fixed_files + 1))
+    else
+        echo "  ℹ️  No changes needed for $file"
+    fi
     
-    echo "  ✅ Fixed trailing spaces and ensured newline at end"
-}
-
-# Fix each workflow file
-for file in $workflow_files; do
-    fix_yaml_file "$file"
+    # Remove backup
+    rm "${file}.bak"
 done
 
 echo ""
-echo "🔍 Running YAML linting to check results..."
+echo "✅ Fixed formatting in $fixed_files file(s)"
 
-# Run yamllint to check if issues are resolved
+# Run final lint check
+echo ""
+echo "🔍 Running final YAML lint check..."
 lint_errors=0
-for file in $workflow_files; do
-    echo "  Checking $file..."
+for file in "${workflow_files[@]}"; do
     if ! yamllint -f parsable -c .yamllint "$file" >/dev/null 2>&1; then
-        echo "  ⚠️  Still has issues:"
-        yamllint -f parsable -c .yamllint "$file" | head -5
+        echo "❌ YAML linting still failed for $file:"
+        yamllint -f parsable -c .yamllint "$file"
         lint_errors=$((lint_errors + 1))
     else
-        echo "  ✅ All issues resolved"
+        echo "  ✅ $file passed YAML linting"
     fi
 done
 
-echo ""
-if [[ $lint_errors -eq 0 ]]; then
-    echo "🎉 All YAML formatting issues have been automatically fixed!"
-    echo "✅ All workflow files now pass yamllint validation"
-    
-    # Clean up backups
-    for file in $workflow_files; do
-        rm -f "${file}.bak"
-    done
-    echo "🗑️  Cleaned up backup files"
-else
-    echo "⚠️  Some issues remain that require manual fixing:"
-    echo "   - Key ordering issues"
-    echo "   - Unquoted string values"
-    echo "   - Line length issues"
+if [[ $lint_errors -gt 0 ]]; then
     echo ""
-    echo "You can run 'yamllint -f parsable -c .yamllint .github/workflows/' to see remaining issues."
-    echo "Backup files (.bak) have been preserved in case you need to revert."
+    echo "⚠️  Some YAML issues remain that require manual fixing:"
+    echo "  - Key ordering issues"
+    echo "  - Unquoted strings"
+    echo "  - Line length issues"
+    echo ""
+    echo "You can run 'yamllint -f parsable -c .yamllint .github/workflows/' to see all remaining issues."
+    exit 1
 fi
 
 echo ""
-echo "📝 Next steps:"
-echo "1. Review the changes: git diff .github/workflows/"
-echo "2. Test the pre-commit hook: .git/hooks/pre-commit"
-echo "3. Commit the changes when ready" 
+echo "🎉 All YAML files are now properly formatted!" 
