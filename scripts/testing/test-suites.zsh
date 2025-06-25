@@ -338,7 +338,4 @@ function assert_not_contains() {
         echo "   Pattern: '$pattern'"
         return 1
     fi
-}
-
-# Export helper function
-export -f assert_not_contains 
+} 
