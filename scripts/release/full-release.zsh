@@ -42,13 +42,19 @@ LOGFILE="output/release.log"
 mkdir -p output
 : > "$LOGFILE"
 
+# Gather repo, branch info for log prefix
+LOG_REMOTE="$(git config --get remote.origin.url 2>/dev/null)"
+LOG_REPO="$(echo "$LOG_REMOTE" | sed -E 's#.*github.com[:/](.*)\.git#\1#')"
+LOG_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+
 VERBOSE=0
 
 log() {
   local level="$1"; shift
   local msg="$@"
   local ts="$(date '+%Y-%m-%d %H:%M:%S')"
-  echo "[$level] $msg" | tee -a "$LOGFILE"
+  local prefix="[$ts][$LOG_REPO][$LOG_BRANCH][$level]"
+  echo "$prefix $msg" | tee -a "$LOGFILE"
 }
 log_debug() {
   [[ $VERBOSE -eq 1 ]] && log "DEBUG" "$@"
