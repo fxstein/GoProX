@@ -47,6 +47,11 @@ jobs:
           chmod +x scripts/testing/*.zsh
           chmod +x goprox
           
+      - name: "Setup output directories"
+        run: |
+          mkdir -p output/test-results
+          mkdir -p output/test-temp
+          
       - name: "Run validation"
         run: |
           echo "🧪 Running validation..."
