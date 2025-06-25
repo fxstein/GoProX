@@ -223,6 +223,62 @@ mountoptions=(--archive --import --clean --firmware)
 - Tests ensure firmware detection and processing works correctly
 - Tests verify configuration loading and validation
 
+### 9. Local Linting and Format Validation
+
+**Principle:** Catch file format and syntax errors locally before they reach CI/CD pipelines, using automated tools and pre-commit hooks.
+
+**Rationale:** Preventing format and syntax errors at the local development level reduces CI/CD failures, improves developer productivity, and maintains code quality standards. It ensures that issues are caught and fixed early in the development cycle rather than after pushing to remote repositories.
+
+**Implementation Requirements:**
+- Implement pre-commit hooks for file format validation
+- Use industry-standard linting tools for each file type
+- Provide automated fixers for common formatting issues
+- Ensure linting tools are available in both local and CI environments
+- Configure linting rules to match project standards
+- Provide clear error messages that guide developers to solutions
+
+**Current Implementation:**
+- YAML linting with `yamllint` for GitHub Actions workflow files
+- Pre-commit hook (`.git/hooks/pre-commit`) validates staged workflow files
+- Automated YAML fixer script (`scripts/maintenance/fix-yaml-formatting.zsh`)
+- Comprehensive documentation for linting setup and troubleshooting
+- Integration with existing commit message validation hooks
+
+**Linting Standards:**
+- **YAML Files:** Use `yamllint` with project-specific configuration
+- **Shell Scripts:** Use `shellcheck` for syntax and best practices validation
+- **Configuration Files:** Validate syntax and format consistency
+- **Documentation:** Ensure proper Markdown formatting and structure
+- **JSON Files:** Validate syntax and schema compliance where applicable
+
+**Pre-commit Hook Requirements:**
+- Only validate staged files to minimize execution time
+- Provide specific file type detection and appropriate linting
+- Block commits with format errors while allowing clean commits
+- Include helpful error messages with line numbers and suggestions
+- Support both automatic fixes and manual resolution guidance
+
+**Automated Fixer Requirements:**
+- Create backups before making changes
+- Fix common issues automatically (trailing spaces, newlines, etc.)
+- Report which issues were fixed and which require manual attention
+- Provide clear guidance for manual fixes when automation isn't possible
+- Maintain file integrity and avoid introducing new issues
+
+**Benefits:**
+- **Reduced CI/CD Failures:** Prevents format errors from reaching remote pipelines
+- **Improved Developer Experience:** Clear, immediate feedback on format issues
+- **Consistent Code Quality:** Enforces project standards across all contributors
+- **Faster Development Cycles:** Catch issues early, avoid CI/CD delays
+- **Automated Maintenance:** Reduce manual formatting work through automated fixers
+
+**Examples in GoProX:**
+- YAML workflow files are validated before commits
+- Pre-commit hook prevents commits with YAML syntax errors
+- Automated fixer removes trailing spaces and ensures proper newlines
+- Clear error messages guide developers to specific line numbers and issues
+- Integration with existing commit message validation workflow
+
 ## Decision Recording Process
 
 When making significant design or architectural decisions:
