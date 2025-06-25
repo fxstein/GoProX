@@ -5,11 +5,11 @@ GoPro Labs firmware files follow a predictable URL pattern on their GitHub media
 
 ## URL Format
 ```
-https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/lfs/LABS_{MODEL}_{VERSION}.zip
+https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/labs/LABS_{MODEL}_{VERSION}.zip
 ```
 
 ## Pattern Components
-- **Base URL**: `https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/lfs/`
+- **Base URL**: `https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/labs/`
 - **Prefix**: `LABS_`
 - **Model**: Camera model identifier (e.g., `HERO11`)
 - **Version**: Firmware version in format `XX_XX_XX_XX` (e.g., `02_32_70`)
@@ -18,7 +18,7 @@ https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/lfs/LA
 ## Example
 For HERO11 Black firmware version H22.01.02.32.70:
 ```
-https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/lfs/LABS_HERO11_02_32_70.zip
+https://media.githubusercontent.com/media/gopro/labs/master/docs/firmware/labs/LABS_HERO11_02_32_70.zip
 ```
 
 ## Version Format Conversion

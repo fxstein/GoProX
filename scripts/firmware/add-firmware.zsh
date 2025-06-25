@@ -219,9 +219,9 @@ fi
 
 # Determine base directory
 if $is_labs; then
-  base="firmware.labs"
+  base="firmware/labs"
 else
-  base="firmware"
+  base="firmware/official"
 fi
 
 dir="$base/$camera/$version"

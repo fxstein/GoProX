@@ -52,7 +52,7 @@ if (( DEBUG )); then
   print "[DEBUG] command -v cut: $(command -v cut)"
 fi
 
-FIRMWARE_DIRS=(firmware firmware.labs)
+FIRMWARE_DIRS=(firmware/official firmware/labs)
 WIKI_PAGE="GoProX.wiki/firmware-tracker.md"
 
 CURRENT_YEAR=$(date +'%Y')
@@ -140,17 +140,17 @@ for dir in $FIRMWARE_DIRS; do
       relpath=${file#./}
       relpath=${relpath#${PWD}/}
       # Determine type by path prefix
-      if [[ $relpath == firmware.labs/* ]]; then
+      if [[ $relpath == firmware/labs/* ]]; then
         type="Labs"
-        model="${relpath#firmware.labs/}"
+        model="${relpath#firmware/labs/}"
         model="${model%%/*}"
-        version="${relpath#firmware.labs/$model/}"
+        version="${relpath#firmware/labs/$model/}"
         version="${version%%/*}"
-      elif [[ $relpath == firmware/* ]]; then
+      elif [[ $relpath == firmware/official/* ]]; then
         type="Official"
-        model="${relpath#firmware/}"
+        model="${relpath#firmware/official/}"
         model="${model%%/*}"
-        version="${relpath#firmware/$model/}"
+        version="${relpath#firmware/official/$model/}"
         version="${version%%/*}"
       else
         continue  # skip files not in expected dirs

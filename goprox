@@ -1222,10 +1222,10 @@ function _firmware()
     _info "Camera: ${camera}"
     _info "Version: ${version}"
     if [[ $firmwareopt == "labs" ]]; then
-      firmwarebase="${GOPROX_HOME}/firmware.labs/${camera}"
+      firmwarebase="${GOPROX_HOME}/firmware/labs/${camera}"
       cache_type="labs"
     else
-      firmwarebase="${GOPROX_HOME}/firmware/${camera}"
+      firmwarebase="${GOPROX_HOME}/firmware/official/${camera}"
       cache_type="official"
     fi
     _debug "Firmware base: $firmwarebase"
