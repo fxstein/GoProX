@@ -99,6 +99,16 @@ The project is currently focused on:
 
 See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed current priorities and progress.
 
+## 🛠️ Developer Setup
+
+To set up your development environment with all required dependencies, use the provided Brewfile:
+
+```zsh
+brew bundle --file=scripts/maintenance/Brewfile
+```
+
+This will install all necessary tools for development, linting, and testing (e.g., yamllint, jsonlint, jq, exiftool, node). Always use this Brewfile to ensure your environment matches project standards.
+
 ---
 
 *This documentation is maintained as part of the GoProX project. For questions or contributions, please refer to the [GitHub repository](https://github.com/fxstein/GoProX).* 

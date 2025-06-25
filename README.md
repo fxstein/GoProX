@@ -616,9 +616,6 @@ Portions of code and documentation created with the help of
 
 Homebrew tap to enable the installation of `goprox`: [homebrew-fxstein](https://github.com/fxstein/homebrew-fxstein)
 
-## Developer Setup
+## 🤝 Contributing
 
-If you want to contribute to GoProX or run it from source, please see the [Developer Setup instructions in the GoProX Wiki](https://github.com/fxstein/GoProX/wiki/Home#developer-setup).
-This covers installing from source, running tests, and tips for a smooth development workflow.
-
-> **Project Standard:** All contributors and AI assistants must follow the rules in [AI_INSTRUCTIONS.md](./AI_INSTRUCTIONS.md).
+For developer setup, contribution guidelines, and environment configuration, please see [CONTRIBUTING.md](CONTRIBUTING.md).
