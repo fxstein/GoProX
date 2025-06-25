@@ -2,6 +2,13 @@
 #
 # full-release.zsh: Complete automated release process for GoProX
 #
+# Enhanced Logging: Implements robust logging to both console and output/release.log, with verbosity control and error trapping (see Issue #71)
+#
+# Logging Usage:
+#   - All log messages are written to both stdout and output/release.log
+#   - Use --verbose to enable debug-level logging
+#   - On error, logs the last command and line number
+#
 # Copyright (c) 2021-2025 by Oliver Ratzesberger
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,24 +37,30 @@
 # 2. Trigger the release workflow
 # 3. Monitor the release process
 
+# --- Enhanced Logging Setup ---
+LOGFILE="output/release.log"
+mkdir -p output
+: > "$LOGFILE"
+
+VERBOSE=0
+
+log() {
+  local level="$1"; shift
+  local msg="$@"
+  local ts="$(date '+%Y-%m-%d %H:%M:%S')"
+  echo "[$level] $msg" | tee -a "$LOGFILE"
+}
+log_debug() {
+  [[ $VERBOSE -eq 1 ]] && log "DEBUG" "$@"
+}
+print_status()   { log "INFO"    "$@"; }
+print_success()  { log "SUCCESS" "$@"; }
+print_warning()  { log "WARNING" "$@"; }
+print_error()    { log "ERROR"   "$@"; }
+
+# Error trapping
+trap 'log "ERROR" "Script failed at line $LINENO: $BASH_COMMAND (exit code $?)"' ERR
 set -e
-
-# Remove color codes for Cursor IDE compatibility
-print_status() {
-    echo "[INFO] $1"
-}
-
-print_success() {
-    echo "[SUCCESS] $1"
-}
-
-print_warning() {
-    echo "[WARNING] $1"
-}
-
-print_error() {
-    echo "[ERROR] $1"
-}
 
 # Function to show usage
 show_usage() {
@@ -163,6 +176,8 @@ main() {
                 -major \
                 -minor \
                 -patch \
+                -verbose \
+                -debug \
                 || {
         # Unknown option
         print_error "Unknown option: $@"
@@ -197,6 +212,9 @@ main() {
                 ;;
             --patch)
                 bump_type="patch"
+                ;;
+            -verbose|-debug)
+                VERBOSE=1
                 ;;
         esac
     done
