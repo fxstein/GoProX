@@ -170,4 +170,13 @@ git push origin feature/new-feature
 
 - #66: Repository cleanup (organization)
 - #68: AI instructions tracking (workflow standards)
-- #38: Timezone independent tests (CI/CD integration) 
+- #38: Timezone independent tests (CI/CD integration)
+- #XX: Enhanced logging for automation and release scripts (architecture, diagnostics)
+
+## Planned Enhancement: Release Workflow Dependency on Validation/Tests
+
+To further improve release reliability and CI/CD robustness, the release workflow should be enhanced to:
+- Wait for all pending validation and test workflows in GitHub Actions before proceeding with a new release.
+- Only continue with the release if all required checks (tests, linting, validation) are successful.
+- This can be implemented using branch protection rules, `workflow_run` triggers, or job dependencies (`needs`) in GitHub Actions.
+- Implementation is deferred until this issue is addressed, but this requirement is now documented for future work. 
