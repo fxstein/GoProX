@@ -271,7 +271,7 @@ generate_release_notes() {
 EOF
     
     # Insert major changes summary if available
-    local summary_file="docs/release/${current_version}-major-changes-since-${previous_version}.md"
+    local summary_file="docs/release/latest-major-changes-since-${previous_version}.md"
     if [[ -f "$summary_file" ]]; then
         print_status "Inserting major changes summary from $summary_file"
         cat "$summary_file" >> "$output_file"
