@@ -71,8 +71,8 @@ set -e
 # Function to show usage
 show_usage() {
     local script_name="${0##*/}"
-    cat << EOF
-Usage: $script_name [options]
+    cat << 'EOF'
+Usage: full-release.zsh [options]
 
 This script performs the complete GoProX release process:
 1. Bump version with --auto --push --force
@@ -89,12 +89,21 @@ Options:
   --major               bump major version (default: minor)
   --minor               bump minor version (default)
   --patch               bump patch version
+  --preserve-summary    preserve summary file (override default behavior)
+  --remove-summary      rename/remove summary file (override default behavior)
+
+Summary File Behavior:
+  Default: Dry-runs preserve summary file, real releases rename it
+  --preserve-summary: Force preserve even for real releases
+  --remove-summary: Force rename even for dry-runs
 
 Examples:
-  $script_name --dry-run --prev 00.52.00
-  $script_name --dry-run --base 00.52.00
-  $script_name --prev 00.52.00 --version 01.00.15
-  $script_name --dry-run --prev 01.00.13 --patch
+  ./scripts/release/full-release.zsh --dry-run --prev 00.52.00
+  ./scripts/release/full-release.zsh --dry-run --base 00.52.00
+  ./scripts/release/full-release.zsh --prev 00.52.00 --version 01.00.15
+  ./scripts/release/full-release.zsh --dry-run --prev 01.00.13 --patch
+  ./scripts/release/full-release.zsh --prev 00.52.00 --preserve-summary
+  ./scripts/release/full-release.zsh --dry-run --prev 00.52.00 --remove-summary
 
 The script is fully automated and requires no user interaction.
 EOF
@@ -169,6 +178,8 @@ main() {
     version=""
     force="false"
     bump_type="minor"
+    preserve_summary="false"
+    remove_summary="false"
     
     # Parse options using zparseopts for strict parameter validation
     declare -A opts
@@ -184,6 +195,8 @@ main() {
                 -patch \
                 -verbose \
                 -debug \
+                -preserve-summary \
+                -remove-summary \
                 || {
         # Unknown option
         print_error "Unknown option: $@"
@@ -221,6 +234,12 @@ main() {
                 ;;
             -verbose|-debug)
                 VERBOSE=1
+                ;;
+            --preserve-summary)
+                preserve_summary="true"
+                ;;
+            --remove-summary)
+                remove_summary="true"
                 ;;
         esac
     done
@@ -279,71 +298,104 @@ main() {
         local base_version="$prev_version"
         local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
         local new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
+        
         if [[ -f "$summary_file" ]]; then
-            # Always remove the target file if it exists to ensure clean rename
-            if [[ -f "$new_summary_file" ]]; then
-                print_warning "$new_summary_file already exists. Removing existing file."
-                rm -f "$new_summary_file"
-                if [[ -f "$new_summary_file" ]]; then
-                    print_error "Failed to remove existing file: $new_summary_file"
-                    exit 1
-                fi
+            # Determine whether to rename the summary file based on flags and run type
+            local should_rename=false
+            
+            # Default behavior: dry-runs preserve, real releases rename
+            if [[ "$dry_run" == "true" ]]; then
+                should_rename=false  # Default: preserve for dry-runs
+            else
+                should_rename=true   # Default: rename for real releases
             fi
             
-            print_status "Renaming $summary_file to $new_summary_file"
+            # Override with explicit flags
+            if [[ "$preserve_summary" == "true" ]]; then
+                should_rename=false
+                print_status "Forcing summary file preservation (--preserve-summary)"
+            fi
             
-            # Perform the rename operation with explicit error checking
-            if mv "$summary_file" "$new_summary_file" 2>/dev/null; then
-                # Verify the rename actually succeeded
-                if [[ -f "$new_summary_file" && ! -f "$summary_file" ]]; then
-                    print_success "Successfully renamed summary file"
-                    
-                    # Handle git operations with better error handling
-                    if git add "$new_summary_file" 2>/dev/null; then
-                        print_status "Added new summary file to git"
-                    else
-                        print_warning "Failed to add new summary file to git (may already be tracked)"
+            if [[ "$remove_summary" == "true" ]]; then
+                should_rename=true
+                print_status "Forcing summary file rename (--remove-summary)"
+            fi
+            
+            # Handle conflicting flags
+            if [[ "$preserve_summary" == "true" && "$remove_summary" == "true" ]]; then
+                print_error "Conflicting flags: --preserve-summary and --remove-summary cannot be used together"
+                exit 1
+            fi
+            
+            if [[ "$should_rename" == "true" ]]; then
+                # Always remove the target file if it exists to ensure clean rename
+                if [[ -f "$new_summary_file" ]]; then
+                    print_warning "$new_summary_file already exists. Removing existing file."
+                    rm -f "$new_summary_file"
+                    if [[ -f "$new_summary_file" ]]; then
+                        print_error "Failed to remove existing file: $new_summary_file"
+                        exit 1
                     fi
-                    
-                    # Remove old file from git if it exists
-                    if git rm "$summary_file" 2>/dev/null; then
-                        print_status "Removed old summary file from git"
-                    else
-                        print_warning "Old summary file not in git (already removed or never tracked)"
-                    fi
-                    
-                    # Commit the changes
-                    if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
-                        print_status "Committed summary file rename"
+                fi
+                
+                print_status "Renaming $summary_file to $new_summary_file"
+                
+                # Perform the rename operation with explicit error checking
+                if mv "$summary_file" "$new_summary_file" 2>/dev/null; then
+                    # Verify the rename actually succeeded
+                    if [[ -f "$new_summary_file" && ! -f "$summary_file" ]]; then
+                        print_success "Successfully renamed summary file"
                         
-                        # Push the changes
-                        if git push 2>/dev/null; then
-                            print_success "Pushed summary file changes"
+                        # Handle git operations with better error handling
+                        if git add "$new_summary_file" 2>/dev/null; then
+                            print_status "Added new summary file to git"
                         else
-                            print_warning "Failed to push summary file changes (may already be up to date)"
+                            print_warning "Failed to add new summary file to git (may already be tracked)"
                         fi
+                        
+                        # Remove old file from git if it exists
+                        if git rm "$summary_file" 2>/dev/null; then
+                            print_status "Removed old summary file from git"
+                        else
+                            print_warning "Old summary file not in git (already removed or never tracked)"
+                        fi
+                        
+                        # Commit the changes
+                        if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
+                            print_status "Committed summary file rename"
+                            
+                            # Push the changes
+                            if git push 2>/dev/null; then
+                                print_success "Pushed summary file changes"
+                            else
+                                print_warning "Failed to push summary file changes (may already be up to date)"
+                            fi
+                        else
+                            print_warning "Failed to commit summary file rename (no changes to commit)"
+                        fi
+                        
+                        print_success "Committed and pushed $new_summary_file"
                     else
-                        print_warning "Failed to commit summary file rename (no changes to commit)"
+                        print_error "Rename operation appeared to succeed but file verification failed"
+                        print_error "Expected: $new_summary_file to exist and $summary_file to not exist"
+                        exit 1
                     fi
-                    
-                    print_success "Committed and pushed $new_summary_file"
                 else
-                    print_error "Rename operation appeared to succeed but file verification failed"
-                    print_error "Expected: $new_summary_file to exist and $summary_file to not exist"
+                    print_error "Failed to rename summary file from $summary_file to $new_summary_file"
+                    print_error "This may be due to file system permissions or the target file being locked"
                     exit 1
                 fi
             else
-                print_error "Failed to rename summary file from $summary_file to $new_summary_file"
-                print_error "This may be due to file system permissions or the target file being locked"
-                exit 1
+                # Preserve the summary file
+                print_status "Preserving summary file: $summary_file"
+                print_success "Summary file will remain available for future runs"
             fi
         else
-            if [[ "$dry_run" == "true" ]]; then
-                print_warning "No major changes summary file found for base $base_version (dry run). Please create docs/release/latest-major-changes-since-${base_version}.md before running the release."
-            else
-                print_error "No major changes summary file found for base $base_version (real release). AI must create docs/release/latest-major-changes-since-${base_version}.md before resubmitting the release job."
-                exit 1
-            fi
+            # Summary file doesn't exist - this is always an error
+            print_error "No major changes summary file found for base $base_version"
+            print_error "AI must create docs/release/latest-major-changes-since-${base_version}.md before any release or dry run"
+            print_error "This file must contain a summary of major changes since version $base_version"
+            exit 1
         fi
     fi
     # --- End major changes summary file handling ---
