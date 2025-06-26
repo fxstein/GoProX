@@ -91,6 +91,7 @@ Options:
   --patch               bump patch version
   --preserve-summary    preserve summary file (override default behavior)
   --remove-summary      rename/remove summary file (override default behavior)
+  --allow-unclean       allow uncommitted changes for dry runs only (not default)
 
 Summary File Behavior:
   Default: Dry-runs preserve summary file, real releases rename it
@@ -180,6 +181,7 @@ main() {
     bump_type="minor"
     preserve_summary="false"
     remove_summary="false"
+    allow_unclean="false"
     
     # Parse options using zparseopts for strict parameter validation
     declare -A opts
@@ -197,6 +199,7 @@ main() {
                 -debug \
                 -preserve-summary \
                 -remove-summary \
+                -allow-unclean \
                 || {
         # Unknown option
         print_error "Unknown option: $@"
@@ -241,31 +244,49 @@ main() {
             --remove-summary)
                 remove_summary="true"
                 ;;
+            --allow-unclean)
+                allow_unclean="true"
+                ;;
         esac
     done
 
     # Check for uncommitted changes in scripts/release/
     if [[ -n $(git status --porcelain scripts/release/) ]]; then
-        print_error "Uncommitted changes detected in scripts/release/. Please commit all changes in the release tree before running a release."
-        exit 1
+        if [[ "$dry_run" == "true" && "$allow_unclean" == "true" ]]; then
+            print_warning "Uncommitted changes detected in scripts/release/, but --allow-unclean is set and this is a dry run. Proceeding anyway."
+        else
+            print_error "Uncommitted changes detected in scripts/release/. Please commit all changes in the release tree before running a release."
+            exit 1
+        fi
     fi
     # Check for uncommitted changes in .github/workflows
     if [[ -n $(git status --porcelain .github/workflows/) ]]; then
-        print_error "Uncommitted changes detected in .github/workflows/. Please commit all changes in the workflow tree before running a release."
-        exit 1
-    fi
-
-    # Check for required major changes summary file
-    if [[ -n "$prev_version" ]]; then
-        local required_summary_file="docs/release/latest-major-changes-since-${prev_version}.md"
-        if [[ ! -f "$required_summary_file" ]]; then
-            print_error "Required major changes summary file missing: $required_summary_file"
-            print_error "AI must create this file before any release or dry run."
-            print_error "This file must contain a summary of major changes since version $prev_version."
+        if [[ "$dry_run" == "true" && "$allow_unclean" == "true" ]]; then
+            print_warning "Uncommitted changes detected in .github/workflows/, but --allow-unclean is set and this is a dry run. Proceeding anyway."
+        else
+            print_error "Uncommitted changes detected in .github/workflows/. Please commit all changes in the workflow tree before running a release."
             exit 1
         fi
-        print_success "Found required summary file: $required_summary_file"
     fi
+
+    # --- Major changes summary file check (existence only) ---
+    local base_version=""
+    local summary_file=""
+    local new_summary_file=""
+    local should_rename=false
+    if [[ -n "$prev_version" ]]; then
+        base_version="$prev_version"
+        summary_file="docs/release/latest-major-changes-since-${base_version}.md"
+        # new_summary_file will be set after version bump
+        if [[ ! -f "$summary_file" ]]; then
+            print_error "No major changes summary file found for base $base_version"
+            print_error "AI must create docs/release/latest-major-changes-since-${base_version}.md before any release or dry run"
+            print_error "This file must contain a summary of major changes since version $base_version"
+            exit 1
+        fi
+        print_success "Found required summary file: $summary_file"
+    fi
+    # --- End major changes summary file check ---
 
     check_prerequisites
 
@@ -293,113 +314,11 @@ main() {
     fi
     print_success "Intended new version: $intended_new_version"
 
-    # --- Major changes summary file handling ---
-    if [[ -n "$prev_version" ]]; then
-        local base_version="$prev_version"
-        local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
-        local new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
-        
-        if [[ -f "$summary_file" ]]; then
-            # Determine whether to rename the summary file based on flags and run type
-            local should_rename=false
-            
-            # Default behavior: dry-runs preserve, real releases rename
-            if [[ "$dry_run" == "true" ]]; then
-                should_rename=false  # Default: preserve for dry-runs
-            else
-                should_rename=true   # Default: rename for real releases
-            fi
-            
-            # Override with explicit flags
-            if [[ "$preserve_summary" == "true" ]]; then
-                should_rename=false
-                print_status "Forcing summary file preservation (--preserve-summary)"
-            fi
-            
-            if [[ "$remove_summary" == "true" ]]; then
-                should_rename=true
-                print_status "Forcing summary file rename (--remove-summary)"
-            fi
-            
-            # Handle conflicting flags
-            if [[ "$preserve_summary" == "true" && "$remove_summary" == "true" ]]; then
-                print_error "Conflicting flags: --preserve-summary and --remove-summary cannot be used together"
-                exit 1
-            fi
-            
-            if [[ "$should_rename" == "true" ]]; then
-                # Always remove the target file if it exists to ensure clean rename
-                if [[ -f "$new_summary_file" ]]; then
-                    print_warning "$new_summary_file already exists. Removing existing file."
-                    rm -f "$new_summary_file"
-                    if [[ -f "$new_summary_file" ]]; then
-                        print_error "Failed to remove existing file: $new_summary_file"
-                        exit 1
-                    fi
-                fi
-                
-                print_status "Renaming $summary_file to $new_summary_file"
-                
-                # Perform the rename operation with explicit error checking
-                if mv "$summary_file" "$new_summary_file" 2>/dev/null; then
-                    # Verify the rename actually succeeded
-                    if [[ -f "$new_summary_file" && ! -f "$summary_file" ]]; then
-                        print_success "Successfully renamed summary file"
-                        
-                        # Handle git operations with better error handling
-                        if git add "$new_summary_file" 2>/dev/null; then
-                            print_status "Added new summary file to git"
-                        else
-                            print_warning "Failed to add new summary file to git (may already be tracked)"
-                        fi
-                        
-                        # Remove old file from git if it exists
-                        if git rm "$summary_file" 2>/dev/null; then
-                            print_status "Removed old summary file from git"
-                        else
-                            print_warning "Old summary file not in git (already removed or never tracked)"
-                        fi
-                        
-                        # Commit the changes
-                        if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
-                            print_status "Committed summary file rename"
-                            
-                            # Push the changes
-                            if git push 2>/dev/null; then
-                                print_success "Pushed summary file changes"
-                            else
-                                print_warning "Failed to push summary file changes (may already be up to date)"
-                            fi
-                        else
-                            print_warning "Failed to commit summary file rename (no changes to commit)"
-                        fi
-                        
-                        print_success "Committed and pushed $new_summary_file"
-                    else
-                        print_error "Rename operation appeared to succeed but file verification failed"
-                        print_error "Expected: $new_summary_file to exist and $summary_file to not exist"
-                        exit 1
-                    fi
-                else
-                    print_error "Failed to rename summary file from $summary_file to $new_summary_file"
-                    print_error "This may be due to file system permissions or the target file being locked"
-                    exit 1
-                fi
-            else
-                # Preserve the summary file
-                print_status "Preserving summary file: $summary_file"
-                print_success "Summary file will remain available for future runs"
-            fi
-        else
-            # Summary file doesn't exist - this is always an error
-            print_error "No major changes summary file found for base $base_version"
-            print_error "AI must create docs/release/latest-major-changes-since-${base_version}.md before any release or dry run"
-            print_error "This file must contain a summary of major changes since version $base_version"
-            exit 1
-        fi
+    # Set new_summary_file for later use
+    if [[ -n "$base_version" ]]; then
+        new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
     fi
-    # --- End major changes summary file handling ---
-    
+
     # Step 2: Trigger release workflow
     print_status "Step 2: Triggering release workflow..."
     release_args=(--force)
@@ -485,6 +404,89 @@ main() {
     print_status "==== END OF RELEASE NOTES ===="
     # Clean up
     rm -rf "$tmpdir"
+
+    # --- Major changes summary file handling (only after successful release) ---
+    if [[ -n "$base_version" && -f "$summary_file" ]]; then
+        # Determine whether to rename the summary file based on flags and run type
+        should_rename=false
+        # Default behavior: dry-runs preserve, real releases rename
+        if [[ "$dry_run" == "true" ]]; then
+            should_rename=false  # Default: preserve for dry-runs
+        else
+            should_rename=true   # Default: rename for real releases
+        fi
+        # Override with explicit flags
+        if [[ "$preserve_summary" == "true" ]]; then
+            should_rename=false
+            print_status "Forcing summary file preservation (--preserve-summary)"
+        fi
+        if [[ "$remove_summary" == "true" ]]; then
+            should_rename=true
+            print_status "Forcing summary file rename (--remove-summary)"
+        fi
+        # Handle conflicting flags
+        if [[ "$preserve_summary" == "true" && "$remove_summary" == "true" ]]; then
+            print_error "Conflicting flags: --preserve-summary and --remove-summary cannot be used together"
+            exit 1
+        fi
+        if [[ "$should_rename" == "true" ]]; then
+            # Always remove the target file if it exists to ensure clean rename
+            if [[ -f "$new_summary_file" ]]; then
+                print_warning "$new_summary_file already exists. Removing existing file."
+                rm -f "$new_summary_file"
+                if [[ -f "$new_summary_file" ]]; then
+                    print_error "Failed to remove existing file: $new_summary_file"
+                    exit 1
+                fi
+            fi
+            print_status "Renaming $summary_file to $new_summary_file"
+            # Perform the rename operation with explicit error checking
+            if mv "$summary_file" "$new_summary_file" 2>/dev/null; then
+                # Verify the rename actually succeeded
+                if [[ -f "$new_summary_file" && ! -f "$summary_file" ]]; then
+                    print_success "Successfully renamed summary file"
+                    # Handle git operations with better error handling
+                    if git add "$new_summary_file" 2>/dev/null; then
+                        print_status "Added new summary file to git"
+                    else
+                        print_warning "Failed to add new summary file to git (may already be tracked)"
+                    fi
+                    # Remove old file from git if it exists
+                    if git rm "$summary_file" 2>/dev/null; then
+                        print_status "Removed old summary file from git"
+                    else
+                        print_warning "Old summary file not in git (already removed or never tracked)"
+                    fi
+                    # Commit the changes
+                    if git commit -m "docs(release): rename major changes summary for release $intended_new_version (refs #68)" 2>/dev/null; then
+                        print_status "Committed summary file rename"
+                        # Push the changes
+                        if git push 2>/dev/null; then
+                            print_success "Pushed summary file changes"
+                        else
+                            print_warning "Failed to push summary file changes (may already be up to date)"
+                        fi
+                    else
+                        print_warning "Failed to commit summary file rename (no changes to commit)"
+                    fi
+                    print_success "Committed and pushed $new_summary_file"
+                else
+                    print_error "Rename operation appeared to succeed but file verification failed"
+                    print_error "Expected: $new_summary_file to exist and $summary_file to not exist"
+                    exit 1
+                fi
+            else
+                print_error "Failed to rename summary file from $summary_file to $new_summary_file"
+                print_error "This may be due to file system permissions or the target file being locked"
+                exit 1
+            fi
+        else
+            # Preserve the summary file
+            print_status "Preserving summary file: $summary_file"
+            print_success "Summary file will remain available for future runs"
+        fi
+    fi
+    # --- End major changes summary file handling ---
 }
 
 main "$@" 
