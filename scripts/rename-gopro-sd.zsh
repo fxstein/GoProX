@@ -30,6 +30,13 @@
 
 set -e
 
+# Setup logging
+export LOGFILE="output/rename-gopro-sd.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/core/logger.zsh"
+
+log_time_start
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -37,7 +44,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
+# Function to print colored output (for user interaction)
 print_status() {
     local color="$1"
     local message="$2"
@@ -50,15 +57,19 @@ rename_gopro_sd() {
     local volume_path="/Volumes/$volume_name"
     local version_file="$volume_path/MISC/version.txt"
     
+    log_info "Processing volume: $volume_name"
+    
     # Check if volume exists and is mounted
     if [[ ! -d "$volume_path" ]]; then
         print_status $RED "Error: Volume '$volume_name' is not mounted"
+        log_error "Volume '$volume_name' is not mounted"
         return 1
     fi
     
     # Check if this is a GoPro SD card
     if [[ ! -f "$version_file" ]] || ! grep -q "camera type" "$version_file"; then
         print_status $YELLOW "Volume '$volume_name' is not a GoPro SD card (no version.txt or camera type found)"
+        log_warning "Volume '$volume_name' is not a GoPro SD card"
         return 1
     fi
     
@@ -66,6 +77,8 @@ rename_gopro_sd() {
     local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
     local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
     local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+    
+    log_info "GoPro SD card detected: $camera_type (serial: $serial_number, firmware: $firmware_version)"
     
     # Extract last 4 digits of serial number for shorter name
     local short_serial=${serial_number: -4}
@@ -85,12 +98,14 @@ rename_gopro_sd() {
     # Check if new name is different from current name
     if [[ "$volume_name" == "$new_volume_name" ]]; then
         print_status $GREEN "Volume '$volume_name' already has the correct name"
+        log_info "Volume '$volume_name' already has the correct name"
         return 0
     fi
     
     # Check if new name already exists
     if [[ -d "/Volumes/$new_volume_name" ]]; then
         print_status $RED "Error: Volume name '$new_volume_name' already exists"
+        log_error "Volume name '$new_volume_name' already exists"
         return 1
     fi
     
@@ -101,20 +116,25 @@ rename_gopro_sd() {
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_status $BLUE "Renaming volume..."
+        log_info "User confirmed rename: '$volume_name' -> '$new_volume_name'"
         
         # Get the device identifier for the volume
         local device_id=$(diskutil info "$volume_path" | grep "Device Identifier" | awk '{print $3}')
+        log_debug "Device identifier: $device_id"
         
         # Use diskutil to rename the volume using device identifier
         if diskutil rename "$device_id" "$new_volume_name"; then
             print_status $GREEN "Successfully renamed '$volume_name' to '$new_volume_name'"
+            log_success "Successfully renamed '$volume_name' to '$new_volume_name'"
             return 0
         else
             print_status $RED "Failed to rename volume"
+            log_error "Failed to rename volume '$volume_name' to '$new_volume_name'"
             return 1
         fi
     else
         print_status $YELLOW "Rename cancelled"
+        log_info "User cancelled rename operation for '$volume_name'"
         return 0
     fi
 }
@@ -122,6 +142,7 @@ rename_gopro_sd() {
 # Function to scan all mounted volumes for GoPro SD cards
 scan_all_volumes() {
     print_status $BLUE "Scanning all mounted volumes for GoPro SD cards..."
+    log_info "Scanning all mounted volumes for GoPro SD cards"
     echo
     
     local found_gopro=false
@@ -140,6 +161,7 @@ scan_all_volumes() {
             if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
                 found_gopro=true
                 echo "Found GoPro SD card: $volume_name"
+                log_info "Found GoPro SD card: $volume_name"
                 rename_gopro_sd "$volume_name"
                 echo
             fi
@@ -148,6 +170,7 @@ scan_all_volumes() {
     
     if [[ "$found_gopro" == false ]]; then
         print_status $YELLOW "No GoPro SD cards found"
+        log_info "No GoPro SD cards found during scan"
     fi
 }
 
@@ -155,20 +178,25 @@ scan_all_volumes() {
 main() {
     print_status $BLUE "GoPro SD Card Volume Renamer"
     print_status $BLUE "============================="
+    log_info "Starting GoPro SD Card Volume Renamer"
     echo
     
     if [[ $# -eq 0 ]]; then
         # No arguments provided, scan all volumes
+        log_info "No volume specified, scanning all volumes"
         scan_all_volumes
     elif [[ $# -eq 1 ]]; then
         # Specific volume name provided
+        log_info "Processing specified volume: $1"
         rename_gopro_sd "$1"
     else
         print_status $RED "Usage: $0 [volume_name]"
         print_status $RED "If no volume name is provided, will scan all mounted volumes"
+        log_error "Invalid usage: too many arguments"
         exit 1
     fi
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@"
+log_time_end 

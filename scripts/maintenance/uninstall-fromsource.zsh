@@ -26,7 +26,24 @@
 # Usage: ./uninstall-fromsource.zsh
 #
 
+# Setup logging
+export LOGFILE="output/uninstall-fromsource.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/../core/logger.zsh"
+
+log_time_start
+
+log_info "Starting GoProX uninstallation from source"
+
 cwd=$(pwd)
+log_info "Current working directory: $cwd"
+
+log_info "Unloading launch agent"
 launchctl unload ~/Library/LaunchAgents/com.goprox.mount.plist
+log_info "Removing launch agent plist"
 rm ~/Library/LaunchAgents/com.goprox.mount.plist
+log_info "Removing goprox from /opt/homebrew/bin"
 sudo rm /opt/homebrew/bin/goprox
+
+log_success "GoProX uninstallation completed successfully"
+log_time_end

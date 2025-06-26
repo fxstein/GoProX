@@ -26,19 +26,35 @@
 # Usage: ./install-fromsource.zsh
 #
 
+# Setup logging
+export LOGFILE="output/install-fromsource.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/../core/logger.zsh"
+
+log_time_start
+
+log_info "Starting GoProX installation from source"
+
 #
 # Most simplistic setup for GoProX for developer use
 # Adds goprox to /usr/local/bin for easy access from source
 #
 
 cwd=$(pwd)
+log_info "Current working directory: $cwd"
 
 # In order to bypass macOS sandbox limitations when the git repo is within the 
 # users Documents folder we have to physically copy the developer copy of goprox 
 # into the homebrew tree. Links will cause the launch agent execution to fail 
 
 # sudo ln -s $cwd/goprox /usr/local/bin
+log_info "Copying goprox to /opt/homebrew/bin"
 sudo cp $cwd/goprox /opt/homebrew/bin
 # ln -s $cwd/launchd/com.goprox.mount.plist ~/Library/LaunchAgents
+log_info "Copying launch agent plist to ~/Library/LaunchAgents"
 cp $cwd/launchd/com.goprox.mount.plist ~/Library/LaunchAgents
+log_info "Loading launch agent"
 launchctl load ~/Library/LaunchAgents/com.goprox.mount.plist
+
+log_success "GoProX installation completed successfully"
+log_time_end

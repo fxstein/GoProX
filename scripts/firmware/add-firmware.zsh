@@ -28,6 +28,13 @@
 
 set -uo pipefail
 
+# Setup logging
+export LOGFILE="output/firmware-add.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/../core/logger.zsh"
+
+log_time_start
+
 # Prefix table by model: sourced from the first firmware directory for each model, or H99.99 if not found
 typeset -A PREFIX_TABLE
 PREFIX_TABLE=(
@@ -44,7 +51,9 @@ PREFIX_TABLE=(
 )
 
 # Helper: print error and exit
-function die() { echo "[ERROR] $1" >&2; exit 1; }
+function die() { log_error "$1"; exit 1; }
+
+log_info "Starting firmware addition process"
 
 # Parse arguments
 url=""
@@ -54,13 +63,14 @@ for ((i=1; i<=$#; i++)); do
     url="${@[i]}"
   fi
   if [[ "${@[i]}" == "-h" || "${@[i]}" == "--help" ]]; then
-    echo "Usage: $0 [--url <firmware_url>]"
+    log_info "Usage: $0 [--url <firmware_url>]"
     exit 0
   fi
 done
 
 # If no URL provided, prompt interactively
 if [[ -z "$url" ]]; then
+  log_info "No URL provided, prompting interactively"
   echo -n "Enter firmware URL: "
   url=""
   while read -r line; do
@@ -75,10 +85,15 @@ url=$(echo "$url" | tr -d '\n' | tr -d '\r' | xargs)
 
 [[ -z "$url" ]] && die "No URL provided."
 
+log_info "Processing firmware URL: $url"
+
 # Determine if this is labs or official
 is_labs=false
 if echo "$url" | grep -qiE 'labs|LABS|githubusercontent|miscdata'; then
   is_labs=true
+  log_info "Detected Labs firmware"
+else
+  log_info "Detected Official firmware"
 fi
 
 # Try to parse camera type and version
@@ -87,6 +102,7 @@ version=""
 
 if $is_labs; then
   fname=$(basename "$url")
+  log_debug "Processing Labs firmware filename: $fname"
   # Handle LABS_HERO12_02_32_70.zip, LABS_HERO11_02_10_70_01.zip, LABS_MINI11_02_50_71b.zip, and LABS_MAX_02_02_70.zip
   if echo "$fname" | grep -qE '^LABS_(HERO|MINI|MAX)[0-9]*(_[0-9]{2,}[a-zA-Z]*)+\.zip$'; then
     if echo "$fname" | grep -qE '^LABS_MAX'; then
@@ -95,6 +111,7 @@ if $is_labs; then
       vdot=$(echo "$vparts" | tr '_' '.')
       prefix="${PREFIX_TABLE[$camera]:-H99.99}"
       version="$prefix.$vdot"
+      log_info "Parsed GoPro Max Labs firmware: $version"
     else
       camtype=$(echo "$fname" | awk -F'_' '{print $2}' | sed 's/HERO//; s/MINI//')
       if echo "$fname" | grep -qE '^LABS_MINI'; then
@@ -106,29 +123,35 @@ if $is_labs; then
       vdot=$(echo "$vparts" | tr '_' '.')
       prefix="${PREFIX_TABLE[$camera]:-H99.99}"
       version="$prefix.$vdot"
+      log_info "Parsed $camera Labs firmware: $version"
     fi
   else
     # Fallback: try to extract from URL path
+    log_debug "Using fallback URL parsing for Labs firmware"
     if echo "$url" | grep -qE 'HERO[0-9]+'; then
       camera="HERO$(echo "$url" | grep -oE 'HERO[0-9]+' | head -1 | grep -oE '[0-9]+') Black"
       vdot=$(echo "$url" | grep -oE '([0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]{2})?)' | head -1)
       prefix="${PREFIX_TABLE[$camera]:-H99.99}"
       version="$prefix.$vdot"
+      log_info "Fallback parsed $camera Labs firmware: $version"
     elif echo "$url" | grep -qE 'MINI[0-9]+'; then
       camnum=$(echo "$url" | grep -oE 'MINI[0-9]+' | head -1 | grep -oE '[0-9]+')
       camera="HERO${camnum} Black Mini"
       vdot=$(echo "$url" | grep -oE '([0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]{2})?)' | head -1)
       prefix="${PREFIX_TABLE[$camera]:-H99.99}"
       version="$prefix.$vdot"
+      log_info "Fallback parsed $camera Labs firmware: $version"
     elif echo "$url" | grep -qE 'Max'; then
       camera="GoPro Max"
       vdot=$(echo "$url" | grep -oE '([0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]{2})?)' | head -1)
       prefix="${PREFIX_TABLE[$camera]:-H99.99}"
       version="$prefix.$vdot"
+      log_info "Fallback parsed $camera Labs firmware: $version"
     fi
   fi
 else
   # Official: parse from path (e.g., .../H22.01/camera_fw/02.32.00/UPDATE.zip or .../H22.01/camera_fw/01.01.10.00/UPDATE.zip)
+  log_debug "Processing Official firmware URL parsing"
   if echo "$url" | grep -qE '/((HD[0-9]{1}|H[0-9]{2})\.[0-9]{2})/camera_fw/([0-9]{2}(\.[0-9]{2}){2,})/UPDATE.zip'; then
     prefix=$(echo "$url" | grep -oE '/((HD[0-9]{1}|H[0-9]{2})\.[0-9]{2})/camera_fw/' | grep -oE '(HD[0-9]{1}|H[0-9]{2})\.[0-9]{2}')
     vdot=$(echo "$url" | grep -oE '/camera_fw/([0-9]{2}(\.[0-9]{2}){2,})/UPDATE.zip' | grep -oE '[0-9]{2}(\.[0-9]{2}){2,}')
@@ -159,6 +182,7 @@ else
     fi
     prefix="${PREFIX_TABLE[$camera]:-H99.99}"
     version="$prefix.$vdot"
+    log_info "Parsed $camera Official firmware: $version"
   elif echo "$url" | grep -qE '/(H[0-9]{2}\.[0-9]{2})/camera_fw/([0-9]{2}\.[0-9]{2}\.[0-9]{2})/UPDATE.zip'; then
     # Handle HERO (2024) format: /H24.03/camera_fw/02.20.00/UPDATE.zip
     prefix=$(echo "$url" | grep -oE '/(H[0-9]{2}\.[0-9]{2})/camera_fw/' | grep -oE 'H[0-9]{2}\.[0-9]{2}')
@@ -168,6 +192,7 @@ else
     fi
     prefix="${PREFIX_TABLE[$camera]:-H99.99}"
     version="$prefix.$vdot"
+    log_info "Parsed $camera Official firmware (2024 format): $version"
   elif echo "$url" | grep -qE '/([Hh][0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2})/camera_fw/'; then
     vdot=$(echo "$url" | grep -oE '/([Hh][0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2})/camera_fw/' | grep -oE '[0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2}')
     if echo "$url" | grep -qE 'HERO[0-9]+'; then
@@ -179,6 +204,7 @@ else
     fi
     prefix="${PREFIX_TABLE[$camera]:-H99.99}"
     version="$prefix.$vdot"
+    log_info "Parsed $camera Official firmware (extended format): $version"
   elif echo "$url" | grep -qE '/([A-Z0-9.]+)/camera_fw/'; then
     vdot=$(echo "$url" | grep -oE '/([A-Z0-9.]+)/camera_fw/' | grep -oE '[0-9]{2}\.[0-9]{2}\.[0-9]{2}(\.[0-9]{2})?')
     if echo "$url" | grep -qE 'HERO[0-9]+'; then
@@ -190,6 +216,7 @@ else
     fi
     prefix="${PREFIX_TABLE[$camera]:-H99.99}"
     version="$prefix.$vdot"
+    log_info "Parsed $camera Official firmware (generic format): $version"
   fi
 fi
 
@@ -197,20 +224,24 @@ fi
 if [[ -z "$camera" && -n "$version" ]]; then
   camera=""
   version=""
+  log_warning "Camera parsing failed, trying .bin fallback parsing"
 fi
 
 # Try .bin parsing for The Remote firmware
 if [[ -z "$camera" ]] && echo "$url" | grep -qiE '\.bin$'; then
   fname=$(basename "$url")
+  log_debug "Processing .bin firmware filename: $fname"
   if echo "$fname" | grep -qE 'REMOTE.*FW.*[0-9]{2}.*[0-9]{2}.*[0-9]{2}'; then
     camera="The Remote"
     version=$(echo "$fname" | sed -E 's/^.*FW[^0-9]*//; s/\.bin$//' | tr '._' '.')
     version="GP.REMOTE.FW.$version"
+    log_info "Parsed The Remote firmware from filename: $version"
   elif echo "$url" | grep -qE 'Remote|remote|GP\.REMOTE\.FW'; then
     camera="The Remote"
     vdot=$(echo "$url" | grep -oE '([0-9]{2}\.[0-9]{2}\.[0-9]{2})' | head -1)
     if [[ -n "$vdot" ]]; then
       version="GP.REMOTE.FW.$vdot"
+      log_info "Parsed The Remote firmware from URL: $version"
     else
       die "Could not parse Remote firmware version from URL"
     fi
@@ -218,6 +249,8 @@ if [[ -z "$camera" ]] && echo "$url" | grep -qiE '\.bin$'; then
 fi
 
 [[ -z "$camera" || -z "$version" ]] && die "Could not parse camera type or firmware version from URL."
+
+log_success "Successfully parsed firmware: $camera $version"
 
 # Determine base directory
 if $is_labs; then
@@ -227,13 +260,16 @@ else
 fi
 
 dir="$base/$camera/$version"
+log_info "Target directory: $dir"
 
 # Create directories and .keep files
 if [[ ! -d "$base/$camera" ]]; then
+  log_info "Creating camera directory: $base/$camera"
   mkdir -p "$base/$camera" || die "Failed to create $base/$camera"
   touch "$base/$camera/.keep"
 fi
 if [[ ! -d "$dir" ]]; then
+  log_info "Creating version directory: $dir"
   mkdir -p "$dir" || die "Failed to create $dir"
   touch "$dir/.keep"
 fi
@@ -241,6 +277,7 @@ fi
 # Write download.url
 urlfile="$dir/download.url"
 echo "$url" > "$urlfile"
+log_info "Created download URL file: $urlfile"
 
 # Download the firmware file into the same directory
 zipname="UPDATE.zip"
@@ -254,12 +291,14 @@ if [[ "$camera" == "The Remote" ]]; then
   fi
 fi
 zipfile="$dir/$zipname"
-echo "Downloading firmware to $zipfile ..."
+log_info "Downloading firmware to $zipfile"
 if curl -L --fail -o "$zipfile" "$url"; then
-  echo "Downloaded firmware to $zipfile"
+  log_success "Downloaded firmware to $zipfile"
 else
-  echo "[ERROR] Failed to download firmware from $url" >&2
+  log_error "Failed to download firmware from $url"
   rm -f "$zipfile"
+  exit 1
 fi
 
-echo "Added firmware URL for $camera $version at $urlfile" 
+log_success "Added firmware URL for $camera $version at $urlfile"
+log_time_end 

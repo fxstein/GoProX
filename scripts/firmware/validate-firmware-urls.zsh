@@ -27,25 +27,28 @@
 
 set -uo pipefail
 
+# Setup logging
+export LOGFILE="output/firmware-validate.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/../core/logger.zsh"
+
+log_time_start
+
 FIRMWARE_DIRS=(firmware firmware.labs)
 
 debug=false
 if [[ "${1:-}" == "--debug" ]]; then
   debug=true
+  export LOG_VERBOSE=1
 fi
 
-echo "\nValidating all firmware URLs in: ${FIRMWARE_DIRS[@]}\n"
-
-broken_urls=()
-
-total=0
-ok=0
-fail=0
+log_info "Validating all firmware URLs in: ${FIRMWARE_DIRS[@]}"
 
 # Collect all .url files into an array, handling spaces
 urlfiles=()
 for dir in $FIRMWARE_DIRS; do
   if [[ -d $dir ]]; then
+    log_debug "Scanning directory: $dir"
     while IFS= read -r -d '' file; do
       urlfiles+="$file"
     done < <(find "$dir" -type f -name '*.url' -print0)
@@ -53,76 +56,57 @@ for dir in $FIRMWARE_DIRS; do
 done
 
 if $debug; then
-  echo "DEBUG: urlfiles found: ${#urlfiles[@]}"
-  for f in "${urlfiles[@]}"; do
-    echo "DEBUG: $f"
+  log_debug "URL files found: ${#urlfiles[@]}"
+fi
+
+valid=()
+invalid=()
+missing=()
+
+for urlfile in "${urlfiles[@]}"; do
+  if [[ ! -f "$urlfile" ]]; then
+    log_error "Failed to read URL from $urlfile"
+    invalid+="$urlfile"
+    continue
+  fi
+  
+  url=$(head -n 1 "$urlfile" | tr -d '\r\n')
+  if [[ -z "$url" ]]; then
+    log_warning "$urlfile: No URL found"
+    missing+="$urlfile"
+    continue
+  fi
+  
+  log_debug "Validating URL: $url"
+  
+  # Check if URL is accessible
+  if curl -s --head --fail "$url" > /dev/null 2>&1; then
+    valid+="$urlfile"
+    log_debug "Valid URL: $url"
+  else
+    log_warning "Invalid URL: $url (in $urlfile)"
+    invalid+="$urlfile"
+  fi
+done
+
+log_info "Validation summary:"
+log_info "  Valid URLs: ${#valid[@]}"
+log_info "  Invalid URLs: ${#invalid[@]}"
+log_info "  Missing URLs: ${#missing[@]}"
+
+if (( ${#invalid[@]} > 0 )); then
+  log_warning "Invalid URLs:"
+  for urlfile in $invalid; do
+    log_warning "  $urlfile"
   done
 fi
 
-set +e
-for urlfile in "${urlfiles[@]}"; do
-  if $debug; then
-    echo "DEBUG: Entering validation loop for: $urlfile"
-  fi
-  if ! url=$(head -n 1 "$urlfile" | tr -d '\r\n'); then
-    if $debug; then
-      echo "[ERROR] Failed to read URL from $urlfile"
-    fi
-    broken_urls+="$urlfile (read error)"
-    (( fail++ ))
-    if ! $debug; then
-      echo -n "X"
-    fi
-    continue
-  fi
-  (( total++ ))
-  if [[ -z "$url" ]]; then
-    if $debug; then
-      echo "[MISSING] $urlfile: No URL found"
-    fi
-    broken_urls+="$urlfile (empty)"
-    (( fail++ ))
-    if ! $debug; then
-      echo -n "X"
-    fi
-    continue
-  fi
-  if $debug; then
-    echo -n "Checking $urlfile ... "
-  fi
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url")
-  if [[ "$http_code" == "200" || "$http_code" == "302" ]]; then
-    if $debug; then
-      echo "OK"
-    else
-      echo -n "."
-    fi
-    (( ok++ ))
-  else
-    if $debug; then
-      echo "BROKEN ($http_code)"
-    else
-      echo -n "X"
-    fi
-    broken_urls+="$urlfile ($http_code)"
-    (( fail++ ))
-  fi
-done
-set -e
-
-echo ""
-echo "\nSummary:"
-echo "  Total URLs checked: $total"
-echo "  OK: $ok"
-echo "  Broken: $fail"
-
-if (( fail > 0 )); then
-  echo "\nBroken URLs:"
-  for entry in $broken_urls; do
-    echo "  $entry"
+if (( ${#missing[@]} > 0 )); then
+  log_warning "Missing URLs:"
+  for urlfile in $missing; do
+    log_warning "  $urlfile"
   done
-  exit 1
-else
-  echo "\nAll firmware URLs are valid."
-  exit 0
-fi 
+fi
+
+log_time_end
+exit 0 

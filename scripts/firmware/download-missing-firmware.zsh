@@ -26,14 +26,22 @@
 
 set -uo pipefail
 
+# Setup logging
+export LOGFILE="output/firmware-download.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname $0)/../core/logger.zsh"
+
+log_time_start
+
 FIRMWARE_DIRS=(firmware firmware.labs)
 
 debug=false
 if [[ "${1:-}" == "--debug" ]]; then
   debug=true
+  export LOG_VERBOSE=1
 fi
 
-echo "\nChecking for missing firmware archives in: ${FIRMWARE_DIRS[@]}\n"
+log_info "Checking for missing firmware archives in: ${FIRMWARE_DIRS[@]}"
 
 downloaded=()
 skipped=()
@@ -43,12 +51,14 @@ failed=()
 urlfiles=()
 for dir in $FIRMWARE_DIRS; do
   if [[ -d $dir ]]; then
+    log_debug "Scanning directory: $dir"
     while IFS= read -r -d '' file; do
       urlfiles+="$file"
     done < <(find "$dir" -type f -name '*.url' -print0)
   fi
-
 done
+
+log_info "Found ${#urlfiles[@]} firmware URL files to process"
 
 for urlfile in "${urlfiles[@]}"; do
   fwdir="$(dirname "$urlfile")"
@@ -61,47 +71,48 @@ for urlfile in "${urlfiles[@]}"; do
   zipfile="$fwdir/$zipname"
   if [[ -f "$zipfile" ]]; then
     if $debug; then
-      echo "[SKIP] $zipfile already exists."
+      log_debug "Skipping $zipfile (already exists)"
     fi
     skipped+="$zipfile"
     continue
   fi
   url=$(head -n 1 "$urlfile" | tr -d '\r\n')
   if [[ -z "$url" ]]; then
-    echo "[ERROR] No URL in $urlfile"
+    log_error "No URL in $urlfile"
     failed+="$urlfile (empty url)"
     continue
   fi
-  echo "[DOWNLOAD] $zipfile <- $url"
+  log_info "Downloading $zipfile from $url"
   if curl -L --fail -o "$zipfile" "$url"; then
     # Validate that the downloaded file is actually a ZIP archive
     if file "$zipfile" | grep -q "Zip archive"; then
       downloaded+="$zipfile"
+      log_success "Successfully downloaded $zipfile"
     else
-      echo "[ERROR] Downloaded file is not a valid ZIP archive: $zipfile"
-      echo "[ERROR] File type: $(file "$zipfile")"
+      log_error "Downloaded file is not a valid ZIP archive: $zipfile"
+      log_error "File type: $(file "$zipfile")"
       failed+="$urlfile (invalid file type)"
       rm -f "$zipfile"
     fi
   else
-    echo "[ERROR] Failed to download $url -> $zipfile"
+    log_error "Failed to download $url -> $zipfile"
     failed+="$urlfile (download failed)"
     rm -f "$zipfile"
   fi
   sleep 1  # be nice to servers
-
 done
 
-echo "\nSummary:"
-echo "  Downloaded: ${#downloaded[@]}"
-echo "  Skipped (already present): ${#skipped[@]}"
-echo "  Failed: ${#failed[@]}"
+log_info "Download summary:"
+log_info "  Downloaded: ${#downloaded[@]}"
+log_info "  Skipped (already present): ${#skipped[@]}"
+log_info "  Failed: ${#failed[@]}"
 
 if (( ${#failed[@]} > 0 )); then
-  echo "\nFailed downloads:"
+  log_warning "Failed downloads:"
   for entry in $failed; do
-    echo "  $entry"
+    log_warning "  $entry"
   done
 fi
 
+log_time_end
 exit 0 
