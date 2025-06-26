@@ -9,9 +9,6 @@ on:
       - "!scripts/testing/test-suites.zsh"
       - "!scripts/testing/run-tests.zsh"
   push:
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
     branches:
       - main
       - develop
