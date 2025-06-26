@@ -190,4 +190,51 @@ While excluding generated test files from git removes some convenient comparison
 4. **Flexibility**: Custom comparison logic for specific needs
 5. **Scalability**: Handles large files and complex comparisons
 
-The key is to establish good practices for baseline management and regular regression testing to maintain confidence in the test suite. 
+The key is to establish good practices for baseline management and regular regression testing to maintain confidence in the test suite.
+
+## Logger Output Management
+
+### Logger File Organization
+The logger module generates structured JSON logs that are automatically managed:
+
+#### Log File Locations
+- **Application Logs**: `output/logs/goprox-YYYY-MM-DD.log`
+- **Test Logs**: `output/test-results/logger-test-YYYY-MM-DD.log`
+- **Performance Logs**: `output/logs/performance-YYYY-MM-DD.log`
+- **Error Logs**: `output/logs/errors-YYYY-MM-DD.log`
+
+#### Log File Management
+- **Automatic Rotation**: Log files are rotated daily
+- **Size Limits**: Log files are limited to prevent disk space issues
+- **Retention Policy**: Old log files are automatically cleaned up
+- **Structured Format**: All logs are JSON-formatted for easy parsing
+
+#### Logger Integration with Test Framework
+```zsh
+# Logger tests generate structured output
+./scripts/testing/run-tests.zsh --logger
+
+# View logger test results
+cat output/test-results/logger-test-$(date +%Y-%m-%d).log
+
+# Analyze logger performance
+jq '.level == "INFO" and .message | contains("performance")' output/logs/goprox-$(date +%Y-%m-%d).log
+```
+
+### Logger Output Comparison
+The logger generates consistent, structured output that can be compared across test runs:
+
+#### Baseline Creation for Logger Tests
+```zsh
+# Create logger baseline
+./scripts/testing/test-file-comparison.zsh baseline output/logs/
+
+# Compare logger output
+./scripts/testing/test-file-comparison.zsh test /path/to/baseline output/logs/
+```
+
+#### Logger Output Validation
+- **JSON Format Validation**: Ensure logs are valid JSON
+- **Log Level Verification**: Confirm appropriate log levels are used
+- **Performance Timing**: Validate timing data accuracy
+- **Error Tracking**: Verify error logging and recovery 

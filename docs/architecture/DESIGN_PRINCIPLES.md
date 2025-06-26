@@ -75,6 +75,59 @@ done
 - `scripts/firmware/*.zsh`
 - Any new scripts added to the project
 
+### 2.1 Structured Logging Standards
+
+**Principle:** All scripts must use the structured logger module for consistent, JSON-formatted output that supports debugging, monitoring, and error tracking.
+
+**Rationale:** Structured logging provides consistent output format across all scripts, enables automated log analysis, supports performance monitoring, and maintains clean separation between user-facing output and internal logging.
+
+**Implementation Requirements:**
+- Source the logger module: `source "./scripts/core/logger.zsh"`
+- Replace `echo` statements with appropriate log levels
+- Use JSON format for structured data and performance timing
+- Direct all logs to the `output/` directory
+- Support configurable log levels (DEBUG, INFO, WARN, ERROR)
+- Include performance timing for operations
+- Maintain user-facing colored output where appropriate
+
+**Current Implementation Pattern:**
+```zsh
+# Source the logger module
+source "./scripts/core/logger.zsh"
+
+# Initialize logger with script context
+init_logger "script-name"
+
+# Use appropriate log levels
+log_info "Starting operation"
+log_debug "Processing file: $filename"
+log_warn "Deprecated feature used"
+log_error "Operation failed: $error_message"
+
+# Performance timing
+start_timer "operation_name"
+# ... perform operation ...
+end_timer "operation_name"
+
+# User-facing output (preserved for colored output)
+echo "✅ Operation completed successfully"
+```
+
+**Logger Integration Benefits:**
+- **Consistent Format**: All logs use JSON structure with timestamps
+- **Performance Monitoring**: Built-in timing functions for operation tracking
+- **Error Tracking**: Structured error logging with context
+- **Log Rotation**: Automatic log file management and cleanup
+- **CI/CD Integration**: Comprehensive testing framework support
+- **Output Management**: All logs properly directed to `output/` directory
+
+**Scripts That Must Use Logger:**
+- All scripts in `scripts/firmware/*.zsh`
+- All scripts in `scripts/maintenance/*.zsh`
+- All scripts in `scripts/release/*.zsh`
+- Core scripts like `rename-gopro-sd.zsh`
+- Any new scripts added to the project
+
 ### 3. Human-Readable Configuration
 
 **Principle:** Configuration files should be easily readable and editable by humans without requiring knowledge of structured data formats.
@@ -166,7 +219,10 @@ mountoptions=(--archive --import --clean --firmware)
 - Validation of dependencies (exiftool, jq)
 - Storage hierarchy validation with automatic creation
 - Clear error messages with suggested solutions
-- Logging at multiple levels (debug, info, warning, error)
+- Structured logging system with JSON output and multiple log levels
+- Performance timing and monitoring capabilities
+- Log rotation and management
+- Integration with CI/CD testing framework
 
 ### 7. Documentation-Driven Development
 

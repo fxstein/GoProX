@@ -72,6 +72,30 @@ assert_exit_code 0 "$?" "message"
 - **Parameter Processing Tests**: Test command-line argument handling
 - **Storage Validation Tests**: Test storage hierarchy and permissions
 - **Integration Tests**: Test complete workflows
+- **Logger Tests**: Validate structured logging functionality and output
+
+## Logger Testing
+
+The testing framework includes comprehensive support for testing the logger module:
+
+### Logger Test Suite
+```zsh
+./scripts/testing/run-tests.zsh --logger
+```
+
+### Logger Test Capabilities
+- **Log Level Testing**: Verify DEBUG, INFO, WARN, ERROR levels work correctly
+- **JSON Output Validation**: Ensure logs are properly formatted JSON
+- **Performance Timing**: Test timing functions and performance monitoring
+- **Log Rotation**: Validate log file management and cleanup
+- **Integration Testing**: Test logger integration with other scripts
+- **CI/CD Integration**: Automated testing in GitHub Actions
+
+### Logger Test Output
+- Test results saved to `output/test-results/`
+- Logger-specific validation reports
+- Performance benchmarks for timing functions
+- Integration test results for all logger-enabled scripts
 
 ## Usage
 

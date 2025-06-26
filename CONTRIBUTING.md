@@ -23,12 +23,18 @@ Thank you for your interest in contributing to GoProX! This document outlines th
   - All code must pass linting and validation before being committed (YAML, JSON, and shell scripts).
   - Use the pre-commit hook to catch issues early.
   - Follow the project's [Design Principles](./docs/architecture/DESIGN_PRINCIPLES.md).
+- **Logging:**
+  - Use the structured logger module (`scripts/core/logger.zsh`) for all output.
+  - Replace `echo` statements with appropriate log levels (DEBUG, INFO, WARN, ERROR).
+  - All logs are automatically directed to the `output/` directory.
+  - Use JSON format for structured data and performance timing.
 - **Testing:**
   - All new features and bug fixes must include or update tests.
   - Run the test suite with:
     ```zsh
     ./scripts/testing/run-tests.zsh
     ```
+  - Include logger tests for new scripts that use logging functionality.
 - **Documentation:**
   - Update or add documentation for any new features, changes, or scripts.
   - Use zsh code blocks for shell script examples.
