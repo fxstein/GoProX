@@ -128,6 +128,56 @@ echo "✅ Operation completed successfully"
 - Core scripts like `rename-gopro-sd.zsh`
 - Any new scripts added to the project
 
+### 2.2 Mandatory Logger Integration
+
+**Principle:** ALL new scripts MUST use the structured logger module for ALL output, with no exceptions.
+
+**Rationale:** Consistent logging across all scripts is critical for debugging, monitoring, and maintaining the codebase. The logger provides structured output, performance tracking, and proper output management that cannot be achieved with simple echo statements.
+
+**Mandatory Requirements:**
+- **NO EXCEPTIONS**: Every new script must integrate the logger module
+- **ALL OUTPUT**: Replace ALL `echo`, `printf`, and other output statements with logger calls
+- **STRUCTURED LOGGING**: Use appropriate log levels (DEBUG, INFO, WARN, ERROR) for all events
+- **PERFORMANCE TRACKING**: Include timing for significant operations
+- **ERROR HANDLING**: Log all errors with context and stack information
+- **USER INTERFACE**: Maintain user-facing colored output while ensuring all events are logged
+
+**Implementation Checklist for New Scripts:**
+```zsh
+# REQUIRED: Source logger module at the top
+SCRIPT_DIR="${0:A:h}"
+source "$SCRIPT_DIR/../core/logger.zsh"
+init_logger "script-name"
+
+# REQUIRED: Log script start
+log_info "Starting script execution"
+
+# REQUIRED: Use logger for all output
+log_debug "Processing file: $filename"
+log_info "Operation completed successfully"
+log_warn "Deprecated feature used"
+log_error "Operation failed: $error_message"
+
+# REQUIRED: Performance timing for operations
+start_timer "operation_name"
+# ... perform operation ...
+end_timer "operation_name"
+
+# OPTIONAL: User-facing colored output (in addition to logging)
+echo "✅ Operation completed successfully"
+```
+
+**Validation Requirements:**
+- All new scripts must pass logger integration validation
+- Pre-commit hooks should check for logger usage
+- CI/CD pipeline must validate logger integration
+- Code reviews must verify logger implementation
+
+**Consequences of Non-Compliance:**
+- Scripts without logger integration will be rejected
+- Pull requests missing logger integration will not be merged
+- Existing scripts must be updated before new features are added
+
 ### 3. Human-Readable Configuration
 
 **Principle:** Configuration files should be easily readable and editable by humans without requiring knowledge of structured data formats.
