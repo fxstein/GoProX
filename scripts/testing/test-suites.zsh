@@ -47,6 +47,61 @@ function test_integration_suite() {
     run_test "integration_error_handling" test_integration_error_handling "Test error handling scenarios"
 }
 
+# Logger Tests
+function test_logger_suite() {
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_suite: start"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_suite: checking if run_test is defined"
+        type run_test 2>&1 || echo "[DEBUG] test_logger_suite: run_test is NOT defined"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_suite: about to call run_test"
+    fi
+    run_test "logger_rotation" test_logger_rotation "Test logger log rotation at 16KB threshold"
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_suite: run_test call completed"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_suite: end"
+    fi
+}
+
+function test_logger_rotation() {
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_rotation: start"
+    fi
+    local log_dir="output"
+    local log_file="$log_dir/goprox.log"
+    local log_file_old="$log_dir/goprox.log.old"
+    rm -f "$log_file" "$log_file_old"
+    export LOG_MAX_SIZE=16384
+    export LOGFILE="$log_file"
+    export LOGFILE_OLD="$log_file_old"
+    source scripts/core/logger.zsh
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_rotation: logger sourced, writing log entries"
+    fi
+    for i in {1..600}; do
+        log_info "Logger rotation test entry $i"
+    done
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_rotation: log entries written, checking files"
+    fi
+    # Check that both log files exist
+    assert_file_exists "$log_file" "Current log file should exist after rotation"
+    assert_file_exists "$log_file_old" "Rotated log file should exist after rotation"
+    # Check that the rotated file contains early log entries
+    assert_contains "$(head -n 1 "$log_file_old")" "Logger rotation test entry" "Rotated log should contain early entries"
+    # Check that the current log contains later log entries
+    assert_contains "$(tail -n 1 "$log_file")" "Logger rotation test entry" "Current log should contain recent entries"
+    rm -f "$log_file" "$log_file_old"
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_logger_rotation: end"
+    fi
+}
+
 # Individual test functions
 
 ## Configuration Tests

@@ -43,10 +43,10 @@ function test_init() {
     mkdir -p "$TEST_TEMP_DIR"
     
     # Reset test statistics
-    TEST_TOTAL=0
-    TEST_PASSED=0
-    TEST_FAILED=0
-    TEST_SKIPPED=0
+    declare -i TEST_TOTAL=0
+    declare -i TEST_PASSED=0
+    declare -i TEST_FAILED=0
+    declare -i TEST_SKIPPED=0
     TEST_RESULTS=()
     
     echo "Test output directory: $TEST_OUTPUT_DIR"
@@ -159,30 +159,59 @@ function run_test() {
     local test_name="$1"
     local test_function="$2"
     local test_description="${3:-$test_name}"
-    
-    ((TEST_TOTAL++))
-    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: function entered with test_name=$test_name, test_function=$test_function"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: about to increment TEST_TOTAL"
+    fi
+    TEST_TOTAL=$((TEST_TOTAL + 1))
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: TEST_TOTAL incremented, about to echo test name"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: about to run $test_function in $test_name"
+    fi
     echo -n "Running test: $test_name... "
-    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: echo completed, about to create temp directory"
+    fi
     # Create test-specific temp directory
     local test_temp_dir="$TEST_TEMP_DIR/$test_name"
     mkdir -p "$test_temp_dir"
-    
     # Run test in subshell to isolate environment
     local test_result
-    if (cd "$test_temp_dir" && $test_function); then
+    local subshell_output
+    local subshell_exit
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: running test in current directory (project root)"
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: about to call $test_function"
+    fi
+    if $test_function; then
+        subshell_exit=0
+    else
+        subshell_exit=$?
+    fi
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: subshell exit code: $subshell_exit"
+    fi
+    if [[ $subshell_exit -eq 0 ]]; then
         echo "${GREEN}✅ PASS${NC}"
-        ((TEST_PASSED++))
+        TEST_PASSED=$((TEST_PASSED + 1))
         test_result="PASS"
     else
         echo "${RED}❌ FAIL${NC}"
-        ((TEST_FAILED++))
+        TEST_FAILED=$((TEST_FAILED + 1))
         test_result="FAIL"
     fi
-    
     # Store test result
     TEST_RESULTS+=("$test_name:$test_result:$test_description")
-    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] run_test: TEST_RESULTS now:"
+        typeset -p TEST_RESULTS
+    fi
     # Cleanup test temp directory
     rm -rf "$test_temp_dir"
 }
@@ -191,8 +220,8 @@ function skip_test() {
     local test_name="$1"
     local reason="${2:-No reason provided}"
     
-    ((TEST_TOTAL++))
-    ((TEST_SKIPPED++))
+    TEST_TOTAL=$((TEST_TOTAL + 1))
+    TEST_SKIPPED=$((TEST_SKIPPED + 1))
     
     echo "⏭️  SKIP: $test_name ($reason)"
     TEST_RESULTS+=("$test_name:SKIP:$reason")
@@ -211,12 +240,24 @@ function test_suite() {
     
     echo ""
     echo "Suite completed: $suite_name"
+    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] test_suite: Completed $suite_name"
+    fi
 }
 
 # Test reporting
 function generate_test_report() {
+    mkdir -p "$TEST_OUTPUT_DIR"
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] generate_test_report: called"
+        echo "[DEBUG] TEST_RESULTS at start of generate_test_report:"
+        typeset -p TEST_RESULTS
+    fi
     local report_file="$TEST_OUTPUT_DIR/test-report-$(date +%Y%m%d-%H%M%S).txt"
-    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] generate_test_report: report_file will be $report_file"
+    fi
     echo "📊 Test Report" > "$report_file"
     echo "==============" >> "$report_file"
     echo "Generated: $(date)" >> "$report_file"
@@ -232,10 +273,13 @@ function generate_test_report() {
     echo "Detailed Results:" >> "$report_file"
     echo "=================" >> "$report_file"
     for result in "${TEST_RESULTS[@]}"; do
-        IFS=':' read -r name status description <<< "$result"
-        echo "  $name: $status - $description" >> "$report_file"
+        IFS=':' read -r name test_status description <<< "$result"
+        echo "  $name: $test_status - $description" >> "$report_file"
     done
     
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] generate_test_report: finished writing $report_file"
+    fi
     echo ""
     echo "Test report saved to: $report_file"
 }

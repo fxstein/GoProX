@@ -32,8 +32,10 @@ RUN_ENHANCED_TESTS=false
 RUN_MEDIA_TESTS=false
 RUN_ERROR_TESTS=false
 RUN_WORKFLOW_TESTS=false
+RUN_LOGGER_TESTS=false
 VERBOSE=false
 QUIET=false
+DEBUG=false
 
 # Parse command line options
 function parse_options() {
@@ -75,12 +77,20 @@ function parse_options() {
                 RUN_WORKFLOW_TESTS=true
                 shift
                 ;;
+            --logger)
+                RUN_LOGGER_TESTS=true
+                shift
+                ;;
             --verbose|-v)
                 VERBOSE=true
                 shift
                 ;;
             --quiet|-q)
                 QUIET=true
+                shift
+                ;;
+            --debug)
+                DEBUG=true
                 shift
                 ;;
             --help|-h)
@@ -100,8 +110,22 @@ function parse_options() {
           "$RUN_PARAM_TESTS" == false && "$RUN_STORAGE_TESTS" == false && \
           "$RUN_INTEGRATION_TESTS" == false && "$RUN_ENHANCED_TESTS" == false && \
           "$RUN_MEDIA_TESTS" == false && "$RUN_ERROR_TESTS" == false && \
-          "$RUN_WORKFLOW_TESTS" == false ]]; then
+          "$RUN_WORKFLOW_TESTS" == false && "$RUN_LOGGER_TESTS" == false ]]; then
         RUN_ALL_TESTS=true
+    fi
+
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] Options parsed:"
+        echo "  RUN_ALL_TESTS=$RUN_ALL_TESTS"
+        echo "  RUN_CONFIG_TESTS=$RUN_CONFIG_TESTS"
+        echo "  RUN_PARAM_TESTS=$RUN_PARAM_TESTS"
+        echo "  RUN_STORAGE_TESTS=$RUN_STORAGE_TESTS"
+        echo "  RUN_INTEGRATION_TESTS=$RUN_INTEGRATION_TESTS"
+        echo "  RUN_ENHANCED_TESTS=$RUN_ENHANCED_TESTS"
+        echo "  RUN_MEDIA_TESTS=$RUN_MEDIA_TESTS"
+        echo "  RUN_ERROR_TESTS=$RUN_ERROR_TESTS"
+        echo "  RUN_WORKFLOW_TESTS=$RUN_WORKFLOW_TESTS"
+        echo "  RUN_LOGGER_TESTS=$RUN_LOGGER_TESTS"
     fi
 }
 
@@ -121,8 +145,10 @@ function show_help() {
     echo "  --media            Run media tests only"
     echo "  --error            Run error handling tests only"
     echo "  --workflow         Run workflow tests only"
+    echo "  --logger           Run logger tests only"
     echo "  --verbose, -v      Enable verbose output"
     echo "  --quiet, -q        Suppress output except for failures"
+    echo "  --debug            Enable debug output"
     echo "  --help, -h         Show this help message"
     echo ""
     echo "Examples:"
@@ -181,6 +207,10 @@ function run_selected_tests() {
     # Initialize test framework
     test_init
     
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] Starting test suite execution"
+    fi
+    
     # Run selected test suites
     if [[ "$RUN_ALL_TESTS" == true || "$RUN_CONFIG_TESTS" == true ]]; then
         test_suite "Configuration Tests" test_configuration_suite
@@ -214,8 +244,24 @@ function run_selected_tests() {
         test_suite "Integration Workflow Tests" test_integration_workflows_suite
     fi
     
+    if [[ "$RUN_LOGGER_TESTS" == true ]]; then
+        test_suite "Logger Tests" test_logger_suite
+    fi
+    
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] Test suite execution complete"
+        echo "[DEBUG] TEST_RESULTS array contents:"
+        typeset -p TEST_RESULTS
+    fi
+    
     # Generate report and summary
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] Generating test report"
+    fi
     generate_test_report
+    if [[ "$DEBUG" == true ]]; then
+        echo "[DEBUG] Test report generation complete"
+    fi
     print_test_summary
     
     return $TEST_FAILED
@@ -228,6 +274,8 @@ function main() {
     
     # Parse command line options
     parse_options "$@"
+    # Export DEBUG for subscripts
+    export DEBUG
     
     # Check prerequisites
     check_prerequisites
