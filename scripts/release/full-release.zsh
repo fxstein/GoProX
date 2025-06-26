@@ -319,6 +319,22 @@ main() {
         new_summary_file="docs/release/${intended_new_version}-major-changes-since-${base_version}.md"
     fi
 
+    # Commit and push the latest summary file before triggering the release workflow
+    if [[ -n "$base_version" ]]; then
+        local summary_file="docs/release/latest-major-changes-since-${base_version}.md"
+        if [[ -f "$summary_file" ]]; then
+            if [[ -n $(git status --porcelain "$summary_file") ]]; then
+                print_status "Committing and pushing updated summary file: $summary_file"
+                git add "$summary_file"
+                git commit -m "docs(release): update latest major changes summary for release (refs #68)"
+                git push
+                print_success "Summary file committed and pushed"
+            else
+                print_status "Summary file $summary_file is already up to date in git"
+            fi
+        fi
+    fi
+
     # Step 2: Trigger release workflow
     print_status "Step 2: Triggering release workflow..."
     release_args=(--force)
