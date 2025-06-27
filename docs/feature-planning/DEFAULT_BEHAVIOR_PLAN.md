@@ -118,7 +118,7 @@ When `goprox` is run on subsequent occasions:
 3. **Smart Decision Making**
    - **New SD Card with Media**: Import and process automatically
    - **Previously Processed Card**: Check for new content only
-   - **Empty SD Card**: Offer to format or skip
+   - **Empty SD Card**: Offer to clean (remove media files) or skip
    - **Multiple Cards**: Process each independently
 
 #### Enhanced SD Card Detection Logic
@@ -166,7 +166,7 @@ For each detected SD card, analyze the content:
    Card State                    Action
    ──────────────────────────────────────────────────────────
    New card with media          → Import + Process + Archive
-   New card, empty              → Offer format or skip
+   New card, empty              → Offer clean or skip
    Previously processed         → Check for new content only
    Has firmware update          → Offer update first
    Error state                  → Report and skip
@@ -390,6 +390,146 @@ GoProX v01.10.00 - Media Management Assistant
    - Resume interrupted processing
    - Repair corrupted metadata
    - Recover from failed operations
+
+#### SD Card Cleaning and Optional Formatting
+
+**Default Behavior: Clean, Don't Format**
+GoProX follows a conservative approach to SD card management, prioritizing data safety and camera compatibility.
+
+**Standard SD Card Cleaning:**
+```zsh
+function _clean_sd_card() {
+  local card_path="$1"
+  
+  # Preserve camera metadata and system files
+  local preserve_patterns=(
+    "MISC/version.txt"           # Camera identification
+    "MISC/firmware/"             # Firmware files
+    "DCIM/"                      # Camera directory structure
+    "MISC/"                      # Camera system files
+    ".Spotlight-V100"            # macOS metadata
+    ".fseventsd"                 # macOS file system events
+    ".Trashes"                   # macOS trash
+  )
+  
+  # Remove only media files, preserve camera structure
+  find "$card_path" -type f \( -name "*.JPG" -o -name "*.MP4" -o -name "*.LRV" -o -name "*.THM" \) -delete
+  
+  # Clean empty directories (except preserved ones)
+  _clean_empty_directories "$card_path" "$preserve_patterns"
+  
+  echo "✅ SD card cleaned: Media files removed, camera metadata preserved"
+}
+```
+
+**Optional Formatting with Metadata Preservation:**
+For advanced users who need a completely fresh SD card, GoProX provides an optional formatting feature that preserves and restores camera metadata.
+
+**Formatting Workflow:**
+```zsh
+function _format_sd_card_with_metadata_preservation() {
+  local card_path="$1"
+  
+  # Step 1: Extract camera metadata
+  local metadata_backup="$(_extract_camera_metadata "$card_path")"
+  
+  # Step 2: Perform low-level format (user confirmation required)
+  read -q "REPLY?⚠️  This will completely erase the SD card. Continue? (y/N) "
+  echo
+  
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Format the card (requires elevated privileges)
+    _perform_sd_card_format "$card_path"
+    
+    # Step 3: Restore camera metadata
+    _restore_camera_metadata "$card_path" "$metadata_backup"
+    
+    echo "✅ SD card formatted and camera metadata restored"
+  else
+    echo "❌ Formatting cancelled"
+    rm -rf "$metadata_backup"
+  fi
+}
+```
+
+**Metadata Extraction and Restoration:**
+```zsh
+function _extract_camera_metadata() {
+  local card_path="$1"
+  local backup_dir="/tmp/goprox_metadata_$(date +%s)"
+  
+  mkdir -p "$backup_dir"
+  
+  # Extract critical camera files
+  if [[ -f "$card_path/MISC/version.txt" ]]; then
+    cp -r "$card_path/MISC" "$backup_dir/"
+  fi
+  
+  # Extract camera directory structure
+  if [[ -d "$card_path/DCIM" ]]; then
+    find "$card_path/DCIM" -type d -exec mkdir -p "$backup_dir/DCIM/{}" \;
+  fi
+  
+  echo "$backup_dir"
+}
+
+function _restore_camera_metadata() {
+  local card_path="$1"
+  local backup_dir="$2"
+  
+  # Restore camera metadata
+  if [[ -d "$backup_dir/MISC" ]]; then
+    cp -r "$backup_dir/MISC" "$card_path/"
+  fi
+  
+  # Restore directory structure
+  if [[ -d "$backup_dir/DCIM" ]]; then
+    find "$backup_dir/DCIM" -type d -exec mkdir -p "$card_path/DCIM/{}" \;
+  fi
+  
+  # Clean up backup
+  rm -rf "$backup_dir"
+}
+```
+
+**Configuration Options:**
+```zsh
+# SD card management preferences
+SD_CARD_CLEANING_MODE="preserve_metadata"  # clean, format, or preserve_metadata
+SD_CARD_FORMAT_CONFIRMATION=true           # Require confirmation for formatting
+SD_CARD_METADATA_BACKUP=true               # Always backup metadata before format
+SD_CARD_QUICK_CLEAN=true                   # Enable quick clean for empty cards
+```
+
+**User Interface:**
+```zsh
+# Empty SD card handling
+function _handle_empty_sd_card() {
+  local card_path="$1"
+  
+  echo "📱 Empty SD card detected: $(basename "$card_path")"
+  echo "Options:"
+  echo "  1. Clean (remove any remaining files, preserve camera metadata)"
+  echo "  2. Format (complete erase with metadata preservation) ⚠️"
+  echo "  3. Skip (leave card unchanged)"
+  
+  read -p "Choose option (1-3): " choice
+  
+  case $choice in
+    1) _clean_sd_card "$card_path" ;;
+    2) _format_sd_card_with_metadata_preservation "$card_path" ;;
+    3) echo "Skipping card" ;;
+    *) echo "Invalid choice, skipping card" ;;
+  esac
+}
+```
+
+**Safety Features:**
+- **Metadata Preservation**: Always backup and restore camera identification files
+- **Confirmation Required**: Formatting requires explicit user confirmation
+- **Fallback Protection**: If metadata restoration fails, card remains usable
+- **Logging**: All formatting operations are logged for audit purposes
+- **Recovery**: Metadata backup is retained until successful restoration
 
 ### Phase 6: Multi-System User Scenarios
 
