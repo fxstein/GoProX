@@ -170,6 +170,142 @@ For each detected SD card, analyze the content:
    - Handle errors gracefully
    - Continue processing other cards if one fails
 
+### Phase 3.5: Processing Order and Performance Optimization
+
+#### Mandatory Processing Order
+When performing any tasks in interactive or batch mode, the following order must be strictly enforced:
+
+**Standard Processing Order:**
+1. **Archive** - Create backup of original files
+2. **Import** - Copy files to library structure
+3. **Process** - Apply metadata, copyright, and transformations
+4. **Clean** - Remove processed files from source
+
+#### Archive-First Optimization Strategy
+
+**Problem**: Reading from SD cards is the slowest part of the process, especially with large media collections.
+
+**Solution**: Leverage the archive created in step 1 to perform subsequent operations, significantly improving performance.
+
+#### Implementation Details
+
+**Archive Creation Phase:**
+```bash
+function _create_optimized_archive() {
+  local source="$1"
+  local archive_dir="$2"
+  
+  # Create timestamped archive directory
+  local timestamp=$(date +%Y%m%d_%H%M%S)
+  local archive_path="${archive_dir}/archive_${timestamp}"
+  
+  # Use rsync for efficient copying with progress
+  rsync -av --progress "$source/" "$archive_path/"
+  
+  # Create archive manifest for integrity verification
+  find "$archive_path" -type f -exec sha256sum {} \; > "${archive_path}.manifest"
+  
+  echo "$archive_path"
+}
+```
+
+**Archive-Based Import:**
+```bash
+function _import_from_archive() {
+  local archive_path="$1"
+  local library="$2"
+  
+  # Import from archive instead of SD card
+  # This is much faster as archive is on local storage
+  rsync -av --progress "$archive_path/" "$library/imported/"
+  
+  # Verify integrity using manifest
+  _verify_archive_integrity "$archive_path"
+}
+```
+
+**Performance Benefits:**
+- **SD Card Read**: Single pass through SD card (archive creation)
+- **Subsequent Operations**: Read from fast local storage (archive)
+- **Parallel Processing**: Multiple operations can read from archive simultaneously
+- **Error Recovery**: Archive provides backup for retry operations
+
+#### Processing Flow Examples
+
+**New Card with Media (Optimized):**
+```
+1. Archive: Copy all files from SD card to local archive (slow)
+2. Import: Copy from archive to library (fast)
+3. Process: Read from archive, write to library (fast)
+4. Clean: Remove from SD card (fast)
+```
+
+**Previously Processed Card (Incremental):**
+```
+1. Archive: Copy only new files to archive (fast)
+2. Import: Copy new files from archive (fast)
+3. Process: Process new files from archive (fast)
+4. Clean: Remove processed files from SD card (fast)
+```
+
+#### Archive Management
+
+**Archive Lifecycle:**
+1. **Creation**: During archive phase of processing
+2. **Utilization**: During import and process phases
+3. **Retention**: Keep for configurable period (default: 30 days)
+4. **Cleanup**: Automatic removal of old archives
+
+**Archive Storage Strategy:**
+```bash
+# Archive directory structure
+~/goprox/archives/
+├── archive_20241201_143022/     # Full card backup
+├── archive_20241201_143022.manifest
+├── archive_20241201_150145/     # Incremental backup
+├── archive_20241201_150145.manifest
+└── .archive_config              # Retention policies
+```
+
+**Archive Configuration:**
+```bash
+# Archive settings in config file
+ARCHIVE_RETENTION_DAYS=30
+ARCHIVE_COMPRESSION=true
+ARCHIVE_VERIFICATION=true
+ARCHIVE_CLEANUP_AUTO=true
+```
+
+#### Error Handling and Recovery
+
+**Archive Integrity:**
+- Verify archive integrity before using for import
+- Re-create archive if corruption detected
+- Use original SD card as fallback if archive fails
+
+**Partial Processing Recovery:**
+- Resume processing from archive if interrupted
+- Skip already processed files based on markers
+- Maintain processing state across restarts
+
+**Storage Management:**
+- Monitor archive storage usage
+- Implement automatic cleanup of old archives
+- Provide manual archive management tools
+
+#### Performance Monitoring
+
+**Metrics to Track:**
+- Archive creation time vs. direct import time
+- Storage space utilization
+- Archive hit/miss ratios
+- Overall processing time improvements
+
+**Expected Performance Gains:**
+- **First Run**: 20-30% faster due to single SD card read
+- **Subsequent Runs**: 50-70% faster due to archive reuse
+- **Large Collections**: 60-80% faster due to local storage access
+
 ### Phase 4: User Experience Enhancements
 
 #### Interactive vs. Automated Modes
@@ -292,12 +428,21 @@ GoProX v01.10.00 - Media Management Assistant
 5. `_batch_processing()` - Multi-card handling
 6. `_progress_reporting()` - Status updates
 7. `_error_recovery()` - Error handling
+8. `_create_optimized_archive()` - Archive creation with integrity checks
+9. `_import_from_archive()` - Fast import from local archive
+10. `_verify_archive_integrity()` - Archive integrity validation
+11. `_manage_archive_lifecycle()` - Archive retention and cleanup
+12. `_enforce_processing_order()` - Ensure correct operation sequence
 
 ### Configuration Enhancements
 1. Extended config file format
 2. User preference management
 3. Workflow template system
 4. Error logging and reporting
+5. Archive management settings
+6. Performance optimization preferences
+7. Processing order enforcement
+8. Archive retention policies
 
 ### Integration Points
 1. Launch agent configuration
@@ -318,6 +463,10 @@ GoProX v01.10.00 - Media Management Assistant
 - More reliable detection and processing
 - Better resource utilization
 - Improved error recovery
+- 20-80% faster processing through archive optimization
+- Reduced SD card wear through single-pass reading
+- Improved parallel processing capabilities
+- Better storage management and cleanup
 
 ### Adoption and Usage
 - Higher user retention after first use
