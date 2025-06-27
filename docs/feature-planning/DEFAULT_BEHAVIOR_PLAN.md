@@ -71,7 +71,7 @@ When `goprox` is run for the first time on a system (no config file exists):
    - Provide configuration validation
 
 #### Configuration File Structure
-```bash
+```zsh
 # GoProX Configuration File
 LIBRARY=~/goprox
 COPYRIGHT=""
@@ -123,7 +123,7 @@ When `goprox` is run on subsequent occasions:
 
 #### Enhanced SD Card Detection Logic
 
-```bash
+```zsh
 function _enhanced_sd_card_processing() {
   for volume in /Volumes/*; do
     if _is_gopro_card "$volume"; then
@@ -198,7 +198,7 @@ When performing any tasks in interactive or batch mode, the following order must
 #### Implementation Details
 
 **Archive Creation Phase:**
-```bash
+```zsh
 function _create_optimized_archive() {
   local source="$1"
   local archive_dir="$2"
@@ -218,7 +218,7 @@ function _create_optimized_archive() {
 ```
 
 **Archive-Based Import:**
-```bash
+```zsh
 function _import_from_archive() {
   local archive_path="$1"
   local library="$2"
@@ -265,7 +265,7 @@ function _import_from_archive() {
 4. **Cleanup**: Automatic removal of old archives
 
 **Archive Storage Strategy:**
-```bash
+```zsh
 # Archive directory structure
 ~/goprox/archives/
 ├── archive_20241201_143022/     # Full card backup
@@ -276,7 +276,7 @@ function _import_from_archive() {
 ```
 
 **Archive Configuration:**
-```bash
+```zsh
 # Archive settings in config file
 ARCHIVE_RETENTION_DAYS=30
 ARCHIVE_COMPRESSION=true
@@ -400,7 +400,7 @@ Professional photographers and videographers often work across multiple systems 
 #### Environment Detection and Adaptation
 
 **System Environment Detection:**
-```bash
+```zsh
 function _detect_environment() {
   local environment="unknown"
   
@@ -432,7 +432,7 @@ function _detect_environment() {
 - Focus on backup and basic organization
 
 **Default Behaviors:**
-```bash
+```zsh
 # Travel environment configuration
 TRAVEL_MODE=true
 LIBRARY="$HOME/goprox/travel"
@@ -473,7 +473,7 @@ TRAVEL_PROCESSING_ORDER=(
 - Full metadata and organization
 
 **Default Behaviors:**
-```bash
+```zsh
 # Office environment configuration
 OFFICE_MODE=true
 LIBRARY="$HOME/goprox/permanent"
@@ -507,7 +507,7 @@ OFFICE_PROCESSING_ORDER=(
 #### Environment Transition Management
 
 **Travel to Office Transition:**
-```bash
+```zsh
 function _handle_travel_to_office_transition() {
   local travel_library="$HOME/goprox/travel"
   local office_library="$HOME/goprox/permanent"
@@ -528,7 +528,7 @@ function _handle_travel_to_office_transition() {
 ```
 
 **Travel Content Processing:**
-```bash
+```zsh
 function _process_travel_content() {
   local travel_library="$1"
   local office_library="$2"
@@ -557,7 +557,7 @@ function _process_travel_content() {
 #### Multi-System Configuration Management
 
 **Configuration Synchronization:**
-```bash
+```zsh
 # Configuration file structure for multi-system users
 ~/.goprox/
 ├── config                    # Base configuration
@@ -570,7 +570,7 @@ function _process_travel_content() {
 ```
 
 **Environment-Specific Overrides:**
-```bash
+```zsh
 # Travel configuration overrides
 source ~/.goprox/travel_config 2>/dev/null || {
   # Default travel settings
@@ -591,7 +591,7 @@ source ~/.goprox/office_config 2>/dev/null || {
 #### Smart Environment Switching
 
 **Automatic Environment Detection:**
-```bash
+```zsh
 function _switch_environment() {
   local new_environment="$1"
   local current_environment="$(_detect_environment)"
@@ -670,7 +670,7 @@ Would you like to process these with full office workflow? (y/N)
 #### Configuration Examples
 
 **Travel Configuration:**
-```bash
+```zsh
 # ~/.goprox/travel_config
 LIBRARY="$HOME/goprox/travel"
 ARCHIVE_DIR="/Volumes/ExternalStorage/goprox/backups"
@@ -684,7 +684,7 @@ RENAME_CARDS=true
 ```
 
 **Office Configuration:**
-```bash
+```zsh
 # ~/.goprox/office_config
 LIBRARY="$HOME/goprox/permanent"
 ARCHIVE_DIR="$HOME/goprox/permanent/archives"
@@ -851,7 +851,7 @@ The enhanced default behavior must be thoroughly tested through our existing tes
 **Purpose**: Test the core default behavior when `goprox` is run without arguments.
 
 **Test Cases**:
-```bash
+```zsh
 function test_default_behavior_no_cards() {
   # Test behavior when no SD cards are present
   # Expected: Informative message, clean exit
@@ -878,7 +878,7 @@ function test_default_behavior_mixed_cards() {
 **Purpose**: Test the guided first-time setup experience.
 
 **Test Cases**:
-```bash
+```zsh
 function test_first_time_setup_flow() {
   # Test complete first-time setup process
   # Expected: Guided configuration, library creation, validation
@@ -905,7 +905,7 @@ function test_first_time_setup_persistence() {
 **Purpose**: Validate the mandatory processing order (Archive → Import → Process → Clean).
 
 **Test Cases**:
-```bash
+```zsh
 function test_processing_order_enforcement() {
   # Test that operations follow correct order
   # Expected: Archive first, then import, process, clean
@@ -932,7 +932,7 @@ function test_processing_order_skip_operations() {
 **Purpose**: Test the archive-first optimization strategy and performance improvements.
 
 **Test Cases**:
-```bash
+```zsh
 function test_archive_creation() {
   # Test archive creation with integrity checks
   # Expected: Archive created, manifest generated, integrity verified
@@ -964,7 +964,7 @@ function test_archive_performance() {
 **Purpose**: Test intelligent content detection and decision making.
 
 **Test Cases**:
-```bash
+```zsh
 function test_card_state_detection() {
   # Test detection of different card states
   # Expected: Correct state identification, appropriate actions
@@ -991,7 +991,7 @@ function test_incremental_processing() {
 **Purpose**: Test guided vs. automated modes and user interaction.
 
 **Test Cases**:
-```bash
+```zsh
 function test_guided_mode() {
   # Test guided mode for new users
   # Expected: Clear explanations, confirmation prompts, helpful feedback
@@ -1018,7 +1018,7 @@ function test_error_handling() {
 **Purpose**: Test environment detection, switching, and transition handling.
 
 **Test Cases**:
-```bash
+```zsh
 function test_environment_detection() {
   # Test automatic environment detection
   # Expected: Correct environment identification (travel/office)
@@ -1101,7 +1101,7 @@ jobs:
 #### Test Data Management
 
 **Test Media Files**:
-```bash
+```zsh
 test/media/
 ├── sd_cards/
 │   ├── HERO11-1234/          # Mock GoPro SD card
@@ -1124,7 +1124,7 @@ test/media/
 #### Automated Test Scenarios
 
 **Scenario Matrix**:
-```bash
+```zsh
 # Test scenarios for CI/CD
 scenarios=(
   "no_cards"
@@ -1147,7 +1147,7 @@ scenarios=(
 #### Benchmark Tests
 
 **Performance Metrics**:
-```bash
+```zsh
 function benchmark_processing_speed() {
   # Measure processing time for different scenarios
   # Compare archive vs. direct processing
@@ -1170,7 +1170,7 @@ function benchmark_storage_io() {
 #### Load Testing
 
 **Load Test Scenarios**:
-```bash
+```zsh
 function test_large_collections() {
   # Test with 1000+ files
   # Test with 100GB+ data
@@ -1189,7 +1189,7 @@ function test_concurrent_processing() {
 #### End-to-End Testing
 
 **Complete Workflow Tests**:
-```bash
+```zsh
 function test_complete_workflow() {
   # Test entire workflow from detection to completion
   # Validate all intermediate states
@@ -1206,7 +1206,7 @@ function test_error_recovery() {
 #### Cross-Platform Testing
 
 **Platform Compatibility**:
-```bash
+```zsh
 function test_macos_compatibility() {
   # Test on macOS (primary platform)
   # Validate macOS-specific features
@@ -1275,7 +1275,7 @@ function test_linux_compatibility() {
 #### Test Data Management
 
 **Test Data Lifecycle**:
-```bash
+```zsh
 function update_test_data() {
   # Update test media files
   # Add new camera models
@@ -1329,7 +1329,7 @@ As GoProX evolves with new features and enhanced default behaviors, we need a ro
 #### Version Detection and Tracking
 
 **Configuration Version Tracking:**
-```bash
+```zsh
 # Configuration file structure with version tracking
 ~/.goprox/
 ├── config                    # Current configuration
@@ -1340,7 +1340,7 @@ As GoProX evolves with new features and enhanced default behaviors, we need a ro
 ```
 
 **Version Detection Function:**
-```bash
+```zsh
 function _detect_config_version() {
   local config_file="$HOME/.goprox/config"
   local version_file="$HOME/.goprox/config.version"
@@ -1361,7 +1361,7 @@ function _detect_config_version() {
 #### Library Version Management
 
 **Library Version Tracking:**
-```bash
+```zsh
 # Library structure with version tracking
 ~/goprox/
 ├── .version                 # Library structure version
@@ -1378,7 +1378,7 @@ function _detect_config_version() {
 #### Explicit Re-Processing Control
 
 **Re-Processing Options:**
-```bash
+```zsh
 # Command-line options for re-processing
 --reprocess-all              # Re-process all files in library
 --reprocess-modified         # Re-process files modified since last version
@@ -1388,7 +1388,7 @@ function _detect_config_version() {
 ```
 
 **Re-Processing Safety Checks:**
-```bash
+```zsh
 function _validate_reprocessing_request() {
   local library="$1"
   local reprocess_type="$2"
@@ -1422,7 +1422,7 @@ function _validate_reprocessing_request() {
 #### Migration Detection and Notification
 
 **Startup Migration Check:**
-```bash
+```zsh
 function _check_for_migrations() {
   local config_needs_migration=false
   local library_needs_migration=false
@@ -1453,7 +1453,7 @@ function _check_for_migrations() {
 #### Migration Test Suite
 
 **Migration Testing:**
-```bash
+```zsh
 function test_config_migration() {
   # Test configuration migration between versions
   # Expected: Config updated, backup created, validation passed
