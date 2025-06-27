@@ -383,6 +383,312 @@ GoProX v01.10.00 - Media Management Assistant
    - Repair corrupted metadata
    - Recover from failed operations
 
+### Phase 6: Multi-System User Scenarios
+
+#### Professional Workflow Environments
+
+Professional photographers and videographers often work across multiple systems and environments. GoProX must adapt its default behavior based on the current environment and user context.
+
+#### Environment Detection and Adaptation
+
+**System Environment Detection:**
+```bash
+function _detect_environment() {
+  local environment="unknown"
+  
+  # Check for travel/field indicators
+  if [[ -n "$(system_profiler SPUSBDataType | grep -i 'external')" ]]; then
+    environment="travel"
+  elif [[ -n "$(df -h | grep -E '/Volumes/.*[0-9]{3,}GB')" ]]; then
+    environment="travel"  # Large external storage detected
+  elif [[ -f "$HOME/.goprox/environment" ]]; then
+    environment=$(cat "$HOME/.goprox/environment")
+  else
+    # Default to office if no indicators found
+    environment="office"
+  fi
+  
+  echo "$environment"
+}
+```
+
+#### Travel/Field Environment Defaults
+
+**Scenario**: Photographer/videographer traveling with laptop and external storage
+
+**Environment Characteristics:**
+- Limited storage space on laptop
+- External storage for temporary media
+- Need for quick processing and review
+- Limited time for full processing
+- Focus on backup and basic organization
+
+**Default Behaviors:**
+```bash
+# Travel environment configuration
+TRAVEL_MODE=true
+LIBRARY="$HOME/goprox/travel"
+ARCHIVE_DIR="$HOME/goprox/travel/archives"
+PROCESSING_MODE="quick"
+AUTO_CLEAN=true
+AUTO_ARCHIVE=true
+AUTO_PROCESS=false  # Skip heavy processing
+COPYRIGHT=""
+GEONAMES=false
+FIRMWARE_CHECK=true
+RENAME_CARDS=true
+
+# Travel-specific processing order
+TRAVEL_PROCESSING_ORDER=(
+  "archive"    # Always backup first
+  "import"     # Quick import to travel library
+  "clean"      # Clean SD card for reuse
+)
+```
+
+**Travel Mode Workflow:**
+1. **Archive First**: Create backup to external storage
+2. **Quick Import**: Import to travel library with minimal processing
+3. **Clean SD Card**: Remove processed files to free up card space
+4. **Skip Heavy Processing**: Defer metadata processing, geonames, etc.
+5. **Generate Travel Summary**: Create quick overview of imported content
+
+#### Office/Studio Environment Defaults
+
+**Scenario**: Same user back in office with permanent storage and processing capabilities
+
+**Environment Characteristics:**
+- Large storage capacity
+- High-performance processing
+- Time for comprehensive processing
+- Integration with permanent library
+- Full metadata and organization
+
+**Default Behaviors:**
+```bash
+# Office environment configuration
+OFFICE_MODE=true
+LIBRARY="$HOME/goprox/permanent"
+ARCHIVE_DIR="$HOME/goprox/permanent/archives"
+PROCESSING_MODE="comprehensive"
+AUTO_CLEAN=true
+AUTO_ARCHIVE=true
+AUTO_PROCESS=true
+COPYRIGHT="$(cat ~/.goprox/copyright)"
+GEONAMES=true
+FIRMWARE_CHECK=true
+RENAME_CARDS=true
+
+# Office-specific processing order
+OFFICE_PROCESSING_ORDER=(
+  "archive"    # Backup to permanent storage
+  "import"     # Import to permanent library
+  "process"    # Full metadata processing
+  "geonames"   # Add location data
+  "clean"      # Clean source after verification
+)
+```
+
+**Office Mode Workflow:**
+1. **Comprehensive Archive**: Backup to permanent storage with integrity checks
+2. **Full Import**: Import to permanent library with organization
+3. **Complete Processing**: Apply metadata, copyright, geonames
+4. **Integration**: Merge with existing library structure
+5. **Verification**: Verify all files before cleaning source
+
+#### Environment Transition Management
+
+**Travel to Office Transition:**
+```bash
+function _handle_travel_to_office_transition() {
+  local travel_library="$HOME/goprox/travel"
+  local office_library="$HOME/goprox/permanent"
+  
+  # Detect travel content that needs processing
+  if [[ -d "$travel_library/imported" ]] && [[ -n "$(ls -A "$travel_library/imported")" ]]; then
+    echo "🔄 Detected travel content requiring office processing..."
+    
+    # Offer to process travel content
+    read -q "REPLY?Process travel content with full office workflow? (y/N) "
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      _process_travel_content "$travel_library" "$office_library"
+    fi
+  fi
+}
+```
+
+**Travel Content Processing:**
+```bash
+function _process_travel_content() {
+  local travel_library="$1"
+  local office_library="$2"
+  
+  # Process travel content with full office workflow
+  for session in "$travel_library/imported"/*; do
+    if [[ -d "$session" ]]; then
+      echo "📁 Processing travel session: $(basename "$session")"
+      
+      # Apply full processing workflow
+      _archive_from_travel "$session" "$office_library"
+      _import_to_office "$session" "$office_library"
+      _process_with_metadata "$session" "$office_library"
+      _add_geonames "$session" "$office_library"
+      
+      # Mark as processed
+      touch "$session/.office_processed"
+    fi
+  done
+  
+  # Clean up travel library after successful processing
+  _cleanup_travel_library "$travel_library"
+}
+```
+
+#### Multi-System Configuration Management
+
+**Configuration Synchronization:**
+```bash
+# Configuration file structure for multi-system users
+~/.goprox/
+├── config                    # Base configuration
+├── environment              # Current environment (travel/office)
+├── travel_config           # Travel-specific overrides
+├── office_config           # Office-specific overrides
+├── copyright               # Copyright information
+├── geonames_account        # Geonames account details
+└── sync_status             # Last sync timestamp
+```
+
+**Environment-Specific Overrides:**
+```bash
+# Travel configuration overrides
+source ~/.goprox/travel_config 2>/dev/null || {
+  # Default travel settings
+  LIBRARY="$HOME/goprox/travel"
+  PROCESSING_MODE="quick"
+  AUTO_PROCESS=false
+}
+
+# Office configuration overrides
+source ~/.goprox/office_config 2>/dev/null || {
+  # Default office settings
+  LIBRARY="$HOME/goprox/permanent"
+  PROCESSING_MODE="comprehensive"
+  AUTO_PROCESS=true
+}
+```
+
+#### Smart Environment Switching
+
+**Automatic Environment Detection:**
+```bash
+function _switch_environment() {
+  local new_environment="$1"
+  local current_environment="$(_detect_environment)"
+  
+  if [[ "$new_environment" != "$current_environment" ]]; then
+    echo "🔄 Switching from $current_environment to $new_environment mode..."
+    
+    # Save current environment
+    echo "$new_environment" > "$HOME/.goprox/environment"
+    
+    # Load environment-specific configuration
+    _load_environment_config "$new_environment"
+    
+    # Handle any pending transitions
+    if [[ "$current_environment" == "travel" ]] && [[ "$new_environment" == "office" ]]; then
+      _handle_travel_to_office_transition
+    fi
+    
+    echo "✅ Switched to $new_environment mode"
+  fi
+}
+```
+
+#### Professional Workflow Templates
+
+**Travel Template**: `--template travel`
+- Quick backup and import
+- Minimal processing
+- SD card cleanup
+- Travel library organization
+
+**Office Template**: `--template office`
+- Comprehensive processing
+- Full metadata application
+- Permanent library integration
+- Quality verification
+
+**Hybrid Template**: `--template hybrid`
+- Smart environment detection
+- Adaptive processing based on context
+- Seamless transition handling
+
+#### Multi-System User Experience
+
+**Environment-Aware Status Reporting:**
+```
+GoProX v01.10.00 - Media Management Assistant
+🌍 Environment: Travel Mode
+
+🔍 Scanning for GoPro SD cards...
+✅ Found 1 GoPro SD card
+
+📱 HERO11-1234 (new card)
+   └─ Travel processing mode detected
+   └─ Creating backup to external storage...
+   └─ Quick import to travel library...
+   └─ Cleaning SD card for reuse...
+   └─ ✅ Complete: 45 files backed up
+
+📊 Summary: 1 card processed in travel mode
+💡 Tip: Run 'goprox --switch-office' when back in studio for full processing
+```
+
+**Transition Notifications:**
+```
+🔄 Travel to Office Transition Detected
+
+Found 3 travel sessions requiring full processing:
+- Session_20241201_143022 (45 files)
+- Session_20241201_150145 (32 files)
+- Session_20241201_160230 (18 files)
+
+Would you like to process these with full office workflow? (y/N)
+```
+
+#### Configuration Examples
+
+**Travel Configuration:**
+```bash
+# ~/.goprox/travel_config
+LIBRARY="$HOME/goprox/travel"
+ARCHIVE_DIR="/Volumes/ExternalStorage/goprox/backups"
+PROCESSING_MODE="quick"
+AUTO_PROCESS=false
+AUTO_CLEAN=true
+COPYRIGHT=""
+GEONAMES=false
+FIRMWARE_CHECK=true
+RENAME_CARDS=true
+```
+
+**Office Configuration:**
+```bash
+# ~/.goprox/office_config
+LIBRARY="$HOME/goprox/permanent"
+ARCHIVE_DIR="$HOME/goprox/permanent/archives"
+PROCESSING_MODE="comprehensive"
+AUTO_PROCESS=true
+AUTO_CLEAN=true
+COPYRIGHT="$(cat ~/.goprox/copyright)"
+GEONAMES=true
+FIRMWARE_CHECK=true
+RENAME_CARDS=true
+```
+
 ## Implementation Strategy
 
 ### Phase 1: Foundation (Immediate Priority)
@@ -418,6 +724,22 @@ GoProX v01.10.00 - Media Management Assistant
    - Background monitoring
    - Notification system
 
+### Phase 4: Multi-System User Scenarios (Low Priority)
+1. **Environment Detection and Adaptation**
+   - Implement system environment detection
+   - Implement travel/office environment defaults
+   - Implement environment transition management
+
+2. **Multi-System Configuration Management**
+   - Implement configuration synchronization
+   - Implement environment-specific overrides
+   - Implement smart environment switching
+
+3. **Professional Workflow Templates**
+   - Implement travel/office workflow templates
+   - Implement hybrid workflow template
+   - Implement multi-system user experience
+
 ## Technical Requirements
 
 ### New Functions to Implement
@@ -433,6 +755,12 @@ GoProX v01.10.00 - Media Management Assistant
 10. `_verify_archive_integrity()` - Archive integrity validation
 11. `_manage_archive_lifecycle()` - Archive retention and cleanup
 12. `_enforce_processing_order()` - Ensure correct operation sequence
+13. `_detect_environment()` - System environment detection
+14. `_switch_environment()` - Environment switching and transition handling
+15. `_handle_travel_to_office_transition()` - Travel content processing
+16. `_process_travel_content()` - Travel session processing
+17. `_load_environment_config()` - Environment-specific configuration loading
+18. `_cleanup_travel_library()` - Travel library cleanup after processing
 
 ### Configuration Enhancements
 1. Extended config file format
@@ -443,6 +771,10 @@ GoProX v01.10.00 - Media Management Assistant
 6. Performance optimization preferences
 7. Processing order enforcement
 8. Archive retention policies
+9. Environment-specific configuration files
+10. Multi-system configuration synchronization
+11. Travel/office environment overrides
+12. Professional workflow templates
 
 ### Integration Points
 1. Launch agent configuration
@@ -660,6 +992,48 @@ function test_progress_reporting() {
 function test_error_handling() {
   # Test error handling and recovery
   # Expected: Clear error messages, recovery suggestions, graceful degradation
+}
+```
+
+#### 7. Multi-System Test Suite (`test-multi-system.zsh`)
+
+**Purpose**: Test environment detection, switching, and transition handling.
+
+**Test Cases**:
+```bash
+function test_environment_detection() {
+  # Test automatic environment detection
+  # Expected: Correct environment identification (travel/office)
+}
+
+function test_travel_mode_workflow() {
+  # Test travel mode processing workflow
+  # Expected: Quick processing, external storage backup, minimal processing
+}
+
+function test_office_mode_workflow() {
+  # Test office mode processing workflow
+  # Expected: Comprehensive processing, full metadata, permanent storage
+}
+
+function test_environment_switching() {
+  # Test switching between travel and office modes
+  # Expected: Configuration updates, transition handling
+}
+
+function test_travel_to_office_transition() {
+  # Test processing travel content in office mode
+  # Expected: Travel content detection, full processing, cleanup
+}
+
+function test_multi_system_configuration() {
+  # Test environment-specific configuration management
+  # Expected: Proper config loading, overrides, synchronization
+}
+
+function test_workflow_templates() {
+  # Test travel/office/hybrid workflow templates
+  # Expected: Correct template application, environment adaptation
 }
 ```
 
