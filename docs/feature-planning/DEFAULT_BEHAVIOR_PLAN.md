@@ -401,24 +401,21 @@ GoProX follows a conservative approach to SD card management, prioritizing data 
 function _clean_sd_card() {
   local card_path="$1"
   
-  # Preserve camera metadata and system files (including macOS files for cleaning)
+  # Preserve camera metadata only (not macOS system files)
   local preserve_patterns=(
     "MISC/version.txt"           # Camera identification
     "MISC/firmware/"             # Firmware files
     "DCIM/"                      # Camera directory structure
     "MISC/"                      # Camera system files
-    ".Spotlight-V100"            # macOS metadata (preserved during cleaning)
-    ".fseventsd"                 # macOS file system events (preserved during cleaning)
-    ".Trashes"                   # macOS trash (preserved during cleaning)
   )
   
-  # Remove only media files, preserve camera structure and system files
+  # Remove only media files, preserve camera structure
   find "$card_path" -type f \( -name "*.JPG" -o -name "*.MP4" -o -name "*.LRV" -o -name "*.THM" \) -delete
   
   # Clean empty directories (except preserved ones)
   _clean_empty_directories "$card_path" "$preserve_patterns"
   
-  echo "✅ SD card cleaned: Media files removed, camera metadata and system files preserved"
+  echo "✅ SD card cleaned: Media files removed, camera metadata preserved"
 }
 ```
 
