@@ -1,5 +1,13 @@
 # GoProX Default Behavior Enhancement Plan
 
+## Core Principles (Project Standards Alignment)
+
+- **No Automatic Destructive Actions**: GoProX must never modify user data or media files automatically. All destructive or modifying actions (including re-processing) require explicit user consent and a dedicated option. (See AI_INSTRUCTIONS.md)
+- **Structured Logging**: All scripts, helpers, and migration tools must use the centralized logger module for all output, including migration logs and error reporting. No `echo` or `printf` for operational output. (See DESIGN_PRINCIPLES.md)
+- **Consistent Parameter Processing**: All scripts, helpers, and migration tools must use strict parameter processing with `zparseopts`, supporting both short and long options, and providing clear error messages. (See DESIGN_PRINCIPLES.md)
+- **Human-Readable Configuration**: All configuration files must remain simple, key=value, and preserve comments and readability through all migrations. (See DESIGN_PRINCIPLES.md)
+- **Testing and Validation**: All new features, helpers, migrations, and behaviors must have dedicated tests, be integrated into CI/CD, and follow the project's testing framework. (See AI_INSTRUCTIONS.md)
+
 ## Overview
 
 This document outlines the current default behavior of GoProX and proposes an enhanced default behavior system that provides a more intuitive, automated, and user-friendly experience. The goal is to make GoProX work seamlessly out-of-the-box while maintaining the flexibility for advanced users.
@@ -761,6 +769,13 @@ RENAME_CARDS=true
 16. `_process_travel_content()` - Travel session processing
 17. `_load_environment_config()` - Environment-specific configuration loading
 18. `_cleanup_travel_library()` - Travel library cleanup after processing
+19. `_detect_config_version()` - Configuration version detection
+20. `_migrate_configuration()` - Configuration migration workflow
+21. `_migrate_library_structure()` - Library structure migration
+22. `_validate_reprocessing_request()` - Re-processing safety validation
+23. `_check_for_migrations()` - Migration detection and notification
+24. `_backup_configuration()` - Configuration backup before migration
+25. `_backup_library()` - Library backup before migration
 
 ### Configuration Enhancements
 1. Extended config file format
@@ -775,6 +790,9 @@ RENAME_CARDS=true
 10. Multi-system configuration synchronization
 11. Travel/office environment overrides
 12. Professional workflow templates
+13. Version tracking and migration settings
+14. Re-processing control and safety options
+15. Migration backup and rollback configuration
 
 ### Integration Points
 1. Launch agent configuration
@@ -1280,6 +1298,183 @@ function cleanup_test_data() {
 - Remove obsolete test cases
 - Optimize test execution time
 
+## Version Migration and Upgrade Management
+
+### Migration Strategy Overview
+
+As GoProX evolves with new features and enhanced default behaviors, we need a robust system to handle configuration and library structure upgrades. This ensures users can seamlessly upgrade without data loss or workflow disruption.
+
+### Version Migration Principles
+
+#### Data Preservation
+- **Never automatically modify media files** unless explicitly requested
+- **Preserve all user data** during upgrades
+- **Maintain backward compatibility** where possible
+- **Create backups** before any migration operations
+
+#### User Control
+- **Explicit user consent** required for any destructive operations
+- **Clear migration options** with detailed explanations
+- **Rollback capabilities** for failed migrations
+- **Migration preview** before execution
+
+#### Incremental Migration
+- **Version-by-version migration** to handle complex upgrades
+- **Migration state tracking** to resume interrupted operations
+- **Partial migration support** for large libraries
+- **Validation at each step** to ensure data integrity
+
+### Configuration Migration System
+
+#### Version Detection and Tracking
+
+**Configuration Version Tracking:**
+```bash
+# Configuration file structure with version tracking
+~/.goprox/
+├── config                    # Current configuration
+├── config.version           # Current configuration version
+├── config.backup.20241201   # Backup of previous version
+├── migration.log            # Migration history
+└── migration.state          # Current migration state
+```
+
+**Version Detection Function:**
+```bash
+function _detect_config_version() {
+  local config_file="$HOME/.goprox/config"
+  local version_file="$HOME/.goprox/config.version"
+  
+  if [[ -f "$version_file" ]]; then
+    cat "$version_file"
+  elif [[ -f "$config_file" ]]; then
+    # Analyze config file to determine version
+    _analyze_config_version "$config_file"
+  else
+    echo "0.0.0"  # No config file exists
+  fi
+}
+```
+
+### Library Structure Migration
+
+#### Library Version Management
+
+**Library Version Tracking:**
+```bash
+# Library structure with version tracking
+~/goprox/
+├── .version                 # Library structure version
+├── .migration_state         # Current migration state
+├── .backup_20241201/        # Backup of previous structure
+├── imported/                # Current library structure
+├── processed/
+├── archives/
+└── travel/                  # New in v02.00.00
+```
+
+### Re-Processing Management
+
+#### Explicit Re-Processing Control
+
+**Re-Processing Options:**
+```bash
+# Command-line options for re-processing
+--reprocess-all              # Re-process all files in library
+--reprocess-modified         # Re-process files modified since last version
+--reprocess-metadata         # Re-process only metadata (non-destructive)
+--reprocess-preview          # Show what would be re-processed
+--reprocess-since-version    # Re-process files from specific version
+```
+
+**Re-Processing Safety Checks:**
+```bash
+function _validate_reprocessing_request() {
+  local library="$1"
+  local reprocess_type="$2"
+  
+  echo "⚠️  Re-processing will modify media files!"
+  echo "📊 Library: $library"
+  echo "🔄 Type: $reprocess_type"
+  
+  # Show affected files
+  local affected_files=$(_count_affected_files "$library" "$reprocess_type")
+  echo "📁 Files to be processed: $affected_files"
+  
+  # Require explicit confirmation
+  read -q "REPLY?Are you sure you want to proceed? (y/N) "
+  echo
+  
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Re-processing cancelled"
+    return 1
+  fi
+  
+  # Create backup before re-processing
+  _backup_library "$library" "before_reprocessing_$(date +%Y%m%d_%H%M%S)"
+  
+  return 0
+}
+```
+
+### Migration User Interface
+
+#### Migration Detection and Notification
+
+**Startup Migration Check:**
+```bash
+function _check_for_migrations() {
+  local config_needs_migration=false
+  local library_needs_migration=false
+  
+  # Check configuration migration
+  local config_version="$(_detect_config_version)"
+  if [[ "$config_version" != "$GOPROX_VERSION" ]]; then
+    config_needs_migration=true
+  fi
+  
+  # Check library migration
+  local library="$(_get_library_path)"
+  if [[ -d "$library" ]]; then
+    local library_version="$(_detect_library_version "$library")"
+    if [[ "$library_version" != "$GOPROX_VERSION" ]]; then
+      library_needs_migration=true
+    fi
+  fi
+  
+  if [[ "$config_needs_migration" == true ]] || [[ "$library_needs_migration" == true ]]; then
+    _show_migration_notification "$config_needs_migration" "$library_needs_migration"
+  fi
+}
+```
+
+### Migration Testing and Validation
+
+#### Migration Test Suite
+
+**Migration Testing:**
+```bash
+function test_config_migration() {
+  # Test configuration migration between versions
+  # Expected: Config updated, backup created, validation passed
+}
+
+function test_library_migration() {
+  # Test library structure migration
+  # Expected: Structure updated, data preserved, validation passed
+}
+
+function test_migration_rollback() {
+  # Test migration rollback capabilities
+  # Expected: Rollback successful, data restored, validation passed
+}
+
+function test_reprocessing_safety() {
+  # Test re-processing safety mechanisms
+  # Expected: User confirmation required, backups created, validation passed
+}
+```
+
 ## Future Considerations
 
 ### Potential Enhancements
@@ -1308,4 +1503,15 @@ function cleanup_test_data() {
 
 The enhanced default behavior will transform GoProX from a command-line tool into an intelligent media management assistant. By providing a guided first-time experience, smart automation, and clear feedback, users will be able to focus on their creative work rather than managing technical details.
 
-The implementation will be phased to ensure stability and user adoption, with each phase building upon the previous one to create a comprehensive and user-friendly system. 
+The implementation will be phased to ensure stability and user adoption, with each phase building upon the previous one to create a comprehensive and user-friendly system.
+
+**Implementation Requirements:**
+- All new helpers, environment switchers, and migration tools must use the logger for all output (including status, errors, and logs).
+- All new helpers and scripts must use strict parameter processing with `zparseopts`.
+- All new helpers and behaviors must have dedicated tests and CI/CD validation.
+
+**Migration Requirements:**
+- All migration helpers and scripts must use the logger for all output (including migration logs and errors).
+- All migration helpers and scripts must use strict parameter processing with `zparseopts`.
+- All migration helpers and scripts must have dedicated tests and CI/CD validation.
+- All configuration migrations must preserve comments and human readability in config files. 
