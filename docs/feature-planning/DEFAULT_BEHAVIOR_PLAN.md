@@ -401,36 +401,36 @@ GoProX follows a conservative approach to SD card management, prioritizing data 
 function _clean_sd_card() {
   local card_path="$1"
   
-  # Preserve camera metadata and system files
+  # Preserve camera metadata and system files (including macOS files for cleaning)
   local preserve_patterns=(
     "MISC/version.txt"           # Camera identification
     "MISC/firmware/"             # Firmware files
     "DCIM/"                      # Camera directory structure
     "MISC/"                      # Camera system files
-    ".Spotlight-V100"            # macOS metadata
-    ".fseventsd"                 # macOS file system events
-    ".Trashes"                   # macOS trash
+    ".Spotlight-V100"            # macOS metadata (preserved during cleaning)
+    ".fseventsd"                 # macOS file system events (preserved during cleaning)
+    ".Trashes"                   # macOS trash (preserved during cleaning)
   )
   
-  # Remove only media files, preserve camera structure
+  # Remove only media files, preserve camera structure and system files
   find "$card_path" -type f \( -name "*.JPG" -o -name "*.MP4" -o -name "*.LRV" -o -name "*.THM" \) -delete
   
   # Clean empty directories (except preserved ones)
   _clean_empty_directories "$card_path" "$preserve_patterns"
   
-  echo "✅ SD card cleaned: Media files removed, camera metadata preserved"
+  echo "✅ SD card cleaned: Media files removed, camera metadata and system files preserved"
 }
 ```
 
 **Optional Formatting with Metadata Preservation:**
-For advanced users who need a completely fresh SD card, GoProX provides an optional formatting feature that preserves and restores camera metadata.
+For advanced users who need a completely fresh SD card, GoProX provides an optional formatting feature that preserves and restores only camera metadata (not macOS system files).
 
 **Formatting Workflow:**
 ```zsh
 function _format_sd_card_with_metadata_preservation() {
   local card_path="$1"
   
-  # Step 1: Extract camera metadata
+  # Step 1: Extract camera metadata (camera files only, not macOS files)
   local metadata_backup="$(_extract_camera_metadata "$card_path")"
   
   # Step 2: Perform low-level format (user confirmation required)
@@ -441,7 +441,7 @@ function _format_sd_card_with_metadata_preservation() {
     # Format the card (requires elevated privileges)
     _perform_sd_card_format "$card_path"
     
-    # Step 3: Restore camera metadata
+    # Step 3: Restore camera metadata (macOS files will be recreated automatically)
     _restore_camera_metadata "$card_path" "$metadata_backup"
     
     echo "✅ SD card formatted and camera metadata restored"
@@ -460,15 +460,18 @@ function _extract_camera_metadata() {
   
   mkdir -p "$backup_dir"
   
-  # Extract critical camera files
+  # Extract critical camera files only (not macOS system files)
   if [[ -f "$card_path/MISC/version.txt" ]]; then
     cp -r "$card_path/MISC" "$backup_dir/"
   fi
   
-  # Extract camera directory structure
+  # Extract camera directory structure only
   if [[ -d "$card_path/DCIM" ]]; then
     find "$card_path/DCIM" -type d -exec mkdir -p "$backup_dir/DCIM/{}" \;
   fi
+  
+  # Note: macOS files (.Spotlight-V100, .fseventsd, .Trashes) are NOT preserved
+  # They will be recreated automatically when the card is mounted
   
   echo "$backup_dir"
 }
@@ -477,15 +480,18 @@ function _restore_camera_metadata() {
   local card_path="$1"
   local backup_dir="$2"
   
-  # Restore camera metadata
+  # Restore camera metadata only
   if [[ -d "$backup_dir/MISC" ]]; then
     cp -r "$backup_dir/MISC" "$card_path/"
   fi
   
-  # Restore directory structure
+  # Restore camera directory structure only
   if [[ -d "$backup_dir/DCIM" ]]; then
     find "$backup_dir/DCIM" -type d -exec mkdir -p "$card_path/DCIM/{}" \;
   fi
+  
+  # macOS system files (.Spotlight-V100, .fseventsd, .Trashes) are NOT restored
+  # They will be recreated automatically by macOS when the card is mounted
   
   # Clean up backup
   rm -rf "$backup_dir"
