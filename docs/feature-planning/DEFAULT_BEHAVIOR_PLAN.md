@@ -842,783 +842,428 @@ FIRMWARE_CHECK=true
 RENAME_CARDS=true
 ```
 
-## Implementation Strategy
+## Multi-Library Support
 
-### Phase 1: Foundation (Immediate Priority)
-1. **Configuration System Enhancement**
-   - Extend existing config file format
-   - Add first-time setup wizard
-   - Implement configuration validation
+### Overview
 
-2. **Basic Smart Detection**
-   - Enhance SD card detection logic
-   - Add content analysis capabilities
-   - Implement basic decision making
+Multi-library support enables users to maintain multiple independent media libraries on a single system, each with its own configuration, processing rules, and organization structure. This feature addresses the needs of professional users who work on different projects, time periods, or storage locations.
 
-### Phase 2: Core Features (High Priority)
-1. **Automated Processing**
-   - Implement smart workflow selection
-   - Add batch processing capabilities
-   - Create progress reporting system
+### Use Cases
 
-2. **User Experience**
-   - Design guided vs. automated modes
-   - Implement status reporting
-   - Add error handling and recovery
+**Professional Workflows:**
+- **Project-based libraries**: Separate libraries for different client projects
+- **Time-based libraries**: Annual or seasonal media collections
+- **Storage-based libraries**: Libraries on different storage devices or locations
+- **Workflow-based libraries**: Different processing workflows for different types of content
 
-### Phase 3: Advanced Features (Medium Priority)
-1. **Intelligence and Automation**
-   - Add workflow templates
-   - Implement scheduled processing
-   - Create multi-card coordination
+**Personal Organization:**
+- **Event libraries**: Separate collections for special events or trips
+- **Device libraries**: Different libraries for different cameras or devices
+- **Archive libraries**: Long-term storage with minimal processing
+- **Active libraries**: Current projects with full processing
 
-2. **Integration and Monitoring**
-   - Launch agent integration
-   - Background monitoring
-   - Notification system
+### Library Management System
 
-### Phase 4: Multi-System User Scenarios (Low Priority)
-1. **Environment Detection and Adaptation**
-   - Implement system environment detection
-   - Implement travel/office environment defaults
-   - Implement environment transition management
+#### Library Configuration Structure
 
-2. **Multi-System Configuration Management**
-   - Implement configuration synchronization
-   - Implement environment-specific overrides
-   - Implement smart environment switching
-
-3. **Professional Workflow Templates**
-   - Implement travel/office workflow templates
-   - Implement hybrid workflow template
-   - Implement multi-system user experience
-
-## Technical Requirements
-
-### New Functions to Implement
-1. `_first_time_setup()` - Guided initial configuration
-2. `_enhanced_sd_card_processing()` - Smart card processing
-3. `_determine_card_state()` - Content analysis
-4. `_smart_workflow_selection()` - Decision making
-5. `_batch_processing()` - Multi-card handling
-6. `_progress_reporting()` - Status updates
-7. `_error_recovery()` - Error handling
-8. `_create_optimized_archive()` - Archive creation with integrity checks
-9. `_import_from_archive()` - Fast import from local archive
-10. `_verify_archive_integrity()` - Archive integrity validation
-11. `_manage_archive_lifecycle()` - Archive retention and cleanup
-12. `_enforce_processing_order()` - Ensure correct operation sequence
-13. `_detect_environment()` - System environment detection
-14. `_switch_environment()` - Environment switching and transition handling
-15. `_handle_travel_to_office_transition()` - Travel content processing
-16. `_process_travel_content()` - Travel session processing
-17. `_load_environment_config()` - Environment-specific configuration loading
-18. `_cleanup_travel_library()` - Travel library cleanup after processing
-19. `_detect_config_version()` - Configuration version detection
-20. `_migrate_configuration()` - Configuration migration workflow
-21. `_migrate_library_structure()` - Library structure migration
-22. `_validate_reprocessing_request()` - Re-processing safety validation
-23. `_check_for_migrations()` - Migration detection and notification
-24. `_backup_configuration()` - Configuration backup before migration
-25. `_backup_library()` - Library backup before migration
-
-### Configuration Enhancements
-1. Extended config file format
-2. User preference management
-3. Workflow template system
-4. Error logging and reporting
-5. Archive management settings
-6. Performance optimization preferences
-7. Processing order enforcement
-8. Archive retention policies
-9. Environment-specific configuration files
-10. Multi-system configuration synchronization
-11. Travel/office environment overrides
-12. Professional workflow templates
-13. Version tracking and migration settings
-14. Re-processing control and safety options
-15. Migration backup and rollback configuration
-
-### Integration Points
-1. Launch agent configuration
-2. Background monitoring
-3. Notification system
-4. Logging framework (already implemented)
-
-## Success Metrics
-
-### User Experience
-- Reduced time from first run to productive use
-- Fewer manual interventions required
-- Clearer feedback and status information
-- Better error handling and recovery
-
-### Technical Performance
-- Faster processing of multiple cards
-- More reliable detection and processing
-- Better resource utilization
-- Improved error recovery
-- 20-80% faster processing through archive optimization
-- Reduced SD card wear through single-pass reading
-- Improved parallel processing capabilities
-- Better storage management and cleanup
-
-### Adoption and Usage
-- Higher user retention after first use
-- Increased frequency of tool usage
-- Reduced support requests
-- Positive user feedback
-
-## Migration Strategy
-
-### Backward Compatibility
-- Maintain existing command-line interface
-- Preserve current configuration files
-- Support existing workflow options
-- Gradual migration path for users
-
-### Testing and Validation
-- Comprehensive testing with various SD card scenarios
-- User acceptance testing with different experience levels
-- Performance testing with large media collections
-- Error scenario testing and recovery validation
-
-## Testing Framework and CI/CD Integration
-
-### Testing Strategy Overview
-
-The enhanced default behavior must be thoroughly tested through our existing testing framework and CI/CD pipeline. Each behavior and feature will have dedicated test suites that validate functionality, performance, and error handling.
-
-### Test Suite Organization
-
-#### 1. Default Behavior Test Suite (`test-default-behavior.zsh`)
-
-**Purpose**: Test the core default behavior when `goprox` is run without arguments.
-
-**Test Cases**:
+**Multi-Library Configuration:**
 ```zsh
-function test_default_behavior_no_cards() {
-  # Test behavior when no SD cards are present
-  # Expected: Informative message, clean exit
-}
-
-function test_default_behavior_single_card() {
-  # Test behavior with one GoPro SD card
-  # Expected: Detection, analysis, appropriate actions
-}
-
-function test_default_behavior_multiple_cards() {
-  # Test behavior with multiple GoPro SD cards
-  # Expected: Parallel processing, conflict avoidance
-}
-
-function test_default_behavior_mixed_cards() {
-  # Test behavior with GoPro and non-GoPro cards
-  # Expected: Only process GoPro cards, ignore others
-}
+# ~/.goprox/libraries.conf - Library registry
+# Format: library_name|path|description|default_processing|created_date
+personal|~/goprox/personal|Personal media collection|comprehensive|2024-01-15
+client_project_a|~/goprox/clients/project_a|Client A project media|quick|2024-02-20
+travel_2024|~/goprox/travel/2024|2024 travel collection|archive_only|2024-03-10
+archive|~/goprox/archive|Long-term archive|minimal|2024-01-01
 ```
 
-#### 2. First-Time Setup Test Suite (`test-first-time-setup.zsh`)
-
-**Purpose**: Test the guided first-time setup experience.
-
-**Test Cases**:
+**Library-Specific Configuration:**
 ```zsh
-function test_first_time_setup_flow() {
-  # Test complete first-time setup process
-  # Expected: Guided configuration, library creation, validation
-}
+# ~/.goprox/libraries/personal.conf
+LIBRARY=~/goprox/personal
+COPYRIGHT="My Name"
+GEONAMES_ACCOUNT="my_geonames"
+PROCESSING_MODE=comprehensive
+AUTO_IMPORT=true
+AUTO_PROCESS=true
+AUTO_ARCHIVE=true
+AUTO_CLEAN=true
 
-function test_first_time_setup_custom_library() {
-  # Test setup with custom library location
-  # Expected: Custom path validation, directory creation
-}
-
-function test_first_time_setup_validation() {
-  # Test configuration validation during setup
-  # Expected: Error detection, user guidance, retry mechanisms
-}
-
-function test_first_time_setup_persistence() {
-  # Test configuration file creation and persistence
-  # Expected: Config file created, settings saved, backup created
-}
+# ~/.goprox/libraries/client_project_a.conf
+LIBRARY=~/goprox/clients/project_a
+COPYRIGHT="Client A"
+GEONAMES_ACCOUNT=""
+PROCESSING_MODE=quick
+AUTO_IMPORT=true
+AUTO_PROCESS=false
+AUTO_ARCHIVE=true
+AUTO_CLEAN=true
 ```
 
-#### 3. Processing Order Test Suite (`test-processing-order.zsh`)
+#### Library Selection and Switching
 
-**Purpose**: Validate the mandatory processing order (Archive → Import → Process → Clean).
-
-**Test Cases**:
+**Library Selection Interface:**
 ```zsh
-function test_processing_order_enforcement() {
-  # Test that operations follow correct order
-  # Expected: Archive first, then import, process, clean
-}
-
-function test_processing_order_interruption() {
-  # Test behavior when processing is interrupted
-  # Expected: Graceful handling, state preservation, recovery
-}
-
-function test_processing_order_parallel() {
-  # Test parallel processing of multiple cards
-  # Expected: Order maintained per card, no conflicts
-}
-
-function test_processing_order_skip_operations() {
-  # Test when some operations are skipped
-  # Expected: Order maintained for enabled operations
-}
-```
-
-#### 4. Archive Optimization Test Suite (`test-archive-optimization.zsh`)
-
-**Purpose**: Test the archive-first optimization strategy and performance improvements.
-
-**Test Cases**:
-```zsh
-function test_archive_creation() {
-  # Test archive creation with integrity checks
-  # Expected: Archive created, manifest generated, integrity verified
-}
-
-function test_import_from_archive() {
-  # Test import from archive vs. direct import
-  # Expected: Faster import, same results, integrity maintained
-}
-
-function test_archive_integrity() {
-  # Test archive integrity verification
-  # Expected: Corruption detection, fallback to original source
-}
-
-function test_archive_lifecycle() {
-  # Test archive retention and cleanup
-  # Expected: Proper retention, automatic cleanup, storage management
-}
-
-function test_archive_performance() {
-  # Test performance improvements
-  # Expected: Measurable speed improvements, resource optimization
-}
-```
-
-#### 5. Smart Detection Test Suite (`test-smart-detection.zsh`)
-
-**Purpose**: Test intelligent content detection and decision making.
-
-**Test Cases**:
-```zsh
-function test_card_state_detection() {
-  # Test detection of different card states
-  # Expected: Correct state identification, appropriate actions
-}
-
-function test_content_analysis() {
-  # Test media content analysis
-  # Expected: Accurate file counting, type detection, metadata extraction
-}
-
-function test_decision_making() {
-  # Test smart workflow selection
-  # Expected: Appropriate workflow chosen based on content and state
-}
-
-function test_incremental_processing() {
-  # Test processing of previously handled cards
-  # Expected: Only new content processed, existing content skipped
-}
-```
-
-#### 6. User Experience Test Suite (`test-user-experience.zsh`)
-
-**Purpose**: Test guided vs. automated modes and user interaction.
-
-**Test Cases**:
-```zsh
-function test_guided_mode() {
-  # Test guided mode for new users
-  # Expected: Clear explanations, confirmation prompts, helpful feedback
-}
-
-function test_automated_mode() {
-  # Test automated mode for experienced users
-  # Expected: Silent operation, automatic decisions, log generation
-}
-
-function test_progress_reporting() {
-  # Test status and progress reporting
-  # Expected: Clear progress indicators, accurate status updates
-}
-
-function test_error_handling() {
-  # Test error handling and recovery
-  # Expected: Clear error messages, recovery suggestions, graceful degradation
-}
-```
-
-#### 7. Multi-System Test Suite (`test-multi-system.zsh`)
-
-**Purpose**: Test environment detection, switching, and transition handling.
-
-**Test Cases**:
-```zsh
-function test_environment_detection() {
-  # Test automatic environment detection
-  # Expected: Correct environment identification (travel/office)
-}
-
-function test_travel_mode_workflow() {
-  # Test travel mode processing workflow
-  # Expected: Quick processing, external storage backup, minimal processing
-}
-
-function test_office_mode_workflow() {
-  # Test office mode processing workflow
-  # Expected: Comprehensive processing, full metadata, permanent storage
-}
-
-function test_environment_switching() {
-  # Test switching between travel and office modes
-  # Expected: Configuration updates, transition handling
-}
-
-function test_travel_to_office_transition() {
-  # Test processing travel content in office mode
-  # Expected: Travel content detection, full processing, cleanup
-}
-
-function test_multi_system_configuration() {
-  # Test environment-specific configuration management
-  # Expected: Proper config loading, overrides, synchronization
-}
-
-function test_workflow_templates() {
-  # Test travel/office/hybrid workflow templates
-  # Expected: Correct template application, environment adaptation
-}
-```
-
-### CI/CD Integration
-
-#### GitHub Actions Workflow Updates
-
-**New Test Jobs**:
-```yaml
-jobs:
-  test-default-behavior:
-    name: "Test Default Behavior"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Checkout code"
-        uses: actions/checkout@v4
-      
-      - name: "Setup test environment"
-        run: |
-          # Create mock SD card structures
-          # Setup test media files
-          # Configure test scenarios
-      
-      - name: "Run default behavior tests"
-        run: |
-          ./scripts/testing/run-tests.zsh --default-behavior
-      
-      - name: "Upload test results"
-        uses: actions/upload-artifact@v4
-        with:
-          name: "default-behavior-test-results"
-          path: "output/test-results/"
-
-  test-performance:
-    name: "Test Performance Optimization"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Performance testing"
-        run: |
-          ./scripts/testing/run-tests.zsh --performance
-      
-      - name: "Generate performance report"
-        run: |
-          ./scripts/testing/generate-performance-report.zsh
-```
-
-#### Test Data Management
-
-**Test Media Files**:
-```zsh
-test/media/
-├── sd_cards/
-│   ├── HERO11-1234/          # Mock GoPro SD card
-│   │   ├── MISC/
-│   │   │   └── version.txt   # Camera info
-│   │   ├── photos/
-│   │   │   ├── G0010001.JPG
-│   │   │   └── G0010002.JPG
-│   │   └── videos/
-│   │       └── G0010001.MP4
-│   ├── HERO12-5678/          # Another mock card
-│   └── empty_card/           # Empty SD card
-├── libraries/
-│   ├── test_library_1/       # Existing library
-│   └── test_library_2/       # Another library
-└── archives/
-    └── existing_archives/    # Pre-existing archives
-```
-
-#### Automated Test Scenarios
-
-**Scenario Matrix**:
-```zsh
-# Test scenarios for CI/CD
-scenarios=(
-  "no_cards"
-  "single_card_new"
-  "single_card_processed"
-  "single_card_empty"
-  "multiple_cards"
-  "mixed_cards"
-  "corrupted_card"
-  "insufficient_space"
-  "permission_denied"
-  "interrupted_processing"
-  "archive_corruption"
-  "network_failure"
-)
-```
-
-### Performance Testing
-
-#### Benchmark Tests
-
-**Performance Metrics**:
-```zsh
-function benchmark_processing_speed() {
-  # Measure processing time for different scenarios
-  # Compare archive vs. direct processing
-  # Track resource utilization
-}
-
-function benchmark_memory_usage() {
-  # Monitor memory consumption during processing
-  # Detect memory leaks
-  # Optimize resource usage
-}
-
-function benchmark_storage_io() {
-  # Measure I/O performance
-  # Compare SD card vs. archive vs. library speeds
-  # Optimize storage operations
-}
-```
-
-#### Load Testing
-
-**Load Test Scenarios**:
-```zsh
-function test_large_collections() {
-  # Test with 1000+ files
-  # Test with 100GB+ data
-  # Test with multiple large cards
-}
-
-function test_concurrent_processing() {
-  # Test multiple cards simultaneously
-  # Test parallel operations
-  # Test resource contention
-}
-```
-
-### Integration Testing
-
-#### End-to-End Testing
-
-**Complete Workflow Tests**:
-```zsh
-function test_complete_workflow() {
-  # Test entire workflow from detection to completion
-  # Validate all intermediate states
-  # Verify final results
-}
-
-function test_error_recovery() {
-  # Test recovery from various failure points
-  # Validate state restoration
-  # Verify data integrity
-}
-```
-
-#### Cross-Platform Testing
-
-**Platform Compatibility**:
-```zsh
-function test_macos_compatibility() {
-  # Test on macOS (primary platform)
-  # Validate macOS-specific features
-  # Test launch agent integration
-}
-
-function test_linux_compatibility() {
-  # Test on Linux (CI/CD environment)
-  # Validate cross-platform compatibility
-  # Test Linux-specific adaptations
-}
-```
-
-### Test Reporting and Monitoring
-
-#### Test Results Structure
-
-**Test Report Format**:
-```json
-{
-  "test_suite": "default-behavior",
-  "timestamp": "2024-12-01T14:30:00Z",
-  "scenarios": [
-    {
-      "name": "single_card_new",
-      "status": "passed",
-      "duration": "45.2s",
-      "performance": {
-        "archive_time": "12.3s",
-        "import_time": "8.7s",
-        "process_time": "15.2s",
-        "clean_time": "2.1s"
-      },
-      "assertions": [
-        {"name": "card_detected", "status": "passed"},
-        {"name": "archive_created", "status": "passed"},
-        {"name": "files_imported", "status": "passed"}
-      ]
-    }
-  ],
-  "summary": {
-    "total_scenarios": 12,
-    "passed": 11,
-    "failed": 1,
-    "performance_improvement": "65%"
-  }
-}
-```
-
-#### CI/CD Monitoring
-
-**Automated Alerts**:
-- Test failure notifications
-- Performance regression alerts
-- Coverage threshold violations
-- Resource usage warnings
-
-**Quality Gates**:
-- All tests must pass
-- Performance benchmarks must be met
-- Code coverage must exceed 90%
-- No critical security vulnerabilities
-
-### Test Maintenance
-
-#### Test Data Management
-
-**Test Data Lifecycle**:
-```zsh
-function update_test_data() {
-  # Update test media files
-  # Add new camera models
-  # Update firmware versions
-  # Maintain test data freshness
-}
-
-function cleanup_test_data() {
-  # Remove old test artifacts
-  # Clean up temporary files
-  # Maintain storage efficiency
-}
-```
-
-#### Test Suite Evolution
-
-**Continuous Improvement**:
-- Add tests for new features
-- Update tests for behavior changes
-- Remove obsolete test cases
-- Optimize test execution time
-
-## Version Migration and Upgrade Management
-
-### Migration Strategy Overview
-
-As GoProX evolves with new features and enhanced default behaviors, we need a robust system to handle configuration and library structure upgrades. This ensures users can seamlessly upgrade without data loss or workflow disruption.
-
-### Version Migration Principles
-
-#### Data Preservation
-- **Never automatically modify media files** unless explicitly requested
-- **Preserve all user data** during upgrades
-- **Maintain backward compatibility** where possible
-- **Create backups** before any migration operations
-
-#### User Control
-- **Explicit user consent** required for any destructive operations
-- **Clear migration options** with detailed explanations
-- **Rollback capabilities** for failed migrations
-- **Migration preview** before execution
-
-#### Incremental Migration
-- **Version-by-version migration** to handle complex upgrades
-- **Migration state tracking** to resume interrupted operations
-- **Partial migration support** for large libraries
-- **Validation at each step** to ensure data integrity
-
-### Configuration Migration System
-
-#### Version Detection and Tracking
-
-**Configuration Version Tracking:**
-```zsh
-# Configuration file structure with version tracking
-~/.goprox/
-├── config                    # Current configuration
-├── config.version           # Current configuration version
-├── config.backup.20241201   # Backup of previous version
-├── migration.log            # Migration history
-└── migration.state          # Current migration state
-```
-
-**Version Detection Function:**
-```zsh
-function _detect_config_version() {
-  local config_file="$HOME/.goprox/config"
-  local version_file="$HOME/.goprox/config.version"
+function _select_library() {
+  local libraries=($(_get_available_libraries))
   
-  if [[ -f "$version_file" ]]; then
-    cat "$version_file"
-  elif [[ -f "$config_file" ]]; then
-    # Analyze config file to determine version
-    _analyze_config_version "$config_file"
+  if [[ ${#libraries[@]} -eq 0 ]]; then
+    echo "No libraries configured. Creating default library..."
+    _create_default_library
+    return
+  fi
+  
+  echo "📚 Available Libraries:"
+  for i in {1..${#libraries[@]}}; do
+    local library_info="$(_get_library_info "${libraries[$i]}")"
+    echo "  $i. $library_info"
+  done
+  
+  read -p "Select library (1-${#libraries[@]}): " choice
+  
+  if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le ${#libraries[@]} ]]; then
+    local selected_library="${libraries[$choice]}"
+    _switch_to_library "$selected_library"
+    echo "✅ Switched to library: $selected_library"
   else
-    echo "0.0.0"  # No config file exists
+    echo "❌ Invalid selection"
+    return 1
   fi
 }
 ```
 
-### Library Structure Migration
-
-#### Library Version Management
-
-**Library Version Tracking:**
+**Library Switching Function:**
 ```zsh
-# Library structure with version tracking
-~/goprox/
-├── .version                 # Library structure version
-├── .migration_state         # Current migration state
-├── .backup_20241201/        # Backup of previous structure
-├── imported/                # Current library structure
-├── processed/
-├── archives/
-└── travel/                  # New in v02.00.00
-```
-
-### Re-Processing Management
-
-#### Explicit Re-Processing Control
-
-**Re-Processing Options:**
-```zsh
-# Command-line options for re-processing
---reprocess-all              # Re-process all files in library
---reprocess-modified         # Re-process files modified since last version
---reprocess-metadata         # Re-process only metadata (non-destructive)
---reprocess-preview          # Show what would be re-processed
---reprocess-since-version    # Re-process files from specific version
-```
-
-**Re-Processing Safety Checks:**
-```zsh
-function _validate_reprocessing_request() {
-  local library="$1"
-  local reprocess_type="$2"
+function _switch_to_library() {
+  local library_name="$1"
+  local library_config="$HOME/.goprox/libraries/${library_name}.conf"
   
-  echo "⚠️  Re-processing will modify media files!"
-  echo "📊 Library: $library"
-  echo "🔄 Type: $reprocess_type"
-  
-  # Show affected files
-  local affected_files=$(_count_affected_files "$library" "$reprocess_type")
-  echo "📁 Files to be processed: $affected_files"
-  
-  # Require explicit confirmation
-  read -q "REPLY?Are you sure you want to proceed? (y/N) "
-  echo
-  
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Re-processing cancelled"
+  if [[ ! -f "$library_config" ]]; then
+    log_error "Library configuration not found: $library_config"
     return 1
   fi
   
-  # Create backup before re-processing
-  _backup_library "$library" "before_reprocessing_$(date +%Y%m%d_%H%M%S)"
+  # Load library-specific configuration
+  source "$library_config"
   
-  return 0
+  # Update current library reference
+  echo "$library_name" > "$HOME/.goprox/current_library"
+  
+  # Validate library structure
+  _validate_library_structure "$LIBRARY"
+  
+  log_info "Switched to library: $library_name ($LIBRARY)"
 }
 ```
 
-### Migration User Interface
+### Library Operations
 
-#### Migration Detection and Notification
+#### Library Creation and Management
 
-**Startup Migration Check:**
+**Create New Library:**
 ```zsh
-function _check_for_migrations() {
-  local config_needs_migration=false
-  local library_needs_migration=false
+function _create_library() {
+  local library_name="$1"
+  local library_path="$2"
+  local description="$3"
+  local processing_mode="$4"
   
-  # Check configuration migration
-  local config_version="$(_detect_config_version)"
-  if [[ "$config_version" != "$GOPROX_VERSION" ]]; then
-    config_needs_migration=true
+  # Validate library name
+  if [[ ! "$library_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    log_error "Invalid library name: $library_name"
+    return 1
   fi
   
-  # Check library migration
-  local library="$(_get_library_path)"
-  if [[ -d "$library" ]]; then
-    local library_version="$(_detect_library_version "$library")"
-    if [[ "$library_version" != "$GOPROX_VERSION" ]]; then
-      library_needs_migration=true
+  # Create library directory structure
+  mkdir -p "$library_path"/{imported,processed,archives,metadata}
+  
+  # Create library configuration
+  _create_library_config "$library_name" "$library_path" "$description" "$processing_mode"
+  
+  # Register library in main registry
+  _register_library "$library_name" "$library_path" "$description" "$processing_mode"
+  
+  log_info "Created library: $library_name at $library_path"
+}
+```
+
+**Library Configuration Template:**
+```zsh
+function _create_library_config() {
+  local library_name="$1"
+  local library_path="$2"
+  local description="$3"
+  local processing_mode="$4"
+  
+  local config_file="$HOME/.goprox/libraries/${library_name}.conf"
+  
+  cat > "$config_file" << EOF
+# GoProX Library Configuration: $library_name
+# Description: $description
+# Created: $(date +%Y-%m-%d)
+
+LIBRARY="$library_path"
+COPYRIGHT=""
+GEONAMES_ACCOUNT=""
+PROCESSING_MODE="$processing_mode"
+
+# Processing Options
+AUTO_IMPORT=true
+AUTO_PROCESS=true
+AUTO_ARCHIVE=true
+AUTO_CLEAN=true
+AUTO_FIRMWARE_CHECK=true
+
+# Library-Specific Settings
+LIBRARY_NAME="$library_name"
+LIBRARY_DESCRIPTION="$description"
+CREATED_DATE="$(date +%Y-%m-%d)"
+LAST_ACCESS="$(date +%Y-%m-%d)"
+EOF
+}
+```
+
+#### Library Validation and Maintenance
+
+**Library Structure Validation:**
+```zsh
+function _validate_library_structure() {
+  local library_path="$1"
+  
+  local required_dirs=("imported" "processed" "archives" "metadata")
+  local missing_dirs=()
+  
+  for dir in "${required_dirs[@]}"; do
+    if [[ ! -d "$library_path/$dir" ]]; then
+      missing_dirs+=("$dir")
+    fi
+  done
+  
+  if [[ ${#missing_dirs[@]} -gt 0 ]]; then
+    log_warn "Missing library directories: ${missing_dirs[*]}"
+    read -q "REPLY?Create missing directories? (y/N) "
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      for dir in "${missing_dirs[@]}"; do
+        mkdir -p "$library_path/$dir"
+        log_info "Created directory: $library_path/$dir"
+      done
+    else
+      log_error "Library structure validation failed"
+      return 1
     fi
   fi
   
-  if [[ "$config_needs_migration" == true ]] || [[ "$library_needs_migration" == true ]]; then
-    _show_migration_notification "$config_needs_migration" "$library_needs_migration"
+  log_info "Library structure validated: $library_path"
+}
+```
+
+### Integration with Default Behavior
+
+#### Multi-Library Default Behavior
+
+**First-Time Setup with Library Selection:**
+```zsh
+function _first_time_setup_with_libraries() {
+  echo "Welcome to GoProX v01.10.00!"
+  echo "GoProX is your GoPro media management assistant."
+  echo ""
+  
+  # Ask about library preferences
+  echo "How would you like to organize your media?"
+  echo "1. Single library (recommended for most users)"
+  echo "2. Multiple libraries (for professional workflows)"
+  
+  read -p "Choose option (1-2): " choice
+  
+  case $choice in
+    1)
+      _setup_single_library
+      ;;
+    2)
+      _setup_multi_library
+      ;;
+    *)
+      echo "Invalid choice, setting up single library"
+      _setup_single_library
+      ;;
+  esac
+}
+```
+
+**Multi-Library Setup:**
+```zsh
+function _setup_multi_library() {
+  echo "Setting up multi-library system..."
+  
+  # Create libraries directory
+  mkdir -p "$HOME/.goprox/libraries"
+  
+  # Create default libraries
+  _create_library "personal" "$HOME/goprox/personal" "Personal media collection" "comprehensive"
+  _create_library "archive" "$HOME/goprox/archive" "Long-term archive" "minimal"
+  
+  # Set personal as default
+  _switch_to_library "personal"
+  
+  echo "✅ Multi-library system configured"
+  echo "📚 Default libraries created:"
+  echo "  - personal: $HOME/goprox/personal"
+  echo "  - archive: $HOME/goprox/archive"
+  echo ""
+  echo "Use 'goprox --library <name>' to switch between libraries"
+}
+```
+
+#### Library-Aware Processing
+
+**Library-Aware SD Card Processing:**
+```zsh
+function _process_sd_card_with_library_selection() {
+  local card_path="$1"
+  
+  # Check if multiple libraries are available
+  local libraries=($(_get_available_libraries))
+  
+  if [[ ${#libraries[@]} -gt 1 ]]; then
+    echo "📱 GoPro SD card detected: $(basename "$card_path")"
+    echo "📚 Select target library:"
+    
+    for i in {1..${#libraries[@]}}; do
+      local library_info="$(_get_library_info "${libraries[$i]}")"
+      echo "  $i. $library_info"
+    done
+    
+    read -p "Select library (1-${#libraries[@]}): " choice
+    
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le ${#libraries[@]} ]]; then
+      local selected_library="${libraries[$choice]}"
+      _switch_to_library "$selected_library"
+      _process_sd_card "$card_path"
+    else
+      echo "❌ Invalid selection, using current library"
+      _process_sd_card "$card_path"
+    fi
+  else
+    # Single library, process normally
+    _process_sd_card "$card_path"
   fi
 }
 ```
 
-### Migration Testing and Validation
+### Command-Line Interface
 
-#### Migration Test Suite
+#### Library Management Commands
 
-**Migration Testing:**
+**Library Command Structure:**
 ```zsh
-function test_config_migration() {
-  # Test configuration migration between versions
-  # Expected: Config updated, backup created, validation passed
+# Library management commands
+goprox --library list                    # List all libraries
+goprox --library create <name> <path>    # Create new library
+goprox --library switch <name>           # Switch to library
+goprox --library info <name>             # Show library information
+goprox --library validate <name>         # Validate library structure
+goprox --library delete <name>           # Delete library (with confirmation)
+
+# Processing with specific library
+goprox --library <name> --import         # Import to specific library
+goprox --library <name> --process        # Process in specific library
+goprox --library <name> --archive        # Archive to specific library
+```
+
+### Configuration and Persistence
+
+#### Library Registry Management
+
+**Library Registry Functions:**
+```zsh
+function _get_available_libraries() {
+  local registry_file="$HOME/.goprox/libraries.conf"
+  
+  if [[ -f "$registry_file" ]]; then
+    cut -d'|' -f1 "$registry_file"
+  else
+    echo "default"
+  fi
 }
 
-function test_library_migration() {
-  # Test library structure migration
-  # Expected: Structure updated, data preserved, validation passed
+function _register_library() {
+  local name="$1"
+  local path="$2"
+  local description="$3"
+  local processing_mode="$4"
+  
+  local registry_file="$HOME/.goprox/libraries.conf"
+  local entry="$name|$path|$description|$processing_mode|$(date +%Y-%m-%d)"
+  
+  echo "$entry" >> "$registry_file"
+  
+  log_info "Registered library: $name"
 }
 
-function test_migration_rollback() {
-  # Test migration rollback capabilities
-  # Expected: Rollback successful, data restored, validation passed
-}
-
-function test_reprocessing_safety() {
-  # Test re-processing safety mechanisms
-  # Expected: User confirmation required, backups created, validation passed
+function _get_library_info() {
+  local library_name="$1"
+  local registry_file="$HOME/.goprox/libraries.conf"
+  
+  if [[ -f "$registry_file" ]]; then
+    local line=$(grep "^$library_name|" "$registry_file")
+    if [[ -n "$line" ]]; then
+      local path=$(echo "$line" | cut -d'|' -f2)
+      local description=$(echo "$line" | cut -d'|' -f3)
+      echo "$library_name: $description ($path)"
+    else
+      echo "$library_name: Not found in registry"
+    fi
+  else
+    echo "$library_name: Default library"
+  fi
 }
 ```
+
+### Testing and Validation
+
+#### Multi-Library Test Suite
+
+**Library Management Tests:**
+```zsh
+function test_library_creation() {
+  # Test library creation and configuration
+  # Expected: Library created, config generated, structure validated
+}
+
+function test_library_switching() {
+  # Test switching between libraries
+  # Expected: Config loaded, environment updated, validation passed
+}
+
+function test_library_validation() {
+  # Test library structure validation
+  # Expected: Missing directories detected, auto-creation works
+}
+
+function test_multi_library_processing() {
+  # Test processing with library selection
+  # Expected: Correct library selected, processing completed
+}
+```
+
+### Future Implementation Considerations
+
+**Implementation Requirements:**
+- **Library isolation**: Each library must be completely independent
+- **Configuration inheritance**: Global settings with library-specific overrides
+- **Cross-library operations**: Ability to move/copy between libraries
+- **Library backup/restore**: Complete library backup and restoration
+- **Library synchronization**: Sync libraries across multiple systems
+- **Library analytics**: Usage statistics and storage management
+- **Library templates**: Pre-configured library types for common workflows
+
+**Technical Considerations:**
+- **Storage management**: Handle libraries on different storage devices
+- **Performance optimization**: Efficient library switching and validation
+- **Error handling**: Graceful handling of missing or corrupted libraries
+- **Migration support**: Upgrade library structures across versions
+- **Integration testing**: Comprehensive testing of multi-library scenarios
 
 ## Future Considerations
 
