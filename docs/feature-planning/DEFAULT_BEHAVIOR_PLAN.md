@@ -488,6 +488,424 @@ GoProX v01.10.00 - Media Management Assistant
 - Performance testing with large media collections
 - Error scenario testing and recovery validation
 
+## Testing Framework and CI/CD Integration
+
+### Testing Strategy Overview
+
+The enhanced default behavior must be thoroughly tested through our existing testing framework and CI/CD pipeline. Each behavior and feature will have dedicated test suites that validate functionality, performance, and error handling.
+
+### Test Suite Organization
+
+#### 1. Default Behavior Test Suite (`test-default-behavior.zsh`)
+
+**Purpose**: Test the core default behavior when `goprox` is run without arguments.
+
+**Test Cases**:
+```bash
+function test_default_behavior_no_cards() {
+  # Test behavior when no SD cards are present
+  # Expected: Informative message, clean exit
+}
+
+function test_default_behavior_single_card() {
+  # Test behavior with one GoPro SD card
+  # Expected: Detection, analysis, appropriate actions
+}
+
+function test_default_behavior_multiple_cards() {
+  # Test behavior with multiple GoPro SD cards
+  # Expected: Parallel processing, conflict avoidance
+}
+
+function test_default_behavior_mixed_cards() {
+  # Test behavior with GoPro and non-GoPro cards
+  # Expected: Only process GoPro cards, ignore others
+}
+```
+
+#### 2. First-Time Setup Test Suite (`test-first-time-setup.zsh`)
+
+**Purpose**: Test the guided first-time setup experience.
+
+**Test Cases**:
+```bash
+function test_first_time_setup_flow() {
+  # Test complete first-time setup process
+  # Expected: Guided configuration, library creation, validation
+}
+
+function test_first_time_setup_custom_library() {
+  # Test setup with custom library location
+  # Expected: Custom path validation, directory creation
+}
+
+function test_first_time_setup_validation() {
+  # Test configuration validation during setup
+  # Expected: Error detection, user guidance, retry mechanisms
+}
+
+function test_first_time_setup_persistence() {
+  # Test configuration file creation and persistence
+  # Expected: Config file created, settings saved, backup created
+}
+```
+
+#### 3. Processing Order Test Suite (`test-processing-order.zsh`)
+
+**Purpose**: Validate the mandatory processing order (Archive → Import → Process → Clean).
+
+**Test Cases**:
+```bash
+function test_processing_order_enforcement() {
+  # Test that operations follow correct order
+  # Expected: Archive first, then import, process, clean
+}
+
+function test_processing_order_interruption() {
+  # Test behavior when processing is interrupted
+  # Expected: Graceful handling, state preservation, recovery
+}
+
+function test_processing_order_parallel() {
+  # Test parallel processing of multiple cards
+  # Expected: Order maintained per card, no conflicts
+}
+
+function test_processing_order_skip_operations() {
+  # Test when some operations are skipped
+  # Expected: Order maintained for enabled operations
+}
+```
+
+#### 4. Archive Optimization Test Suite (`test-archive-optimization.zsh`)
+
+**Purpose**: Test the archive-first optimization strategy and performance improvements.
+
+**Test Cases**:
+```bash
+function test_archive_creation() {
+  # Test archive creation with integrity checks
+  # Expected: Archive created, manifest generated, integrity verified
+}
+
+function test_import_from_archive() {
+  # Test import from archive vs. direct import
+  # Expected: Faster import, same results, integrity maintained
+}
+
+function test_archive_integrity() {
+  # Test archive integrity verification
+  # Expected: Corruption detection, fallback to original source
+}
+
+function test_archive_lifecycle() {
+  # Test archive retention and cleanup
+  # Expected: Proper retention, automatic cleanup, storage management
+}
+
+function test_archive_performance() {
+  # Test performance improvements
+  # Expected: Measurable speed improvements, resource optimization
+}
+```
+
+#### 5. Smart Detection Test Suite (`test-smart-detection.zsh`)
+
+**Purpose**: Test intelligent content detection and decision making.
+
+**Test Cases**:
+```bash
+function test_card_state_detection() {
+  # Test detection of different card states
+  # Expected: Correct state identification, appropriate actions
+}
+
+function test_content_analysis() {
+  # Test media content analysis
+  # Expected: Accurate file counting, type detection, metadata extraction
+}
+
+function test_decision_making() {
+  # Test smart workflow selection
+  # Expected: Appropriate workflow chosen based on content and state
+}
+
+function test_incremental_processing() {
+  # Test processing of previously handled cards
+  # Expected: Only new content processed, existing content skipped
+}
+```
+
+#### 6. User Experience Test Suite (`test-user-experience.zsh`)
+
+**Purpose**: Test guided vs. automated modes and user interaction.
+
+**Test Cases**:
+```bash
+function test_guided_mode() {
+  # Test guided mode for new users
+  # Expected: Clear explanations, confirmation prompts, helpful feedback
+}
+
+function test_automated_mode() {
+  # Test automated mode for experienced users
+  # Expected: Silent operation, automatic decisions, log generation
+}
+
+function test_progress_reporting() {
+  # Test status and progress reporting
+  # Expected: Clear progress indicators, accurate status updates
+}
+
+function test_error_handling() {
+  # Test error handling and recovery
+  # Expected: Clear error messages, recovery suggestions, graceful degradation
+}
+```
+
+### CI/CD Integration
+
+#### GitHub Actions Workflow Updates
+
+**New Test Jobs**:
+```yaml
+jobs:
+  test-default-behavior:
+    name: "Test Default Behavior"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+      
+      - name: "Setup test environment"
+        run: |
+          # Create mock SD card structures
+          # Setup test media files
+          # Configure test scenarios
+      
+      - name: "Run default behavior tests"
+        run: |
+          ./scripts/testing/run-tests.zsh --default-behavior
+      
+      - name: "Upload test results"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "default-behavior-test-results"
+          path: "output/test-results/"
+
+  test-performance:
+    name: "Test Performance Optimization"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Performance testing"
+        run: |
+          ./scripts/testing/run-tests.zsh --performance
+      
+      - name: "Generate performance report"
+        run: |
+          ./scripts/testing/generate-performance-report.zsh
+```
+
+#### Test Data Management
+
+**Test Media Files**:
+```bash
+test/media/
+├── sd_cards/
+│   ├── HERO11-1234/          # Mock GoPro SD card
+│   │   ├── MISC/
+│   │   │   └── version.txt   # Camera info
+│   │   ├── photos/
+│   │   │   ├── G0010001.JPG
+│   │   │   └── G0010002.JPG
+│   │   └── videos/
+│   │       └── G0010001.MP4
+│   ├── HERO12-5678/          # Another mock card
+│   └── empty_card/           # Empty SD card
+├── libraries/
+│   ├── test_library_1/       # Existing library
+│   └── test_library_2/       # Another library
+└── archives/
+    └── existing_archives/    # Pre-existing archives
+```
+
+#### Automated Test Scenarios
+
+**Scenario Matrix**:
+```bash
+# Test scenarios for CI/CD
+scenarios=(
+  "no_cards"
+  "single_card_new"
+  "single_card_processed"
+  "single_card_empty"
+  "multiple_cards"
+  "mixed_cards"
+  "corrupted_card"
+  "insufficient_space"
+  "permission_denied"
+  "interrupted_processing"
+  "archive_corruption"
+  "network_failure"
+)
+```
+
+### Performance Testing
+
+#### Benchmark Tests
+
+**Performance Metrics**:
+```bash
+function benchmark_processing_speed() {
+  # Measure processing time for different scenarios
+  # Compare archive vs. direct processing
+  # Track resource utilization
+}
+
+function benchmark_memory_usage() {
+  # Monitor memory consumption during processing
+  # Detect memory leaks
+  # Optimize resource usage
+}
+
+function benchmark_storage_io() {
+  # Measure I/O performance
+  # Compare SD card vs. archive vs. library speeds
+  # Optimize storage operations
+}
+```
+
+#### Load Testing
+
+**Load Test Scenarios**:
+```bash
+function test_large_collections() {
+  # Test with 1000+ files
+  # Test with 100GB+ data
+  # Test with multiple large cards
+}
+
+function test_concurrent_processing() {
+  # Test multiple cards simultaneously
+  # Test parallel operations
+  # Test resource contention
+}
+```
+
+### Integration Testing
+
+#### End-to-End Testing
+
+**Complete Workflow Tests**:
+```bash
+function test_complete_workflow() {
+  # Test entire workflow from detection to completion
+  # Validate all intermediate states
+  # Verify final results
+}
+
+function test_error_recovery() {
+  # Test recovery from various failure points
+  # Validate state restoration
+  # Verify data integrity
+}
+```
+
+#### Cross-Platform Testing
+
+**Platform Compatibility**:
+```bash
+function test_macos_compatibility() {
+  # Test on macOS (primary platform)
+  # Validate macOS-specific features
+  # Test launch agent integration
+}
+
+function test_linux_compatibility() {
+  # Test on Linux (CI/CD environment)
+  # Validate cross-platform compatibility
+  # Test Linux-specific adaptations
+}
+```
+
+### Test Reporting and Monitoring
+
+#### Test Results Structure
+
+**Test Report Format**:
+```json
+{
+  "test_suite": "default-behavior",
+  "timestamp": "2024-12-01T14:30:00Z",
+  "scenarios": [
+    {
+      "name": "single_card_new",
+      "status": "passed",
+      "duration": "45.2s",
+      "performance": {
+        "archive_time": "12.3s",
+        "import_time": "8.7s",
+        "process_time": "15.2s",
+        "clean_time": "2.1s"
+      },
+      "assertions": [
+        {"name": "card_detected", "status": "passed"},
+        {"name": "archive_created", "status": "passed"},
+        {"name": "files_imported", "status": "passed"}
+      ]
+    }
+  ],
+  "summary": {
+    "total_scenarios": 12,
+    "passed": 11,
+    "failed": 1,
+    "performance_improvement": "65%"
+  }
+}
+```
+
+#### CI/CD Monitoring
+
+**Automated Alerts**:
+- Test failure notifications
+- Performance regression alerts
+- Coverage threshold violations
+- Resource usage warnings
+
+**Quality Gates**:
+- All tests must pass
+- Performance benchmarks must be met
+- Code coverage must exceed 90%
+- No critical security vulnerabilities
+
+### Test Maintenance
+
+#### Test Data Management
+
+**Test Data Lifecycle**:
+```bash
+function update_test_data() {
+  # Update test media files
+  # Add new camera models
+  # Update firmware versions
+  # Maintain test data freshness
+}
+
+function cleanup_test_data() {
+  # Remove old test artifacts
+  # Clean up temporary files
+  # Maintain storage efficiency
+}
+```
+
+#### Test Suite Evolution
+
+**Continuous Improvement**:
+- Add tests for new features
+- Update tests for behavior changes
+- Remove obsolete test cases
+- Optimize test execution time
+
 ## Future Considerations
 
 ### Potential Enhancements
