@@ -3,6 +3,8 @@
 ## Design Principles and Architecture
 **CRITICAL: Before beginning any work on this project, you MUST read and understand the Design Principles document: `docs/architecture/DESIGN_PRINCIPLES.md`**
 
+**MANDATORY READING REQUIREMENT: Whenever you are asked to read AI Instructions, you MUST also read the Design Principles document immediately after. These two documents work together and both are required for complete project context.**
+
 This document establishes the foundational architectural decisions and design patterns that guide all development work. It covers:
 - Simplicity as the core principle
 - Consistent parameter processing using zparseopts
