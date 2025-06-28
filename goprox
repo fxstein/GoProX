@@ -1762,7 +1762,7 @@ _debug "Copyright: $copyright"
 _debug "GeonamesAcct: $geonamesacct"
 
 # Library is a mandatory config setting or parameter
-if [ -z $library ] && [ "$test" != true ]; then
+if [ -z "$library" ] && [ "$test" != true ]; then
   # Empty Library
   _error "ERROR: Missing library!"
   _warning "Specifying library via -l: or --library: is mandatory."
