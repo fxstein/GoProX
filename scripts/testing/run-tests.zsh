@@ -294,4 +294,5 @@ function main() {
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@" # Test commit to trigger CI/CD
+# Test commit to trigger CI/CD with fixed dependencies
