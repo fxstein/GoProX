@@ -21,6 +21,10 @@ This document establishes the foundational architectural decisions and design pa
 - Do not use filler phrases like "Good idea!" or similar conversational fluff.
 - Never require the user to remind you of project standards; treat this file as the source of truth.
 
+## Terminology Standards
+- **Summary Usage**: Never use the term "executive summary" in any work. Always use "summary" or "<topic> summary" (e.g., "release summary", "feature summary", "implementation summary").
+- Maintain consistent terminology across all documentation, commit messages, and communication.
+
 ## MANDATORY RELEASE CHECKLIST
 **CRITICAL: This checklist MUST be completed before ANY release or dry run operation:**
 
