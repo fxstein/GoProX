@@ -299,4 +299,90 @@ run_terminal_cmd "test_command" "is_background" "False"
 - The linting setup for JSON files must be kept in sync between local and CI/CD environments, just like YAML linting.
 - If new JSON files are added, update the linting configuration and scripts to include them automatically.
 
+## Structural Change Proposals
+**CRITICAL: Always propose structural changes to the project before implementing them.**
+
+**Rationale**: Structural changes affect the entire project organization and can impact development workflow, documentation, and maintenance. Proposals ensure changes are well-thought-out and align with project goals.
+
+**Proposal Requirements**:
+- **Always propose** any structural changes before implementation
+- **Describe the proposed structure** with clear examples and rationale
+- **Explain the benefits** and potential impacts of the change
+- **Provide implementation steps** if the proposal is approved
+- **Wait for user approval** before proceeding with implementation
+
+**Complex Proposal Documentation**:
+- **For large or complex structural changes**, automatically create a proposal document
+- **Location**: `docs/proposals/` directory (create if it doesn't exist)
+- **Naming**: `PROPOSAL-YYYY-MM-DD-DESCRIPTIVE-NAME.md`
+- **Content Requirements**:
+  - Executive summary of the proposed change
+  - Current state analysis
+  - Proposed structure with examples
+  - Implementation plan and steps
+  - Benefits and potential risks
+  - Migration strategy (if applicable)
+  - Success criteria and validation
+- **Review Process**: Present the proposal document for review before implementation
+
+**Proposal Document Template**:
+```markdown
+# Proposal: [Descriptive Title]
+
+**Date**: YYYY-MM-DD
+**Proposed By**: AI Assistant
+**Status**: Pending Review
+
+## Executive Summary
+Brief description of the proposed structural change.
+
+## Current State
+Analysis of the existing structure and identified issues.
+
+## Proposed Structure
+Detailed description with examples and rationale.
+
+## Implementation Plan
+Step-by-step implementation approach.
+
+## Benefits and Risks
+Expected benefits and potential concerns.
+
+## Migration Strategy
+How to transition from current to proposed structure.
+
+## Success Criteria
+How to validate the change was successful.
+
+## Next Steps
+What happens after approval/rejection.
+```
+
+**Examples of Structural Changes Requiring Proposals**:
+- Directory reorganization (like the feature-planning restructuring)
+- Script organization changes
+- Documentation structure modifications
+- Configuration file reorganization
+- Testing framework restructuring
+- CI/CD workflow reorganization
+
+**Implementation Guidelines**:
+- **Small Changes**: Propose directly in conversation with clear examples
+- **Medium Changes**: Create a brief proposal document in `docs/proposals/`
+- **Large Changes**: Create comprehensive proposal document with detailed analysis
+- **Always Wait**: Never implement structural changes without explicit approval
+
+**Proposal Review Process**:
+1. **Present Proposal**: Show the proposed structure and rationale
+2. **Wait for Feedback**: Allow user to review and provide input
+3. **Refine if Needed**: Adjust proposal based on feedback
+4. **Get Approval**: Ensure explicit approval before implementation
+5. **Implement**: Follow the approved proposal exactly
+
+**Documentation Updates**:
+- Update relevant documentation after structural changes
+- Ensure navigation and references are updated
+- Update README files to reflect new structure
+- Commit and push all changes together
+
 ## [Add more rules as needed...] 
