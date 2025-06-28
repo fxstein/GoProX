@@ -247,7 +247,7 @@ function test_params_invalid_options() {
 function test_params_missing_required() {
     # Test that missing required parameters are handled
     local output
-    output=$(./goprox --import 2>&1)
+    output=$(./goprox --import --library "" 2>&1)
     assert_exit_code 1 "$?" "Missing library should exit with code 1"
     assert_contains "$output" "Missing library" "Should show missing library error"
 }
@@ -371,7 +371,7 @@ function test_integration_firmware_check() {
 function test_integration_error_handling() {
     # Test error handling by trying to access non-existent file
     local output
-    output=$(./goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
+    output=$(./goprox --source "/nonexistent/path" --library "/nonexistent/library" 2>&1)
     
     # Should handle the error gracefully
     assert_exit_code 1 "$?" "Should exit with error code for non-existent source"

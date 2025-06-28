@@ -355,7 +355,7 @@ function test_storage_cleanup() {
 function test_error_invalid_source() {
     # Test error handling by trying to access non-existent file
     local output
-    output=$(./goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
+    output=$(./goprox --source "/nonexistent/path" --library "/nonexistent/library" 2>&1)
     
     # Should handle the error gracefully
     assert_exit_code 1 "$?" "Should exit with error code for non-existent source"
