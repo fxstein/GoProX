@@ -5,7 +5,184 @@
 
 ## Summary
 
-This plan provides a focused approach to implementing git-flow for the GoProX project, addressing the current main-only workflow and establishing a more structured development process.
+This plan provides a focused approach to implementing git-flow for the GoProX project, addressing the current main-only workflow and establishing a more structured development process with multi-channel release support for Homebrew packages.
+
+## Multi-Channel Release Strategy
+
+### Release Channels Overview
+
+**1. Latest Build Channel (develop branch)**
+- **Purpose**: Continuous integration builds for development testing
+- **Source**: `develop` branch
+- **Audience**: Developers, early adopters, testing
+- **Installation**: `brew install fxstein/tap/goprox@latest`
+- **Update Frequency**: On every develop branch push
+- **Stability**: Development quality, may contain bugs
+
+**2. Beta Channel (release branches)**
+- **Purpose**: Pre-release testing and validation
+- **Source**: `release/*` branches
+- **Audience**: Beta testers, advanced users
+- **Installation**: `brew install fxstein/tap/goprox@beta`
+- **Update Frequency**: On release branch creation and updates
+- **Stability**: Release candidate quality, feature complete
+
+**3. Official Channel (main branch)**
+- **Purpose**: Stable production releases
+- **Source**: `main` branch (tagged releases)
+- **Audience**: General users, production environments
+- **Installation**: `brew install fxstein/tap/goprox` (default)
+- **Update Frequency**: On official releases only
+- **Stability**: Production quality, thoroughly tested
+
+### Channel Management Strategy
+
+**Homebrew Formula Structure:**
+```ruby
+# Formula/goprox.rb - Official channel (default)
+class Goprox < Formula
+  desc "GoPro media management tool"
+  homepage "https://github.com/fxstein/GoProX"
+  version "01.11.00"
+  url "https://github.com/fxstein/GoProX/archive/v01.11.00.tar.gz"
+  sha256 "..."
+  
+  depends_on "zsh"
+  depends_on "exiftool"
+  depends_on "jq"
+  
+  def install
+    # Installation logic
+  end
+end
+
+# Formula/goprox@beta.rb - Beta channel
+class GoproxBeta < Formula
+  desc "GoPro media management tool (beta)"
+  homepage "https://github.com/fxstein/GoProX"
+  version "01.11.00-beta.1"
+  url "https://github.com/fxstein/GoProX/archive/v01.11.00-beta.1.tar.gz"
+  sha256 "..."
+  
+  depends_on "zsh"
+  depends_on "exiftool"
+  depends_on "jq"
+  
+  def install
+    # Installation logic
+  end
+end
+
+# Formula/goprox@latest.rb - Latest build channel
+class GoproxLatest < Formula
+  desc "GoPro media management tool (latest build)"
+  homepage "https://github.com/fxstein/GoProX"
+  version "01.11.00-dev.$(date +%Y%m%d)"
+  url "https://github.com/fxstein/GoProX/archive/develop.tar.gz"
+  sha256 "..."
+  
+  depends_on "zsh"
+  depends_on "exiftool"
+  depends_on "jq"
+  
+  def install
+    # Installation logic
+  end
+end
+```
+
+### CI/CD Workflow Integration
+
+**Multi-Channel Release Workflows:**
+
+```yaml
+# .github/workflows/release-channels.yml
+name: Multi-Channel Release Management
+
+on:
+  push:
+    branches: [main, develop, release/*]
+  release:
+    types: [published]
+
+jobs:
+  latest-build:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Latest Version
+      - name: Update Homebrew Latest Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox@latest formula
+          ./scripts/release/update-homebrew-channel.zsh latest
+
+  beta-release:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Beta Version
+      - name: Update Homebrew Beta Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox@beta formula
+          ./scripts/release/update-homebrew-channel.zsh beta
+
+  official-release:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Official Version
+      - name: Update Homebrew Official Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox formula (official)
+          ./scripts/release/update-homebrew-channel.zsh official
+```
+
+### Channel Update Scripts
+
+**Homebrew Channel Management:**
+```zsh
+#!/bin/zsh
+# scripts/release/update-homebrew-channel.zsh
+
+# Update Homebrew formula for specific channel
+# Usage: ./update-homebrew-channel.zsh [latest|beta|official]
+
+local channel="$1"
+local version=""
+local url=""
+local sha256=""
+
+case $channel in
+  latest)
+    version="$(date +%Y%m%d)-dev"
+    url="https://github.com/fxstein/GoProX/archive/develop.tar.gz"
+    ;;
+  beta)
+    version="$(git describe --tags --abbrev=0)-beta.$(date +%Y%m%d)"
+    url="https://github.com/fxstein/GoProX/archive/$(git rev-parse HEAD).tar.gz"
+    ;;
+  official)
+    version="$(git describe --tags --abbrev=0)"
+    url="https://github.com/fxstein/GoProX/archive/v${version}.tar.gz"
+    ;;
+  *)
+    echo "Error: Invalid channel. Use: latest, beta, or official"
+    exit 1
+    ;;
+esac
+
+# Calculate SHA256
+sha256=$(curl -sL "$url" | sha256sum | cut -d' ' -f1)
+
+# Update Homebrew formula
+_update_homebrew_formula "$channel" "$version" "$url" "$sha256"
+```
 
 ## Current Project Context
 
@@ -90,6 +267,51 @@ This plan provides a focused approach to implementing git-flow for the GoProX pr
    - Implement feature branch workflow
    - Set up release branch process
    - Configure hotfix workflow
+
+### Phase 3: Multi-Channel Release Setup
+**Dependencies**: Phase 2 completion  
+**Impact**: High
+
+**Multi-Channel Implementation Steps:**
+1. **Homebrew Tap Enhancement**
+   - Create additional formula files for beta and latest channels
+   - Set up channel-specific versioning and naming conventions
+   - Configure channel-specific installation paths and dependencies
+
+2. **CI/CD Multi-Channel Workflows**
+   - Implement channel-specific GitHub Actions workflows
+   - Set up automated formula updates for each channel
+   - Configure channel-specific testing and validation
+
+3. **Channel Management Scripts**
+   - Create `update-homebrew-channel.zsh` script
+   - Implement channel-specific version calculation
+   - Set up automated SHA256 calculation and validation
+
+4. **Documentation and User Experience**
+   - Update installation documentation for multi-channel support
+   - Create channel selection guidelines for users
+   - Document channel-specific features and limitations
+
+### Phase 4: Testing and Validation
+**Dependencies**: Phase 3 completion  
+**Impact**: Medium
+
+**Multi-Channel Testing:**
+1. **Channel Isolation Testing**
+   - Verify each channel installs independently
+   - Test channel switching and coexistence
+   - Validate channel-specific versioning
+
+2. **Automation Testing**
+   - Test automated formula updates for all channels
+   - Validate SHA256 calculation accuracy
+   - Test error handling and rollback procedures
+
+3. **User Experience Testing**
+   - Test installation commands for all channels
+   - Validate channel-specific documentation
+   - Test upgrade paths between channels
 
 ## Detailed Implementation Plan
 
@@ -178,11 +400,105 @@ on:
 - [ ] Documentation updated with new processes
 - [ ] First successful release using git-flow
 
+### Multi-Channel Release Criteria
+- [ ] Three Homebrew channels operational (latest, beta, official)
+- [ ] Automated formula updates for all channels
+- [ ] Channel-specific versioning and naming conventions
+- [ ] User documentation for channel selection and installation
+- [ ] Channel isolation and coexistence testing completed
+- [ ] Automated SHA256 calculation and validation working
+- [ ] Error handling and rollback procedures tested
+
 ### Quality Metrics
 - **Code Quality**: Reduced bugs in main branch
 - **Collaboration**: Improved review process and feedback
 - **Release Stability**: More predictable and reliable releases
 - **Team Efficiency**: Faster onboarding and reduced conflicts
+- **User Experience**: Clear channel selection and installation process
+- **Release Flexibility**: Support for development, testing, and production needs
+
+## User Experience and Channel Selection
+
+### Channel Selection Guidelines
+
+**For General Users (Production):**
+```zsh
+# Install stable production version
+brew install fxstein/tap/goprox
+```
+- **Use Case**: Production environments, general users
+- **Stability**: Highest - thoroughly tested releases
+- **Update Frequency**: Only on official releases
+- **Risk Level**: Minimal
+
+**For Advanced Users (Beta Testing):**
+```zsh
+# Install beta version for testing
+brew install fxstein/tap/goprox@beta
+```
+- **Use Case**: Beta testing, advanced users, feature preview
+- **Stability**: High - release candidate quality
+- **Update Frequency**: On release branch updates
+- **Risk Level**: Low - may contain minor issues
+
+**For Developers (Latest Builds):**
+```zsh
+# Install latest development build
+brew install fxstein/tap/goprox@latest
+```
+- **Use Case**: Development testing, early adopters, debugging
+- **Stability**: Development quality - may contain bugs
+- **Update Frequency**: On every develop branch push
+- **Risk Level**: Medium - may contain breaking changes
+
+### Channel Switching
+
+**Upgrading Between Channels:**
+```zsh
+# Switch from official to beta
+brew uninstall fxstein/tap/goprox
+brew install fxstein/tap/goprox@beta
+
+# Switch from beta to latest
+brew uninstall fxstein/tap/goprox@beta
+brew install fxstein/tap/goprox@latest
+
+# Downgrade from latest to official
+brew uninstall fxstein/tap/goprox@latest
+brew install fxstein/tap/goprox
+```
+
+**Channel Information:**
+```zsh
+# Check installed version and channel
+goprox --version
+
+# Check available channels
+brew search fxstein/tap/goprox
+
+# Check channel-specific information
+brew info fxstein/tap/goprox@beta
+```
+
+### Channel-Specific Features
+
+**Latest Build Channel:**
+- Access to cutting-edge features
+- Development debugging information
+- Experimental functionality
+- Daily updates
+
+**Beta Channel:**
+- Pre-release feature testing
+- Release candidate validation
+- Stable feature set
+- Weekly updates
+
+**Official Channel:**
+- Production-ready releases
+- Full feature documentation
+- Long-term support
+- Release-based updates
 
 ## Risk Assessment
 
@@ -216,11 +532,19 @@ on:
 - **#68**: AI instructions tracking (workflow standards)
 - **#38**: Timezone independent tests (CI/CD integration) - COMPLETED
 
+### Multi-Channel Dependencies
+- **Homebrew Tap Repository**: Requires `fxstein/homebrew-fxstein` with multi-formula support
+- **GitHub Secrets**: `HOMEBREW_TOKEN` with cross-repository permissions
+- **CI/CD Infrastructure**: Enhanced workflows for multi-channel automation
+- **Version Management**: Automated version calculation for each channel
+
 ### Integration Points
-- **CI/CD Workflows**: Must support all branch types
+- **CI/CD Workflows**: Must support all branch types and channels
 - **Release Process**: Integration with existing release automation
-- **Testing Framework**: Must work across all branches
+- **Testing Framework**: Must work across all branches and channels
 - **Documentation**: Updates to CONTRIBUTING.md and workflow guides
+- **Homebrew Integration**: Multi-formula management and updates
+- **User Experience**: Channel selection and installation guidance
 
 ## Next Steps
 
@@ -238,15 +562,23 @@ on:
 
 ## Conclusion
 
-Git-flow implementation will improve code quality, collaboration, and release management for the GoProX project. The implementation should focus on establishing a structured workflow that supports the current development pace while preparing for future team growth.
+Git-flow implementation with multi-channel release support will significantly improve code quality, collaboration, and release management for the GoProX project. The implementation provides a structured workflow that supports rapid development while offering flexible release channels for different user needs.
 
-**Recommendation**: Implement git-flow using the phased approach outlined in this plan, starting with preparation activities and then moving to full implementation.
+**Key Benefits of Multi-Channel Approach:**
+- **Development Flexibility**: Latest builds enable rapid iteration and testing
+- **User Choice**: Beta channel provides early access with stability
+- **Production Reliability**: Official channel ensures stable releases
+- **Automated Management**: CI/CD handles all channel updates automatically
+
+**Recommendation**: Implement git-flow with multi-channel releases using the phased approach outlined in this plan, starting with preparation activities and then moving to full implementation with channel support.
 
 This approach ensures that:
 - Git-flow implementation is well-planned and documented
+- Multi-channel releases support different user needs
 - Team is prepared for workflow changes
 - Implementation builds on existing CI/CD infrastructure
 - Workflow supports current and future development needs
+- Users have clear guidance on channel selection and usage
 
 ---
 
