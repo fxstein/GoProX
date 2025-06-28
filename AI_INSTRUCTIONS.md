@@ -111,6 +111,7 @@ This document establishes the foundational architectural decisions and design pa
 
 - Whenever the user requests an issue to be created, always create it as a GitHub tracker issue.
 - Assign the issue to fxstein by default.
+- **IMPORTANT**: fxstein is the user's official GitHub handle. When the user asks to assign an issue to "myself" or "themselves," this means assign to fxstein.
 - Use the latest issues as a template for formatting and structure.
 - When creating the issue statement, format the text using proper Markdown and multi-line input, avoiding explicit \n characters in the body.
 
