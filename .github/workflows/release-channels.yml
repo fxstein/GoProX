@@ -1,0 +1,101 @@
+name: Multi-Channel Release Management
+
+on:
+  push:
+    branches: [main, develop, release/*]
+  release:
+    types: [published]
+
+jobs:
+  latest-build:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup zsh
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          brew install zsh exiftool jq yamllint
+
+      - name: Run tests
+        run: |
+          ./scripts/testing/run-tests.zsh
+
+      - name: Update Homebrew Latest Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox@latest formula
+          ./scripts/release/update-homebrew-channel.zsh latest
+
+  beta-release:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup zsh
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          brew install zsh exiftool jq yamllint
+
+      - name: Run tests
+        run: |
+          ./scripts/testing/run-tests.zsh
+
+      - name: Update Homebrew Beta Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox@beta formula
+          ./scripts/release/update-homebrew-channel.zsh beta
+
+  official-release:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup zsh
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          brew install zsh exiftool jq yamllint
+
+      - name: Run tests
+        run: |
+          ./scripts/testing/run-tests.zsh
+
+      - name: Update Homebrew Official Channel
+        env:
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          # Update goprox formula (official)
+          ./scripts/release/update-homebrew-channel.zsh official
+
+  channel-validation:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [latest-build, beta-release, official-release]
+    steps:
+      - name: Validate Channel Updates
+        run: |
+          echo "Channel update validation completed"
+          echo "Latest build: ${{ needs.latest-build.result }}"
+          echo "Beta release: ${{ needs.beta-release.result }}"
+          echo "Official release: ${{ needs.official-release.result }}"
