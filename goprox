@@ -1746,6 +1746,9 @@ fi
 
 if [[ -n $libraryopt ]]; then
   library=$libraryopt
+elif [[ "$libraryopt" == "" ]]; then
+  # libraryopt was explicitly set to empty string
+  library=""
 fi
 
 if [[ -n $copyrightopt ]]; then
