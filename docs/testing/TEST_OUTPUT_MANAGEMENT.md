@@ -135,7 +135,7 @@ exiftool test/processed/2021/20210902/*.jpg | grep -E "(File Size|Image Size|Cre
 ## Migration from Git-Based Comparison
 
 ### Before (with git)
-```bash
+```zsh
 # Compare current vs previous commit
 git diff HEAD~1 test/processed/
 
@@ -147,7 +147,7 @@ git checkout HEAD~1 test/processed/
 ```
 
 ### After (with comparison framework)
-```bash
+```zsh
 # Create baseline
 ./scripts/testing/test-file-comparison.zsh baseline
 

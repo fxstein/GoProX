@@ -5,19 +5,19 @@ This document describes how to detect mounted SD cards and identify if they are 
 ## SD Card Detection
 
 ### Method 1: Check for Removable Media
-```bash
+```zsh
 # Find external disks with removable media
 system_profiler SPUSBDataType | grep -A 5 -B 2 "Removable Media: Yes"
 ```
 
 ### Method 2: List Mounted Volumes
-```bash
+```zsh
 # List all mounted volumes
 ls -la /Volumes/ | grep -v "^d.*\.$" | grep -v "^d.*\.\.$" | grep -v "^total"
 ```
 
 ### Method 3: Check External Disks
-```bash
+```zsh
 # List external physical disks
 diskutil list | grep -A 10 "external"
 ```
@@ -25,19 +25,19 @@ diskutil list | grep -A 10 "external"
 ## GoPro SD Card Identification
 
 ### Method 1: Check for GoPro URL File
-```bash
+```zsh
 # Look for GoPro branding file
 ls "/Volumes/$VOLUME_NAME/Get_started_with_GoPro.url"
 ```
 
 ### Method 2: Check for GoPro Directory Structure
-```bash
+```zsh
 # Verify GoPro standard directories exist
 [ -d "/Volumes/$VOLUME_NAME/MISC" ] && [ -d "/Volumes/$VOLUME_NAME/DCIM" ]
 ```
 
 ### Method 3: Check for Camera Type in Metadata (Recommended)
-```bash
+```zsh
 # Look for camera type in version.txt
 grep "camera type" "/Volumes/$VOLUME_NAME/MISC/version.txt"
 ```
@@ -45,32 +45,32 @@ grep "camera type" "/Volumes/$VOLUME_NAME/MISC/version.txt"
 ## Extracting GoPro Information
 
 ### Firmware Version
-```bash
+```zsh
 # Extract firmware version from version.txt
 grep "firmware version" "/Volumes/$VOLUME_NAME/MISC/version.txt" | cut -d'"' -f4
 ```
 
 ### Camera Serial Number
-```bash
+```zsh
 # Extract camera serial number from version.txt
 grep "camera serial number" "/Volumes/$VOLUME_NAME/MISC/version.txt" | cut -d'"' -f4
 ```
 
 ### Camera Type
-```bash
+```zsh
 # Extract camera type from version.txt
 grep "camera type" "/Volumes/$VOLUME_NAME/MISC/version.txt" | cut -d'"' -f4
 ```
 
 ### WiFi MAC Address
-```bash
+```zsh
 # Extract WiFi MAC address from version.txt
 grep "wifi mac" "/Volumes/$VOLUME_NAME/MISC/version.txt" | cut -d'"' -f4
 ```
 
 ## Complete Detection Script Example
 
-```bash
+```zsh
 #!/bin/zsh
 
 # Function to detect GoPro SD cards

@@ -320,47 +320,15 @@ run_terminal_cmd "test_command" "is_background" "False"
 - **Location**: `docs/proposals/` directory (create if it doesn't exist)
 - **Naming**: `PROPOSAL-YYYY-MM-DD-DESCRIPTIVE-NAME.md`
 - **Content Requirements**:
-  - Executive summary of the proposed change
-  - Current state analysis
-  - Proposed structure with examples
-  - Implementation plan and steps
-  - Benefits and potential risks
-  - Migration strategy (if applicable)
-  - Success criteria and validation
+  - **Summary**: Brief description of the proposed structural change.
+  - **Current State**: Analysis of the existing structure and identified issues.
+  - **Proposed Structure**: Detailed description with examples and rationale.
+  - **Implementation Plan**: Step-by-step implementation approach.
+  - **Benefits and Risks**: Expected benefits and potential concerns.
+  - **Migration Strategy**: How to transition from current to proposed structure.
+  - **Success Criteria**: How to validate the change was successful.
+  - **Next Steps**: What happens after approval/rejection.
 - **Review Process**: Present the proposal document for review before implementation
-
-**Proposal Document Template**:
-```markdown
-# Proposal: [Descriptive Title]
-
-**Date**: YYYY-MM-DD
-**Proposed By**: AI Assistant
-**Status**: Pending Review
-
-## Executive Summary
-Brief description of the proposed structural change.
-
-## Current State
-Analysis of the existing structure and identified issues.
-
-## Proposed Structure
-Detailed description with examples and rationale.
-
-## Implementation Plan
-Step-by-step implementation approach.
-
-## Benefits and Risks
-Expected benefits and potential concerns.
-
-## Migration Strategy
-How to transition from current to proposed structure.
-
-## Success Criteria
-How to validate the change was successful.
-
-## Next Steps
-What happens after approval/rejection.
-```
 
 **Examples of Structural Changes Requiring Proposals**:
 - Directory reorganization (like the feature-planning restructuring)
@@ -388,5 +356,38 @@ What happens after approval/rejection.
 - Ensure navigation and references are updated
 - Update README files to reflect new structure
 - Commit and push all changes together
+
+**Proposal Document Template**:
+```markdown
+# Proposal: [Descriptive Title]
+
+**Date**: YYYY-MM-DD
+**Proposed By**: AI Assistant
+**Status**: Pending Review
+
+## Summary
+Brief description of the proposed structural change.
+
+## Current State
+Analysis of the existing structure and identified issues.
+
+## Proposed Structure
+Detailed description with examples and rationale.
+
+## Implementation Plan
+Step-by-step implementation approach.
+
+## Benefits and Risks
+Expected benefits and potential concerns.
+
+## Migration Strategy
+How to transition from current to proposed structure.
+
+## Success Criteria
+How to validate the change was successful.
+
+## Next Steps
+What happens after approval/rejection.
+```
 
 ## [Add more rules as needed...] 

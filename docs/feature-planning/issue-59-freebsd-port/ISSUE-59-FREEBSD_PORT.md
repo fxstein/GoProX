@@ -212,7 +212,7 @@ goprox --version
 
 ## Example Usage
 
-```bash
+```zsh
 # Install via ports
 cd /usr/ports/multimedia/goprox
 make install

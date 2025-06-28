@@ -63,7 +63,7 @@ Add debug steps to GitHub Actions workflow to detect the issue:
 
 Compare local and remote tag hashes:
 
-```bash
+```zsh
 # Local
 git rev-parse v00.52.00
 
@@ -75,7 +75,7 @@ gh run view <run-id> --log | grep "Tag v00.52.00:"
 
 Compare expected vs. actual commit counts:
 
-```bash
+```zsh
 # Expected (local)
 git log --oneline v00.52.00..HEAD | wc -l
 
@@ -89,7 +89,7 @@ git log --oneline v00.52.00..HEAD | wc -l
 
 After `git filter-repo`, force push all tags to update them on GitHub:
 
-```bash
+```zsh
 # Force push all tags with rewritten history
 git push --force --tags
 
@@ -167,7 +167,7 @@ fi
 
 Before running workflows, verify local and remote are in sync:
 
-```bash
+```zsh
 # Check tag consistency
 git ls-remote --tags origin | grep v00.52.00
 git rev-parse v00.52.00

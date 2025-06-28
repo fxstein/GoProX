@@ -193,7 +193,7 @@ echo "✅ Operation completed successfully"
 - Include examples of all possible entries as comments at the very top of the configuration file
 
 **Current Implementation:**
-```bash
+```zsh
 # ~/.goprox configuration file
 # Example configuration with all possible entries:
 # source=.

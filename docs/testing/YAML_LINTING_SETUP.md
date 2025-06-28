@@ -26,6 +26,11 @@ The project uses `yamllint` to validate YAML files, particularly GitHub Actions 
 3. If any issues are found, the commit is blocked
 4. Provides helpful error messages and suggestions
 
+**Usage**:
+```zsh
+./scripts/maintenance/fix-yaml-formatting.zsh
+```
+
 ### 2. YAML Formatting Fixer Script
 
 **Location**: `scripts/maintenance/fix-yaml-formatting.zsh`
@@ -108,7 +113,7 @@ The GitHub Actions workflows include YAML linting steps that use the same config
 ## Installation Requirements
 
 ### Local Development
-```bash
+```zsh
 # Install yamllint
 pip install yamllint
 

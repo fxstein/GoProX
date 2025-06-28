@@ -5,7 +5,7 @@
 **Priority**: High  
 **Assignee**: fxstein  
 
-## Executive Summary
+## Summary
 
 The current GoProX repository uses a monolithic 1,932-line `goprox` script that combines CLI interface, business logic, and utility functions. This structure is not sustainable for future growth and development. This proposal outlines a modular `lib/`-based architecture that maintains backward compatibility while improving maintainability, testability, and extensibility.
 
@@ -103,7 +103,7 @@ GoProX/
 #!/usr/bin/env zsh
 
 # Get the directory where goprox is located
-GOPROX_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GOPROX_HOME="$(cd "$(dirname "${(%):-%x}")" && pwd)"
 
 # Source core libraries
 source "$GOPROX_HOME/lib/core/config.zsh"

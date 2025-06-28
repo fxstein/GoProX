@@ -28,7 +28,7 @@ Examples:
 ## Proposal Content
 
 Each proposal includes:
-- **Executive Summary**: Brief description of the proposed change
+- **Summary**: Brief description of the proposed change
 - **Current State**: Analysis of existing structure and issues
 - **Proposed Structure**: Detailed description with examples
 - **Implementation Plan**: Step-by-step approach

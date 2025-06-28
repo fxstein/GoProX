@@ -3,7 +3,7 @@
 **Status**: Ready for Implementation  
 **Scope**: Git-flow implementation for current repository
 
-## Executive Summary
+## Summary
 
 This plan provides a focused approach to implementing git-flow for the GoProX project, addressing the current main-only workflow and establishing a more structured development process.
 

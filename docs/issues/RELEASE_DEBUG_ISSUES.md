@@ -5,7 +5,7 @@ This document tracks issues encountered while debugging the SHA256 mismatch prob
 ## Issues Encountered During Debugging
 
 ### 1. GitHub CLI Command Issues
-```bash
+```zsh
 # These commands failed with "head: |: No such file or directory" errors:
 gh run list --workflow="release-automation.yml" --limit 1
 gh run list --workflow release-automation.yml
@@ -31,7 +31,7 @@ gh secret list
 ## Proposed Fixes
 
 ### Fix 1: Improve GitHub CLI Debugging
-```bash
+```zsh
 # Test basic gh functionality
 gh --version
 gh auth status

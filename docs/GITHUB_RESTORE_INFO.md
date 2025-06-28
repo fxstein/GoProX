@@ -8,7 +8,7 @@ This file contains the information needed to restore the GitHub remote connectio
 - **Current HEAD**: 2d3b09e (Remove remaining media files with uppercase extensions)
 
 ## Remote Configuration
-```bash
+```zsh
 # Current remote configuration
 origin  https://github.com/fxstein/GoProX.git (fetch)
 origin  https://github.com/fxstein/GoProX.git (push)
@@ -17,27 +17,27 @@ origin  https://github.com/fxstein/GoProX.git (push)
 ## Steps to Restore GitHub Connection
 
 ### 1. Remove Current Remote (if needed)
-```bash
+```zsh
 git remote remove origin
 ```
 
 ### 2. Add GitHub Remote Back
-```bash
+```zsh
 git remote add origin https://github.com/fxstein/GoProX.git
 ```
 
 ### 3. Verify Remote Configuration
-```bash
+```zsh
 git remote -v
 ```
 
 ### 4. Force Push Cleaned Repository
-```bash
+```zsh
 git push --force-with-lease origin main
 ```
 
 ### 5. Verify Connection
-```bash
+```zsh
 git fetch origin
 git status
 ```
