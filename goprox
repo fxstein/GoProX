@@ -34,7 +34,7 @@ fi
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2021-2025 Oliver Ratzesberger'
 __license__='MIT'
-__version__='01.10.00'
+__version__='01.11.00'
 __github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
@@ -1746,6 +1746,9 @@ fi
 
 if [[ -n $libraryopt ]]; then
   library=$libraryopt
+elif [[ "$libraryopt" == "" ]]; then
+  # libraryopt was explicitly set to empty string
+  library=""
 fi
 
 if [[ -n $copyrightopt ]]; then
@@ -1762,7 +1765,7 @@ _debug "Copyright: $copyright"
 _debug "GeonamesAcct: $geonamesacct"
 
 # Library is a mandatory config setting or parameter
-if [ -z $library ] && [ "$test" != true ]; then
+if [ -z "$library" ] && [ "$test" != true ]; then
   # Empty Library
   _error "ERROR: Missing library!"
   _warning "Specifying library via -l: or --library: is mandatory."
