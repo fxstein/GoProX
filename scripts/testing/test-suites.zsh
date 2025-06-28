@@ -231,7 +231,7 @@ mountoptions=(--archive --import --clean --firmware)'
 function test_params_valid_options() {
     # Test that valid parameter combinations work
     local output
-    output=$(../goprox --help 2>&1)
+    output=$(./goprox --help 2>&1)
     assert_exit_code 1 "$?" "Help option should exit with code 1"
     assert_contains "$output" "Usage:" "Help output should contain usage information"
 }
@@ -239,7 +239,7 @@ function test_params_valid_options() {
 function test_params_invalid_options() {
     # Test that invalid options are rejected
     local output
-    output=$(../goprox --invalid-option 2>&1)
+    output=$(./goprox --invalid-option 2>&1)
     assert_exit_code 1 "$?" "Invalid option should exit with code 1"
     assert_contains "$output" "Unknown option" "Should show unknown option error"
 }
@@ -247,7 +247,7 @@ function test_params_invalid_options() {
 function test_params_missing_required() {
     # Test that missing required parameters are handled
     local output
-    output=$(../goprox --import 2>&1)
+    output=$(./goprox --import 2>&1)
     assert_exit_code 1 "$?" "Missing library should exit with code 1"
     assert_contains "$output" "Missing library" "Should show missing library error"
 }
@@ -255,7 +255,7 @@ function test_params_missing_required() {
 function test_params_help_option() {
     # Test help option functionality
     local output
-    output=$(../goprox -h 2>&1)
+    output=$(./goprox -h 2>&1)
     assert_exit_code 1 "$?" "Help option should exit with code 1"
     assert_contains "$output" "goprox - import and process" "Help should show description"
 }
@@ -263,7 +263,7 @@ function test_params_help_option() {
 function test_params_version_option() {
     # Test version option functionality
     local output
-    output=$(../goprox --version 2>&1)
+    output=$(./goprox --version 2>&1)
     assert_exit_code 0 "$?" "Version option should exit with code 0"
     assert_contains "$output" "goprox v" "Version should show version string"
 }
@@ -371,7 +371,7 @@ function test_integration_firmware_check() {
 function test_integration_error_handling() {
     # Test error handling by trying to access non-existent file
     local output
-    output=$(../goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
+    output=$(./goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
     
     # Should handle the error gracefully
     assert_exit_code 1 "$?" "Should exit with error code for non-existent source"
