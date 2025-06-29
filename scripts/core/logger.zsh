@@ -60,7 +60,10 @@ function log_time_end() {
   log_info "Elapsed time: ${duration}s"
 }
 
-trap 'log_error "Error on line $LINENO"' ERR
+# Set up error trap for debugging (only in interactive mode or when explicitly enabled)
+if [[ "${INTERACTIVE:-}" == "true" || "${ENABLE_ERROR_TRAP:-}" == "true" ]]; then
+    trap 'log_error "Error on line $LINENO"' ERR
+fi
 
 # --- Usage Example ---
 # source scripts/core/logger.zsh
