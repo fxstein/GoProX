@@ -61,8 +61,10 @@ function log_time_end() {
 }
 
 # Set up error trap for debugging (only in interactive mode or when explicitly enabled)
+# More robust error trap that only triggers on actual script errors
 if [[ "${INTERACTIVE:-}" == "true" || "${ENABLE_ERROR_TRAP:-}" == "true" ]]; then
-    trap 'log_error "Error on line $LINENO"' ERR
+    # Only trap errors from the main script, not from expected command failures
+    trap 'if [[ $? -ne 0 && $BASH_SUBSHELL -eq 0 ]]; then log_error "Error on line $LINENO (exit code: $?)"; fi' ERR
 fi
 
 # --- Usage Example ---
