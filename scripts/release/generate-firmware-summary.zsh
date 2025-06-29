@@ -73,6 +73,30 @@ while IFS= read -r model; do
     sorted_models+=("$model")
 done < <(printf '%s\n' "${all_models[@]}" | sort)
 
+# Calculate column widths
+model_width=5  # "Model" header length
+official_width=15  # "Latest Official" header length
+labs_width=11  # "Latest Labs" header length
+
+for model in "${sorted_models[@]}"; do
+    model_len=${#model}
+    if [[ $model_len -gt $model_width ]]; then
+        model_width=$model_len
+    fi
+    
+    official_ver="${official_firmware[$model]:-N/A}"
+    official_len=${#official_ver}
+    if [[ $official_len -gt $official_width ]]; then
+        official_width=$official_len
+    fi
+    
+    labs_ver="${labs_firmware[$model]:-N/A}"
+    labs_len=${#labs_ver}
+    if [[ $labs_len -gt $labs_width ]]; then
+        labs_width=$labs_len
+    fi
+done
+
 # Generate the summary
 log_info "Generating firmware summary markdown"
 
@@ -83,13 +107,14 @@ The following GoPro camera models are currently supported by GoProX:
 
 EOF
 
-# Single table with latest official and labs firmware
-echo "| Model | Latest Official | Latest Labs |"
-echo "|-------|-----------------|-------------|"
+# Generate properly formatted table
+printf "| %-${model_width}s | %-${official_width}s | %-${labs_width}s |\n" "Model" "Latest Official" "Latest Labs"
+printf "|%s|%s|%s|\n" "$(printf '%*s' $((model_width + 2)) '' | tr ' ' '-')" "$(printf '%*s' $((official_width + 2)) '' | tr ' ' '-')" "$(printf '%*s' $((labs_width + 2)) '' | tr ' ' '-')"
+
 for model in "${sorted_models[@]}"; do
     official_ver="${official_firmware[$model]:-N/A}"
     labs_ver="${labs_firmware[$model]:-N/A}"
-    echo "| $model | $official_ver | $labs_ver |"
+    printf "| %-${model_width}s | %-${official_width}s | %-${labs_width}s |\n" "$model" "$official_ver" "$labs_ver"
 done
 
 log_info "Firmware summary generation completed" 
