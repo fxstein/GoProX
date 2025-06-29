@@ -427,6 +427,27 @@ When implementing new features, consider these questions:
 5. **Error Handling:** How will this fail gracefully and provide clear feedback?
 6. **Documentation:** Is this decision worth documenting for future reference?
 
+## Variable Naming and Reserved Word Conflicts
+
+- **All variables, including loop variables, must be prefixed** (e.g., `wf_`, `rel_`, `test_`, etc.) to avoid conflicts with shell reserved words or built-in variables (such as `status`, `time`, `path`, etc.).
+- **Never use unprefixed names** that could shadow or conflict with zsh/built-in variables or reserved words.
+- **Loop variables** in `while`/`for`/`read` statements must also be prefixed.
+- This rule applies to all scripts, functions, and test code in the project.
+- If in doubt, always use a descriptive prefix related to the script or function context.
+
+**Rationale:**
+- Prevents subtle bugs and errors due to variable shadowing or assignment to read-only shell variables.
+- Ensures code is robust, portable, and easier to maintain.
+
+**Example:**
+```zsh
+# BAD (conflicts with zsh built-in)
+while IFS='|' read -r status name; do ...
+
+# GOOD (uses prefix)
+while IFS='|' read -r wf_status wf_name; do ...
+```
+
 ---
 
 *This document should be consulted when making any significant design decisions in the GoProX project. When in doubt, prioritize simplicity and user experience over technical elegance.* 
