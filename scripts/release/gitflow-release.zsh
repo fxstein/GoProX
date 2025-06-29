@@ -257,6 +257,12 @@ commit_and_push() {
         return 0
     fi
     
+    # Check if there are any changes to commit
+    if git diff-index --quiet HEAD --; then
+        log_info "No changes to commit - version already up to date"
+        return 0
+    fi
+    
     # Add and commit changes
     git add "$PROJECT_ROOT/goprox" "$summary_file"
     git commit -m "chore(release): bump version to $NEW_VERSION (refs #20)"
