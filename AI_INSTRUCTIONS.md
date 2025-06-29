@@ -130,6 +130,73 @@ This document establishes the foundational architectural decisions and design pa
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
 - After generating the issue list, read the output file (`output/github_issues.md`) to ensure you are memorizing and referencing the latest issues in all future work and communication.
 
+## GitHub Command Intermediate Documents (MANDATORY)
+**CRITICAL: For any GitHub issue or PR creation commands with complex formatting or long content, ALWAYS create an intermediate document first to avoid formatting issues and process hangs.**
+
+**Rationale**: Complex GitHub CLI commands with long bodies, multiple parameters, or special characters can cause formatting issues, syntax errors, or process hangs. Creating intermediate documents ensures reliable command execution and proper formatting.
+
+**Requirements**:
+- **Create intermediate document** for any GitHub command with:
+  - Long body text (more than 200 characters)
+  - Multiple parameters or complex formatting
+  - Special characters or markdown formatting
+  - Multiple labels or assignees
+  - Complex issue/PR descriptions
+
+- **Document location**: `output/` directory
+- **Naming convention**: `output/<command_type>_<timestamp>.md` (e.g., `output/pr_body_20250629_153000.md`)
+- **Content format**: Clean markdown with proper formatting
+
+**Implementation Process**:
+1. **Create intermediate document** in `output/` directory
+2. **Write content** with proper markdown formatting
+3. **Read document content** into variable or use file reference
+4. **Execute GitHub command** using the document content
+5. **Clean up** intermediate document after successful execution
+
+**Examples**:
+```zsh
+# Create intermediate document for complex PR
+cat > output/pr_body_$(date +%Y%m%d_%H%M%S).md << 'EOF'
+## Summary
+Complex PR description with multiple sections...
+
+## Requirements
+- Feature A
+- Feature B
+
+## Motivation
+Detailed explanation...
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+EOF
+
+# Use document in GitHub command
+gh pr create --title "title" --body-file output/pr_body_*.md --assignee fxstein --label enhancement
+```
+
+**Benefits**:
+- ✅ **Reliable execution** - Avoids command line length limits
+- ✅ **Proper formatting** - Maintains markdown structure
+- ✅ **Error prevention** - Reduces syntax and formatting issues
+- ✅ **Easy editing** - Can review and modify content before execution
+- ✅ **Cleanup** - Intermediate files are in `output/` directory (gitignored)
+
+**Enforcement**:
+- **MANDATORY** for all complex GitHub commands
+- **Failure to follow** will result in immediate correction
+- **Always use** for issue/PR creation with detailed content
+- **Clean up** intermediate files after successful execution
+
+**Common Use Cases**:
+- Creating detailed GitHub issues with multiple sections
+- Creating pull requests with comprehensive descriptions
+- Adding complex labels and assignees
+- Including formatted markdown content
+- Multi-line descriptions or requirements
+
 ## Pull Request Issue Closure Rules (MANDATORY)
 - **NEVER assume whether a PR closes an issue** - always ask the user if the PR closes the entire issue or is just a partial implementation
 - **Use "Related to #X" instead of "Closes #X"** unless explicitly told by the user that the PR closes the issue
