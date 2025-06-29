@@ -516,6 +516,17 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 - When in doubt, read more documents rather than fewer
 - If a document is missing or inaccessible, inform the user immediately 
 
+## Branch Management and Git Flow
+- **ALWAYS create separate branches for unrelated work** using `scripts/maintenance/create-branch.zsh`
+- Use appropriate branch types: `bug`, `enhancement`, `feature`, `cleanup`, `refactor`, `release`, `hotfix`, `documentation`, `test`
+- Branch naming follows the pattern: `<prefix>/<type>-<description>-<issue>-<timestamp>`
+- Examples:
+  ```zsh
+  ./scripts/maintenance/create-branch.zsh "fix CI test failures" --type bug --issue 123
+  ./scripts/maintenance/create-branch.zsh "add new feature" --type enhancement
+  ./scripts/maintenance/create-branch.zsh "update documentation" --type cleanup
+  ```
+
 ## Branch Safety and Fix Management (MANDATORY)
 
 ### **Prominent Branch Display**

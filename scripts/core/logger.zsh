@@ -150,6 +150,8 @@ get_branch_display() {
         local branch_type=""
         if [[ "$current_branch" =~ ^fix/ ]]; then
             branch_type="fix"
+        elif [[ "$current_branch" =~ ^feat/ ]]; then
+            branch_type="feat"
         elif [[ "$current_branch" =~ ^feature/ ]]; then
             branch_type="feat"
         elif [[ "$current_branch" =~ ^release/ ]]; then
@@ -233,6 +235,7 @@ test_branch_display() {
     # Test different branch name patterns
     local test_branches=(
         "fix/bug-description-123-20250629-120000"
+        "feat/enhancement-description-456-20250629-120000"
         "feature/new-awesome-feature-456-20250629-120000"
         "release/01.12.1-dev"
         "hotfix/critical-security-fix-789-20250629-120000"
@@ -262,6 +265,8 @@ get_branch_display_for_test() {
         local branch_type=""
         if [[ "$current_branch" =~ ^fix/ ]]; then
             branch_type="fix"
+        elif [[ "$current_branch" =~ ^feat/ ]]; then
+            branch_type="feat"
         elif [[ "$current_branch" =~ ^feature/ ]]; then
             branch_type="feat"
         elif [[ "$current_branch" =~ ^release/ ]]; then
