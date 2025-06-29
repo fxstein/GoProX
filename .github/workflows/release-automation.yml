@@ -42,12 +42,21 @@ jobs:
           fi
 
           CURRENT_VERSION=$(grep "__version__=" goprox | cut -d"'" -f2)
-          if [[ "$CURRENT_VERSION" != "${{ inputs.version }}" ]]; then
-            echo "Error: Version in goprox file ($CURRENT_VERSION) doesn't match input (${{ inputs.version }})"
-            exit 1
-          fi
 
-          echo "Version validation passed: ${{ inputs.version }}"
+          # For dry runs, skip version match check since version bump is only simulated
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "Dry run detected - skipping version match validation"
+            echo "Current version in goprox: $CURRENT_VERSION"
+            echo "Target version: ${{ inputs.version }}"
+            echo "Version format validation passed: ${{ inputs.version }}"
+          else
+            # For real releases, ensure version matches
+            if [[ "$CURRENT_VERSION" != "${{ inputs.version }}" ]]; then
+              echo "Error: Version in goprox file ($CURRENT_VERSION) doesn't match input (${{ inputs.version }})"
+              exit 1
+            fi
+            echo "Version validation passed: ${{ inputs.version }}"
+          fi
 
   run-tests:
     name: Run Tests
