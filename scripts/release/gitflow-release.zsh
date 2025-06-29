@@ -390,6 +390,56 @@ monitor_github_actions() {
     return 1
 }
 
+# Handle summary file cleanup
+handle_summary_cleanup() {
+    local dry_run="$1"
+    local preserve_summary="$2"
+    local remove_summary="$3"
+    local summary_file="$4"
+    local base_version="$5"
+    local monitor_timeout="$6"
+    
+    # Determine if we should remove the summary file
+    local should_remove=false
+    
+    if [[ "$remove_summary" == "true" ]]; then
+        should_remove=true
+    elif [[ "$preserve_summary" == "false" && "$dry_run" == "false" ]]; then
+        should_remove=true
+    fi
+    
+    if [[ "$should_remove" == "true" ]]; then
+        if [[ "$dry_run" == "true" ]]; then
+            log_info "DRY RUN: Would remove summary file"
+        else
+            # Rename summary file to versioned format
+            local versioned_file="$RELEASE_DIR/$(basename "$summary_file" .md)-$NEW_VERSION.md"
+            mv "$summary_file" "$versioned_file"
+            git add "$versioned_file"
+            git commit -m "docs(release): archive AI summary for version $NEW_VERSION (refs #20)"
+            
+            # Get commit SHA after commit
+            local commit_sha=$(get_current_commit_sha)
+            
+            git push origin "$CURRENT_BRANCH"
+            log_info "Archived summary file to $versioned_file"
+            
+            # Monitor GitHub Actions workflows after summary cleanup push
+            echo ""
+            echo "🚀 Triggered GitHub Actions - Monitoring workflows..."
+            if ! monitor_github_actions "$monitor_timeout" "$commit_sha" "$CURRENT_BRANCH" "$dry_run"; then
+                log_error "GitHub Actions monitoring failed after summary cleanup"
+                echo ""
+                echo "❌ Release process failed due to workflow errors!"
+                echo "   Please fix the workflow issues and retry the release."
+                exit 1
+            fi
+        fi
+    else
+        log_info "Preserving summary file"
+    fi
+}
+
 # Commit and push changes if not dry run
 commit_and_push() {
     local dry_run="$1"
@@ -443,56 +493,6 @@ if [[ "$DRY_RUN" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
 else
     commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"
 fi
-
-# Handle summary file cleanup
-handle_summary_cleanup() {
-    local dry_run="$1"
-    local preserve_summary="$2"
-    local remove_summary="$3"
-    local summary_file="$4"
-    local base_version="$5"
-    local monitor_timeout="$6"
-    
-    # Determine if we should remove the summary file
-    local should_remove=false
-    
-    if [[ "$remove_summary" == "true" ]]; then
-        should_remove=true
-    elif [[ "$preserve_summary" == "false" && "$dry_run" == "false" ]]; then
-        should_remove=true
-    fi
-    
-    if [[ "$should_remove" == "true" ]]; then
-        if [[ "$dry_run" == "true" ]]; then
-            log_info "DRY RUN: Would remove summary file"
-        else
-            # Rename summary file to versioned format
-            local versioned_file="$RELEASE_DIR/$(basename "$summary_file" .md)-$NEW_VERSION.md"
-            mv "$summary_file" "$versioned_file"
-            git add "$versioned_file"
-            git commit -m "docs(release): archive AI summary for version $NEW_VERSION (refs #20)"
-            
-            # Get commit SHA after commit
-            local commit_sha=$(get_current_commit_sha)
-            
-            git push origin "$CURRENT_BRANCH"
-            log_info "Archived summary file to $versioned_file"
-            
-            # Monitor GitHub Actions workflows after summary cleanup push
-            echo ""
-            echo "🚀 Triggered GitHub Actions - Monitoring workflows..."
-            if ! monitor_github_actions "$monitor_timeout" "$commit_sha" "$CURRENT_BRANCH" "$dry_run"; then
-                log_error "GitHub Actions monitoring failed after summary cleanup"
-                echo ""
-                echo "❌ Release process failed due to workflow errors!"
-                echo "   Please fix the workflow issues and retry the release."
-                exit 1
-            fi
-        fi
-    else
-        log_info "Preserving summary file"
-    fi
-}
 
 # Display next steps
 show_next_steps() {
