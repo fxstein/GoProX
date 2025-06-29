@@ -127,46 +127,32 @@ log_info "Monitor timeout: $MONITOR_TIMEOUT minutes"
 CURRENT_BRANCH=$(git branch --show-current)
 log_info "Current branch: $CURRENT_BRANCH"
 
-# Validate branch requirements
-validate_branch_requirements() {
-    local branch="$1"
-    local dry_run="$2"
-    local allow_unclean="$3"
-    
-    case "$branch" in
-        feature/*)
-            if [[ "$dry_run" == "false" ]]; then
-                log_error "Feature branches only support dry-run releases"
-                exit 1
-            fi
-            if [[ "$allow_unclean" == "false" ]]; then
-                log_error "Feature branches require --allow-unclean for releases"
-                exit 1
-            fi
-            log_info "Feature branch validation passed"
-            ;;
-        develop)
-            log_info "Develop branch validation passed"
-            ;;
-        release/*)
-            log_info "Release branch validation passed"
-            ;;
-        main)
-            if [[ "$dry_run" == "true" ]]; then
-                log_error "Main branch does not support dry-run releases"
-                exit 1
-            fi
-            log_info "Main branch validation passed"
-            ;;
-        *)
-            log_error "Unsupported branch for git-flow release: $branch"
-            log_error "Supported branches: feature/*, develop, release/*, main"
-            exit 1
-            ;;
-    esac
-}
+# Display prominent branch information
+display_branch_info "Git-Flow Release Process" "Base Version: $BASE_VERSION, Dry Run: $DRY_RUN"
 
-validate_branch_requirements "$CURRENT_BRANCH" "$DRY_RUN" "$ALLOW_UNCLEAN"
+# Branch validation logic
+if [[ "$DRY_RUN" == true ]]; then
+    # Allow dry-run on any branch, but warn if not a standard branch
+    if [[ ! "$CURRENT_BRANCH" =~ ^(develop|main|release/|feature/) ]]; then
+        echo ""
+        echo "⚠️  WARNING: Running dry-run release on non-standard branch: $CURRENT_BRANCH"
+        echo "   This is allowed for validation, but real releases are only permitted on develop, release/*, or main."
+        echo ""
+    fi
+    log_info "Dry-run branch validation passed"
+else
+    # Real releases: enforce strict branch checks
+    if [[ "$CURRENT_BRANCH" =~ ^feature/ ]]; then
+        log_error "Real releases are not allowed from feature branches. Use develop, release/*, or main."
+        exit 1
+    fi
+    if [[ ! "$CURRENT_BRANCH" =~ ^(develop|main|release/) ]]; then
+        log_error "Unsupported branch for git-flow release: $CURRENT_BRANCH"
+        log_error "Supported branches: develop, release/*, main"
+        exit 1
+    fi
+    log_info "Branch validation passed"
+fi
 
 # Check for uncommitted changes
 if [[ "$ALLOW_UNCLEAN" == "false" ]]; then
@@ -203,6 +189,10 @@ determine_new_version() {
             # Feature branches: increment patch for testing
             echo "$major.$minor.$((patch + 1))-feature"
             ;;
+        fix/*)
+            # Fix branches: increment patch for testing
+            echo "$major.$minor.$((patch + 1))-fix"
+            ;;
         develop)
             if [[ "$dry_run" == "true" ]]; then
                 echo "$major.$minor.$((patch + 1))-dev-dry"
@@ -220,6 +210,14 @@ determine_new_version() {
         main)
             # Main branch: official release
             echo "$major.$minor.$((patch + 1))"
+            ;;
+        *)
+            # Unknown branch type: use generic suffix
+            if [[ "$dry_run" == "true" ]]; then
+                echo "$major.$minor.$((patch + 1))-unknown-dry"
+            else
+                echo "$major.$minor.$((patch + 1))-unknown"
+            fi
             ;;
     esac
 }
@@ -414,6 +412,9 @@ handle_summary_cleanup() {
         else
             # Rename summary file to versioned format
             local versioned_file="$RELEASE_DIR/$(basename "$summary_file" .md)-$NEW_VERSION.md"
+            
+            display_branch_info "Archiving Summary" "Version: $NEW_VERSION, File: $versioned_file"
+            
             mv "$summary_file" "$versioned_file"
             git add "$versioned_file"
             git commit -m "docs(release): archive AI summary for version $NEW_VERSION (refs #20)"
@@ -421,8 +422,9 @@ handle_summary_cleanup() {
             # Get commit SHA after commit
             local commit_sha=$(get_current_commit_sha)
             
+            display_branch_info "Pushing Summary Archive" "Commit: $commit_sha"
+            
             git push origin "$CURRENT_BRANCH"
-            log_info "Archived summary file to $versioned_file"
             
             # Monitor GitHub Actions workflows after summary cleanup push
             echo ""
@@ -458,6 +460,8 @@ commit_and_push() {
     fi
     
     # Add and commit changes
+    display_branch_info "Committing Changes" "Version: $NEW_VERSION"
+    
     git add "$PROJECT_ROOT/goprox" "$summary_file"
     git commit -m "chore(release): bump version to $NEW_VERSION (refs #20)"
     
@@ -465,6 +469,8 @@ commit_and_push() {
     local commit_sha=$(get_current_commit_sha)
     
     # Push to current branch
+    display_branch_info "Pushing to Remote" "Commit: $commit_sha"
+    
     git push origin "$CURRENT_BRANCH"
     
     log_info "Committed and pushed version $NEW_VERSION"
