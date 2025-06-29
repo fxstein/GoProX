@@ -250,6 +250,7 @@ update_version "$NEW_VERSION" "$DRY_RUN"
 commit_and_push() {
     local dry_run="$1"
     local summary_file="$2"
+    local monitor_timeout="$3"
     
     if [[ "$dry_run" == "true" ]]; then
         log_info "DRY RUN: Would commit and push changes"
@@ -260,13 +261,27 @@ commit_and_push() {
     git add "$PROJECT_ROOT/goprox" "$summary_file"
     git commit -m "chore(release): bump version to $NEW_VERSION (refs #20)"
     
+    # Get commit SHA after commit
+    local commit_sha=$(get_current_commit_sha)
+    
     # Push to current branch
     git push origin "$CURRENT_BRANCH"
     
     log_info "Committed and pushed version $NEW_VERSION"
+    
+    # Monitor GitHub Actions workflows after push
+    echo ""
+    echo "🚀 Triggered GitHub Actions - Monitoring workflows..."
+    if ! monitor_github_actions "$monitor_timeout" "$commit_sha" "$CURRENT_BRANCH" "$dry_run"; then
+        log_error "GitHub Actions monitoring failed after commit and push"
+        echo ""
+        echo "❌ Release process failed due to workflow errors!"
+        echo "   Please fix the workflow issues and retry the release."
+        exit 1
+    fi
 }
 
-commit_and_push "$DRY_RUN" "$SUMMARY_FILE"
+commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"
 
 # Handle summary file cleanup
 handle_summary_cleanup() {
@@ -275,6 +290,7 @@ handle_summary_cleanup() {
     local remove_summary="$3"
     local summary_file="$4"
     local base_version="$5"
+    local monitor_timeout="$6"
     
     # Determine if we should remove the summary file
     local should_remove=false
@@ -294,8 +310,23 @@ handle_summary_cleanup() {
             mv "$summary_file" "$versioned_file"
             git add "$versioned_file"
             git commit -m "docs(release): archive AI summary for version $NEW_VERSION (refs #20)"
+            
+            # Get commit SHA after commit
+            local commit_sha=$(get_current_commit_sha)
+            
             git push origin "$CURRENT_BRANCH"
             log_info "Archived summary file to $versioned_file"
+            
+            # Monitor GitHub Actions workflows after summary cleanup push
+            echo ""
+            echo "🚀 Triggered GitHub Actions - Monitoring workflows..."
+            if ! monitor_github_actions "$monitor_timeout" "$commit_sha" "$CURRENT_BRANCH" "$dry_run"; then
+                log_error "GitHub Actions monitoring failed after summary cleanup"
+                echo ""
+                echo "❌ Release process failed due to workflow errors!"
+                echo "   Please fix the workflow issues and retry the release."
+                exit 1
+            fi
         fi
     else
         log_info "Preserving summary file"
@@ -304,7 +335,7 @@ handle_summary_cleanup() {
 
 # Only handle cleanup if this is a real release (not dry run) or if explicitly requested
 if [[ "$DRY_RUN" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
-    handle_summary_cleanup "$DRY_RUN" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$BASE_VERSION"
+    handle_summary_cleanup "$DRY_RUN" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$BASE_VERSION" "$MONITOR_TIMEOUT"
 fi
 
 # Display next steps
@@ -361,34 +392,5 @@ show_next_steps() {
 }
 
 show_next_steps "$CURRENT_BRANCH" "$DRY_RUN" "$NEW_VERSION"
-
-# Handle monitoring if requested
-if [[ "$MONITOR" == "true" && "$DRY_RUN" == "false" ]]; then
-    echo ""
-    echo "🔍 Starting automatic workflow monitoring..."
-    echo "============================================"
-    
-    # Call the monitor script to verify workflow completion
-    if "$SCRIPT_DIR/gitflow-monitor.zsh" --monitor-release --base-version "$BASE_VERSION" --branch "$CURRENT_BRANCH"; then
-        echo ""
-        echo "✅ Release process verified successfully!"
-        log_info "Release process verified successfully"
-    else
-        echo ""
-        echo "❌ Release process verification failed!"
-        log_error "Release process verification failed"
-        echo ""
-        echo "📋 Manual verification steps:"
-        echo "   1. Check GitHub Actions: https://github.com/fxstein/GoProX/actions"
-        echo "   2. Look for the latest workflow run for branch: $CURRENT_BRANCH"
-        echo "   3. Verify the workflow completed successfully"
-        echo "   4. Check for any error messages in the workflow logs"
-        exit 1
-    fi
-elif [[ "$MONITOR" == "true" && "$DRY_RUN" == "true" ]]; then
-    echo ""
-    echo "ℹ️  Monitoring skipped for dry-run (no workflow triggered)"
-    echo "   To monitor manually, check: https://github.com/fxstein/GoProX/actions"
-fi
 
 log_info "Git-flow release process completed successfully" 

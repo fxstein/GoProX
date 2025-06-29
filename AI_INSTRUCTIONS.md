@@ -282,6 +282,51 @@ run_terminal_cmd "test_command" "is_background" "False"
 ## CI/CD Monitoring Requirement
 - The AI assistant must periodically, and at a minimum once per day, check the status of all GitHub Actions workflows for failures or errors. If any issues are detected, they must be investigated and fixed as a priority to ensure CI/CD reliability and rapid feedback for the team.
 
+## GitHub Actions Release Monitoring (MANDATORY)
+**CRITICAL: For EVERY release step (dry-run or real) that triggers GitHub Actions, you MUST:**
+
+1. **Wait for Workflow Completion**
+   - After every commit/push that triggers GitHub Actions, ALWAYS wait for all workflows to complete
+   - Use the integrated monitoring in `scripts/release/gitflow-release.zsh` which automatically monitors workflows
+   - Never proceed to the next step until all workflows have finished
+
+2. **Validate Workflow Success**
+   - Check that ALL workflows complete with `"success"` status
+   - Any workflow with `"failure"`, `"cancelled"`, or `"timed_out"` status MUST be investigated and fixed
+   - The release process will automatically fail if any workflow fails
+
+3. **Monitor Timeout and Manual Verification**
+   - Default monitoring timeout is 15 minutes (configurable with `--monitor-timeout`)
+   - If timeout is reached, provide clear manual verification steps
+   - Never skip workflow verification - this is a mandatory requirement
+
+4. **Integration Points**
+   - **Version Bump**: Monitors workflows after version commit and push
+   - **Summary Cleanup**: Monitors workflows after summary archive commit and push
+   - **Dry Runs**: Skips monitoring (no workflows triggered)
+   - **Real Releases**: Always monitors all triggered workflows
+
+5. **Failure Handling**
+   - If any workflow fails, the release process stops immediately
+   - Provide clear error messages with workflow details and log URLs
+   - Require manual intervention to fix workflow issues before retrying
+
+6. **Manual Monitoring Commands**
+   ```zsh
+   # Check recent workflow runs
+   gh run list --limit 5 --json status,conclusion,workflowName,headBranch,url,number
+   
+   # View specific workflow logs
+   gh run view <run_id> --log
+   
+   # Monitor workflows for specific commit
+   gh run list --limit 10 --json status,conclusion,workflowName,headSha,createdAt,url,number
+   ```
+
+**RATIONALE**: This ensures that every release step is validated by CI/CD before proceeding, preventing broken releases and maintaining code quality. The integrated monitoring eliminates the need for manual workflow checking and ensures consistent validation across all release processes.
+
+**ENFORCEMENT**: This requirement is built into the git-flow release scripts and cannot be bypassed. Any attempt to skip workflow monitoring will result in release failure.
+
 ## JSON Linting Requirement
 - All present and future JSON files in the repository must be linted for syntax and formatting errors.
 - JSON linting must be enforced both locally (pre-commit or pre-push) and in CI/CD workflows.
