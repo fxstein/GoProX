@@ -246,6 +246,150 @@ update_version() {
 
 update_version "$NEW_VERSION" "$DRY_RUN"
 
+# Function to get the current commit SHA
+get_current_commit_sha() {
+    git rev-parse HEAD
+}
+
+# Function to monitor GitHub Actions workflows
+monitor_github_actions() {
+    local timeout_minutes="$1"
+    local commit_sha="$2"
+    local branch="$3"
+    local dry_run="$4"
+    
+    log_info "Starting GitHub Actions monitoring for commit: $commit_sha"
+    log_info "Branch: $branch, Timeout: ${timeout_minutes} minutes"
+    
+    # For dry runs, we don't expect workflows to be triggered
+    if [[ "$dry_run" == "true" ]]; then
+        log_info "Dry run detected - no workflows expected to be triggered"
+        return 0
+    fi
+    
+    local start_time=$(date +%s)
+    local timeout_seconds=$((timeout_minutes * 60))
+    local poll_interval=30  # Check every 30 seconds
+    local max_attempts=$((timeout_seconds / poll_interval))
+    local attempt=0
+    
+    echo ""
+    echo "🔍 Monitoring GitHub Actions Workflows"
+    echo "======================================"
+    echo "Commit: $commit_sha"
+    echo "Branch: $branch"
+    echo "Timeout: ${timeout_minutes} minutes"
+    echo ""
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        attempt=$((attempt + 1))
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - start_time))
+        local remaining=$((timeout_seconds - elapsed))
+        
+        echo -n "[$(date '+%H:%M:%S')] Checking workflows (attempt $attempt/$max_attempts, ${remaining}s remaining)... "
+        
+        # Get recent workflow runs for this commit
+        local workflow_status
+        if ! workflow_status=$(gh run list --limit 10 --json status,conclusion,workflowName,headSha,createdAt,url,number 2>/dev/null); then
+            echo "❌ Failed to fetch workflow status"
+            log_error "Failed to fetch GitHub Actions workflow status"
+            return 1
+        fi
+        
+        # Filter workflows for this specific commit
+        local relevant_workflows=$(echo "$workflow_status" | jq -r --arg sha "$commit_sha" '.[] | select(.headSha == $sha) | "\(.number)|\(.workflowName)|\(.status)|\(.conclusion)"' 2>/dev/null)
+        
+        if [[ -z "$relevant_workflows" ]]; then
+            echo "⏳ No workflows found yet for this commit"
+            if [[ $attempt -eq 1 ]]; then
+                echo "   This is normal for the first few checks - workflows may take time to start"
+            fi
+        else
+            local all_completed=true
+            local any_failed=false
+            local workflow_count=0
+            
+            echo ""
+            echo "   📊 Workflow Status:"
+            
+            while IFS='|' read -r run_number workflow_name status conclusion; do
+                [[ -z "$run_number" ]] && continue
+                workflow_count=$((workflow_count + 1))
+                
+                case "$status" in
+                    "completed")
+                        case "$conclusion" in
+                            "success")
+                                echo "   ✅ $workflow_name (#$run_number) - Completed successfully"
+                                ;;
+                            "failure"|"cancelled"|"timed_out")
+                                echo "   ❌ $workflow_name (#$run_number) - Failed ($conclusion)"
+                                any_failed=true
+                                ;;
+                            *)
+                                echo "   ⚠️  $workflow_name (#$run_number) - Completed with unknown status ($conclusion)"
+                                ;;
+                        esac
+                        ;;
+                    "in_progress"|"queued"|"waiting")
+                        echo "   🔄 $workflow_name (#$run_number) - $status"
+                        all_completed=false
+                        ;;
+                    *)
+                        echo "   ❓ $workflow_name (#$run_number) - Unknown status ($status)"
+                        all_completed=false
+                        ;;
+                esac
+            done <<< "$relevant_workflows"
+            
+            # Check if all workflows are completed
+            if [[ "$all_completed" == "true" ]]; then
+                if [[ "$any_failed" == "true" ]]; then
+                    echo ""
+                    echo "❌ Some workflows failed! Manual intervention required."
+                    echo ""
+                    echo "📋 Failed Workflow Details:"
+                    echo "$relevant_workflows" | while IFS='|' read -r run_number workflow_name status conclusion; do
+                        [[ -z "$run_number" ]] && continue
+                        if [[ "$conclusion" != "success" ]]; then
+                            echo "   Workflow: $workflow_name (#$run_number)"
+                            echo "   Status: $conclusion"
+                            echo "   Logs: https://github.com/fxstein/GoProX/actions/runs/$run_number"
+                            echo ""
+                        fi
+                    done
+                    
+                    log_error "GitHub Actions workflows failed for commit $commit_sha"
+                    return 1
+                else
+                    echo ""
+                    echo "✅ All workflows completed successfully!"
+                    log_info "All GitHub Actions workflows completed successfully for commit $commit_sha"
+                    return 0
+                fi
+            fi
+        fi
+        
+        # Wait before next check
+        if [[ $attempt -lt $max_attempts ]]; then
+            sleep $poll_interval
+        fi
+    done
+    
+    echo ""
+    echo "⏰ Timeout reached! Workflows may still be running."
+    echo ""
+    echo "📋 Manual verification required:"
+    echo "   1. Check GitHub Actions: https://github.com/fxstein/GoProX/actions"
+    echo "   2. Look for workflows for commit: $commit_sha"
+    echo "   3. Verify all workflows complete successfully"
+    echo "   4. Check for any error messages in the workflow logs"
+    
+    log_error "GitHub Actions monitoring timed out after ${timeout_minutes} minutes"
+    return 1
+}
+
 # Commit and push changes if not dry run
 commit_and_push() {
     local dry_run="$1"
