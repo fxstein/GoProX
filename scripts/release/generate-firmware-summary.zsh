@@ -67,7 +67,7 @@ for model_dir in firmware/labs/*/; do
     fi
 done
 
-# Sort models in custom order
+# Sort models with newer models at top
 sorted_models=()
 custom_order=(
     "HERO13 Black"
@@ -82,16 +82,68 @@ custom_order=(
     "The Remote"
 )
 
-# Add models in custom order if they exist
-for model in "${custom_order[@]}"; do
-    if [[ " ${all_models[@]} " =~ " ${model} " ]]; then
-        sorted_models+=("$model")
+# Function to get highest firmware version for a model
+get_highest_firmware() {
+    local model="$1"
+    local official_ver="${official_firmware[$model]:-}"
+    local labs_ver="${labs_firmware[$model]:-}"
+    
+    if [[ -n "$official_ver" && -n "$labs_ver" ]]; then
+        if [[ "$official_ver" > "$labs_ver" ]]; then
+            echo "$official_ver"
+        else
+            echo "$labs_ver"
+        fi
+    elif [[ -n "$official_ver" ]]; then
+        echo "$official_ver"
+    elif [[ -n "$labs_ver" ]]; then
+        echo "$labs_ver"
+    else
+        echo ""
+    fi
+}
+
+# Separate known and unknown models
+known_models=()
+unknown_models=()
+
+for model in "${all_models[@]}"; do
+    if [[ " ${custom_order[@]} " =~ " ${model} " ]]; then
+        known_models+=("$model")
+    else
+        unknown_models+=("$model")
     fi
 done
 
-# Add any remaining models that weren't in the custom order (alphabetically)
-for model in "${all_models[@]}"; do
-    if [[ ! " ${sorted_models[@]} " =~ " ${model} " ]]; then
+# Sort unknown models by firmware version (newest first)
+if [[ ${#unknown_models[@]} -gt 0 ]]; then
+    # Create temporary array with model and version pairs
+    temp_models=()
+    for model in "${unknown_models[@]}"; do
+        version=$(get_highest_firmware "$model")
+        if [[ -n "$version" ]]; then
+            temp_models+=("$version|$model")
+        else
+            temp_models+=("0000.00.00.00.00|$model")
+        fi
+    done
+    
+    # Sort by version (descending) and extract model names
+    sorted_unknown=()
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            model=$(echo "$line" | cut -d'|' -f2)
+            sorted_unknown+=("$model")
+        fi
+    done < <(printf '%s\n' "${temp_models[@]}" | sort -r)
+    
+    # Add unknown models at the top (newest first)
+    sorted_models+=("${sorted_unknown[@]}")
+fi
+
+# Add known models in custom order
+for model in "${custom_order[@]}"; do
+    if [[ " ${known_models[@]} " =~ " ${model} " ]]; then
         sorted_models+=("$model")
     fi
 done
