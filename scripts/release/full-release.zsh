@@ -383,54 +383,55 @@ main() {
         print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
     fi
 
-    # Fetch and display the latest release notes artifact
-    print_status "Fetching release notes artifact for version: $intended_new_version..."
-    # Wait for the workflow to complete (polling for completion)
-    run_id=""
-    for i in {1..30}; do
-        run_id=$(gh run list --workflow release-automation.yml --json databaseId,headBranch,status,createdAt --limit 1 --jq '.[0] | select(.headBranch=="main") | .databaseId')
-        if [[ -n "$run_id" ]]; then
-            wf_status=$(gh run view "$run_id" --json status,conclusion --jq '.status')
-            if [[ "$wf_status" == "completed" ]]; then
-                break
-            fi
-        fi
-        sleep 10
-    done
-    if [[ -z "$run_id" ]]; then
-        print_error "Could not find a recent workflow run."
-        exit 1
-    fi
-    print_success "Workflow run $run_id completed. Downloading release notes artifact..."
-
-    # Download the release-notes artifact
-    tmpdir=$(mktemp -d)
-    gh run download "$run_id" --name release-notes --dir "$tmpdir" --repo fxstein/GoProX
-    if [[ $? -ne 0 ]]; then
-        print_error "Failed to download release notes artifact."
-        exit 1
-    fi
-    # Find the release_notes.md file
-    notes_file=$(find "$tmpdir" -name 'release_notes.md' | head -n 1)
-    if [[ ! -f "$notes_file" ]]; then
-        print_error "release_notes.md not found in artifact."
-        exit 1
-    fi
-    # Prepare output filename
-    mkdir -p output
+    # Fetch and display the latest release notes artifact (skip in dry-run mode)
     if [[ "$dry_run" == "true" ]]; then
-        out_file="output/release-notes-${intended_new_version}-dry-run.md"
+        print_status "Skipping artifact fetch (dry-run mode)"
+        print_success "Dry-run release process completed successfully!"
     else
+        print_status "Fetching release notes artifact for version: $intended_new_version..."
+        # Wait for the workflow to complete (polling for completion)
+        run_id=""
+        for i in {1..30}; do
+            run_id=$(gh run list --workflow release-automation.yml --json databaseId,headBranch,status,createdAt --limit 1 --jq '.[0] | select(.headBranch=="main") | .databaseId')
+            if [[ -n "$run_id" ]]; then
+                wf_status=$(gh run view "$run_id" --json status,conclusion --jq '.status')
+                if [[ "$wf_status" == "completed" ]]; then
+                    break
+                fi
+            fi
+            sleep 10
+        done
+        if [[ -z "$run_id" ]]; then
+            print_error "Could not find a recent workflow run."
+            exit 1
+        fi
+        print_success "Workflow run $run_id completed. Downloading release notes artifact..."
+
+        # Download the release-notes artifact
+        tmpdir=$(mktemp -d)
+        gh run download "$run_id" --name release-notes --dir "$tmpdir" --repo fxstein/GoProX
+        if [[ $? -ne 0 ]]; then
+            print_error "Failed to download release notes artifact."
+            exit 1
+        fi
+        # Find the release_notes.md file
+        notes_file=$(find "$tmpdir" -name 'release_notes.md' | head -n 1)
+        if [[ ! -f "$notes_file" ]]; then
+            print_error "release_notes.md not found in artifact."
+            exit 1
+        fi
+        # Prepare output filename
+        mkdir -p output
         out_file="output/release-notes-${intended_new_version}.md"
+        cp "$notes_file" "$out_file"
+        print_success "Release notes saved to $out_file"
+        echo
+        print_status "==== RELEASE NOTES ===="
+        cat "$out_file"
+        print_status "==== END OF RELEASE NOTES ===="
+        # Clean up
+        rm -rf "$tmpdir"
     fi
-    cp "$notes_file" "$out_file"
-    print_success "Release notes saved to $out_file"
-    echo
-    print_status "==== RELEASE NOTES ===="
-    cat "$out_file"
-    print_status "==== END OF RELEASE NOTES ===="
-    # Clean up
-    rm -rf "$tmpdir"
 
     # --- Major changes summary file handling (only after successful release) ---
     if [[ -n "$base_version" && -f "$summary_file" ]]; then
