@@ -130,6 +130,15 @@ This document establishes the foundational architectural decisions and design pa
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
 - After generating the issue list, read the output file (`output/github_issues.md`) to ensure you are memorizing and referencing the latest issues in all future work and communication.
 
+## Pull Request Issue Closure Rules (MANDATORY)
+- **NEVER assume whether a PR closes an issue** - always ask the user if the PR closes the entire issue or is just a partial implementation
+- **Use "Related to #X" instead of "Closes #X"** unless explicitly told by the user that the PR closes the issue
+- **Let the user determine issue closure** - only they can decide if the PR fully addresses the issue requirements
+- **Be conservative with issue closure** - it's better to under-claim than over-claim the scope of work
+- **Ask explicitly**: "Does this PR close issue #X entirely, or is this a partial implementation?"
+
+**RATIONALE**: Prevents incorrect assumptions about issue scope and ensures proper issue management. Only the user knows the full requirements and can determine when an issue is truly complete.
+
 ## Release Summary File Creation
 - Never copy an existing release summary file to create the required latest major changes file (e.g., `docs/release/latest-major-changes-since-<BASE>.md`).
 - Always create or update this file through the AI, ensuring it is up-to-date and accurate for the requested release base.
