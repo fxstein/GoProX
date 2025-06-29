@@ -150,8 +150,8 @@ git push origin --delete hotfix/critical-fix
 
 ### Release Channels
 
-**1. Latest Build Channel (develop branch):**
-- **Installation**: `brew install fxstein/tap/goprox@latest`
+**1. Dev Build Channel (develop branch):**
+- **Installation**: `brew install fxstein/tap/goprox@dev`
 - **Source**: `develop` branch
 - **Update Frequency**: On every develop push
 - **Audience**: Developers, early adopters
@@ -179,12 +179,12 @@ git push origin --delete hotfix/critical-fix
 brew uninstall fxstein/tap/goprox
 brew install fxstein/tap/goprox@beta
 
-# Switch from beta to latest
+# Switch from beta to dev
 brew uninstall fxstein/tap/goprox@beta
-brew install fxstein/tap/goprox@latest
+brew install fxstein/tap/goprox@dev
 
-# Downgrade from latest to official
-brew uninstall fxstein/tap/goprox@latest
+# Downgrade from dev to official
+brew uninstall fxstein/tap/goprox@dev
 brew install fxstein/tap/goprox
 ```
 
