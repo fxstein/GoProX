@@ -22,6 +22,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Robustly find project root by searching upwards for 'goprox' script
 PROJECT_ROOT="$(cd "$SCRIPT_DIR" && while [ ! -f goprox ] && [ "$PWD" != "/" ]; do cd ..; done; pwd)"
 
+# Add project root to PATH so goprox is always found
+export PATH="$PROJECT_ROOT:$PATH"
+
 # Test options
 RUN_ALL_TESTS=false
 RUN_CONFIG_TESTS=false
