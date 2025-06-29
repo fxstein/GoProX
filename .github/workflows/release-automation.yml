@@ -1,87 +1,131 @@
 ---
-name: Automated Release Process
+name: Release Automation
+
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 00.61.00)'
+        description: 'Version to release (XX.XX.XX format)'
         required: true
         type: string
       prev_version:
-        description: 'Previous version for changelog'
+        description: 'Previous version for changelog (XX.XX.XX format)'
         required: true
         type: string
       dry_run:
-        description: 'Dry run (no actual release)'
+        description: 'Perform a dry run (no actual release)'
         required: false
         default: 'false'
         type: string
+  push:
+    branches: [main]
+    paths:
+      - 'goprox'
+      - '.github/workflows/release-automation.yml'
 
 jobs:
   validate-version:
     name: Validate Version
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prev_version: ${{ steps.version.outputs.prev_version }}
+      dry_run: ${{ steps.version.outputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Debug Information
+      - name: Detect Version Information
+        id: version
         run: |
-          echo "Current version: ${{ inputs.version }}"
-          echo "Previous version: ${{ inputs.prev_version }}"
-          echo "Dry run: ${{ inputs.dry_run }}"
-          echo "GitHub context:"
-          echo "${{ toJson(github) }}"
+          # Get current version from goprox file
+          CURRENT_VERSION=$(grep "__version__=" goprox | cut -d"'" -f2)
 
-      - name: Validate version format
-        run: |
-          if [[ ! "${{ inputs.version }}" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+          # Determine if this is a manual trigger or automatic
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger - use provided inputs
+            VERSION="${{ inputs.version }}"
+            PREV_VERSION="${{ inputs.prev_version }}"
+            DRY_RUN="${{ inputs.dry_run }}"
+          else
+            # Automatic trigger - detect from git and goprox
+            VERSION="$CURRENT_VERSION"
+
+            # Get previous version from git tags
+            PREV_VERSION=$(git tag --sort=-version:refname | head -n 1 | sed 's/v//')
+            if [[ -z "$PREV_VERSION" ]]; then
+              echo "Error: No previous version tag found"
+              exit 1
+            fi
+
+            # Check if this is actually a version bump
+            if [[ "$VERSION" == "$PREV_VERSION" ]]; then
+              echo "No version bump detected. Skipping automatic release."
+              echo "Current version: $VERSION"
+              echo "Previous version: $PREV_VERSION"
+              exit 0
+            fi
+
+            DRY_RUN="false"
+          fi
+
+          # Validate version format
+          if [[ ! "$VERSION" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
             echo "Error: Version must be in format XX.XX.XX"
             exit 1
           fi
 
-          CURRENT_VERSION=$(grep "__version__=" goprox | cut -d"'" -f2)
-          if [[ "$CURRENT_VERSION" != "${{ inputs.version }}" ]]; then
-            echo "Error: Version in goprox file ($CURRENT_VERSION) doesn't match input (${{ inputs.version }})"
+          # Validate that goprox file version matches
+          if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
+            echo "Error: Version in goprox file ($CURRENT_VERSION) doesn't match detected version ($VERSION)"
             exit 1
           fi
 
-          echo "Version validation passed: ${{ inputs.version }}"
+          # Check if this version already exists as a tag
+          if git tag | grep -q "v$VERSION"; then
+            echo "Error: Version v$VERSION already exists as a tag"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
+          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+
+          echo "✅ Version validation passed:"
+          echo "   Current version: $VERSION"
+          echo "   Previous version: $PREV_VERSION"
+          echo "   Dry run: $DRY_RUN"
+
+      - name: Debug Information
+        run: |
+          echo "Current version: ${{ steps.version.outputs.version }}"
+          echo "Previous version: ${{ steps.version.outputs.prev_version }}"
+          echo "Dry run: ${{ steps.version.outputs.dry_run }}"
+          echo "GitHub context:"
+          echo "${{ toJson(github) }}"
 
   run-tests:
     name: Run Tests
     runs-on: ubuntu-latest
-    needs: validate-version
+    needs: [validate-version]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup zsh
-        run: |
-          # Install zsh if not available
-          if ! command -v zsh &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y zsh
-          fi
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-      - name: Install dependencies
+      - name: Install zsh
         run: |
           sudo apt-get update
-          sudo apt-get install -y exiftool
+          sudo apt-get install -y zsh
 
-      - name: Run GoProX tests
+      - name: Run test suite
         run: |
-          chmod +x ./goprox
-          ./goprox --test
-
-      - name: Upload test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-failures
-          path: test/
+          ./scripts/testing/run-tests.zsh --test-suite logger
+          ./scripts/testing/run-tests.zsh --test-suite basic
 
   build-packages:
     name: Build Packages
@@ -89,202 +133,129 @@ jobs:
     needs: [validate-version, run-tests]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Create release tarball
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
           echo "Creating release tarball for version $VERSION"
 
-          # Clean up any existing tarball
-          rm -f "goprox-v${VERSION}.tar.gz"
-
-          # Create a temporary directory for the release
-          mkdir -p /tmp/goprox-release
-
-          # Copy files to temporary directory, excluding unnecessary files
-          rsync -av --exclude='.git' \
+          # Create tarball with version prefix
+          tar -czf "goprox-v$VERSION.tar.gz" \
+            --exclude='.git' \
             --exclude='.github' \
             --exclude='test' \
-            --exclude='*.DS_Store' \
-            --exclude='.DS_Store' \
+            --exclude='output' \
             --exclude='*.log' \
-            --exclude="goprox-v${VERSION}.tar.gz" \
-            --exclude='.gitattributes' \
-            --exclude='.gitignore' \
-            --exclude='*.lfs' \
-            . /tmp/goprox-release/
-
-          # Create tarball from temporary directory
-          cd /tmp/goprox-release
-          tar -czf "/tmp/goprox-v${VERSION}.tar.gz" .
-
-          # Move tarball back to workspace
-          mv "/tmp/goprox-v${VERSION}.tar.gz" "$GITHUB_WORKSPACE/"
-          cd "$GITHUB_WORKSPACE"
-
-          echo "Created goprox-v${VERSION}.tar.gz"
-          ls -la "goprox-v${VERSION}.tar.gz"
+            --exclude='*.tmp' \
+            .
 
       - name: Calculate SHA256
         id: sha256
         run: |
-          SHA256=$(shasum -a 256 "goprox-v${{ inputs.version }}.tar.gz" | cut -d' ' -f1)
+          SHA256=$(shasum -a 256 "goprox-v${{ steps.version.outputs.version }}.tar.gz" | cut -d' ' -f1)
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "SHA256: $SHA256"
 
-      - name: Upload package artifacts
+      - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
           name: release-packages
-          path: goprox-v${{ inputs.version }}.tar.gz
+          path: goprox-v${{ steps.version.outputs.version }}.tar.gz
 
   generate-release-notes:
     name: Generate Release Notes
     runs-on: ubuntu-latest
-    needs: [validate-version, run-tests]
+    needs: [validate-version, build-packages]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Force Rewritten History
+      - name: Setup zsh
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install zsh
         run: |
-          echo "=== FORCING REWRITTEN HISTORY ==="
+          sudo apt-get update
+          sudo apt-get install -y zsh
 
-          # Force fetch all refs to ensure we have the latest history
-          git fetch --all --tags --force
-
+      - name: Verify git history
+        run: |
           # Verify we have the correct history
           echo "Current HEAD: $(git rev-parse HEAD)"
-          echo "Tag v${{ inputs.prev_version }}: $(git rev-parse v${{ inputs.prev_version }})"
+          echo "Tag v${{ steps.version.outputs.prev_version }}: $(git rev-parse v${{ steps.version.outputs.prev_version }})"
 
           # Check if we're using the rewritten history
-          if git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l | grep -q "397"; then
+          if git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | wc -l | grep -q "397"; then
             echo "❌ Still using old history (397 commits detected)"
             echo "Attempting to force rewritten history..."
 
-            # Try to fetch the rewritten history explicitly
-            git fetch origin --force
-            git reset --hard origin/main
-            git fetch --all --tags --force
+            # Force fetch the rewritten history
+            git fetch origin main --force
 
             # Verify again
-            COMMIT_COUNT=$(git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l)
+            COMMIT_COUNT=$(git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | wc -l)
             echo "Commit count after force fetch: $COMMIT_COUNT"
 
-            if [[ $COMMIT_COUNT -gt 200 ]]; then
-              echo "❌ Still using old history. Manual intervention required."
-              echo "The repository may need to be re-pushed with the rewritten history."
+            if [[ "$COMMIT_COUNT" -eq 397 ]]; then
+              echo "❌ Still using old history after force fetch"
               exit 1
-            else
-              echo "✅ Now using rewritten history"
             fi
-          else
-            echo "✅ Using rewritten history"
-          fi
-
-      - name: Verify Git History
-        run: |
-          echo "=== GIT HISTORY VERIFICATION ==="
-          echo "Checking if we have the correct rewritten history..."
-
-          # Check if filter-repo evidence exists
-          if [[ -d ".git/filter-repo" ]]; then
-            echo "✅ Filter-repo evidence found - using rewritten history"
-          else
-            echo "❌ No filter-repo evidence found - may be using old history"
           fi
 
           # Verify the tag exists and is reachable
-          if git rev-parse v${{ inputs.prev_version }} >/dev/null 2>&1; then
-            echo "✅ Tag v${{ inputs.prev_version }} exists and is reachable"
+          if git rev-parse v${{ steps.version.outputs.prev_version }} >/dev/null 2>&1; then
+            echo "✅ Tag v${{ steps.version.outputs.prev_version }} exists and is reachable"
           else
-            echo "❌ Tag v${{ inputs.prev_version }} not found or not reachable"
+            echo "❌ Tag v${{ steps.version.outputs.prev_version }} not found or not reachable"
             exit 1
           fi
 
-          # Show commit range analysis
           echo ""
           echo "=== COMMIT RANGE ANALYSIS ==="
-          echo "Base version: v${{ inputs.prev_version }}"
-          echo "Current version: v${{ inputs.version }}"
+          echo "Base version: v${{ steps.version.outputs.prev_version }}"
+          echo "Current version: v${{ steps.version.outputs.version }}"
           echo ""
-          echo "Total commits since v${{ inputs.prev_version }}:"
-          git log --oneline v${{ inputs.prev_version }}..HEAD | wc -l
+          echo "Total commits since v${{ steps.version.outputs.prev_version }}:"
+          git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | wc -l
           echo ""
           echo "Commits with issue references:"
-          git log --oneline v${{ inputs.prev_version }}..HEAD | grep "(refs #" | wc -l
+          git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | grep "(refs #" | wc -l
           echo ""
           echo "Unique issues referenced:"
-          git log --oneline v${{ inputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq | wc -l
+          git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq | wc -l
           echo ""
-          echo "Issues with commits since v${{ inputs.prev_version }}:"
-          git log --oneline v${{ inputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq
+          echo "Issues with commits since v${{ steps.version.outputs.prev_version }}:"
+          git log --oneline v${{ steps.version.outputs.prev_version }}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq
 
           # Force garbage collection to ensure clean state
           git gc --prune=now
-          echo ""
-          echo "✅ Git history verification completed"
-
-      - name: Setup zsh
-        run: |
-          # Install zsh if not available
-          if ! command -v zsh &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y zsh
-          fi
-
-      - name: Setup GitHub CLI
-        run: |
-          # Install GitHub CLI
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-
-      - name: Authenticate GitHub CLI
-        run: |
-          # Authenticate with GitHub token for API access
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-          gh auth status
 
       - name: Generate changelog
         id: changelog
         run: |
-          PREV_VERSION="${{ inputs.prev_version }}"
-          CURR_VERSION="${{ inputs.version }}"
+          PREV_VERSION="${{ steps.version.outputs.prev_version }}"
+          CURR_VERSION="${{ steps.version.outputs.version }}"
 
           echo "Generating changelog from v${PREV_VERSION} to v${CURR_VERSION}"
 
-          # Make the script executable
-          chmod +x scripts/release/generate-release-notes.zsh
+          # Generate changelog using the existing script
+          ./scripts/release/generate-release-notes.zsh \
+            --version "$CURR_VERSION" \
+            --prev-version "$PREV_VERSION" \
+            --output release_notes.md
 
-          # Generate release notes using the new script
-          ./scripts/release/generate-release-notes.zsh "$CURR_VERSION" "$PREV_VERSION" release_notes.md
+          # Check if changelog was generated successfully
+          if [[ ! -f "release_notes.md" ]]; then
+            echo "❌ Failed to generate release notes"
+            exit 1
+          fi
 
-          # Verify the generated release notes
-          echo ""
-          echo "=== RELEASE NOTES VERIFICATION ==="
-          echo "Issues included in release notes:"
-          grep -o "Issue #[0-9]*" release_notes.md | sort | uniq | wc -l
-          echo ""
-          echo "Issues in release notes:"
-          grep -o "Issue #[0-9]*" release_notes.md | sort | uniq
-          echo ""
-          echo "Expected issues (from git log):"
-          git log --oneline v${PREV_VERSION}..HEAD | grep -o "(refs #[0-9]*)" | sort | uniq
-
-          # Read the generated release notes for GitHub output
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
-          cat release_notes.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          echo "Generated release notes:"
-          cat release_notes.md
+          echo "✅ Release notes generated successfully"
+          echo "File size: $(wc -c < release_notes.md) bytes"
+          echo "Line count: $(wc -l < release_notes.md) lines"
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
@@ -296,160 +267,120 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: [build-packages, generate-release-notes]
-    if: inputs.dry_run != 'true'
+    if: needs.validate-version.outputs.dry_run != 'true'
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-packages
+          path: .
 
       - name: Download release notes
         uses: actions/download-artifact@v4
         with:
           name: release-notes
+          path: .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ inputs.version }}
-          name: GoProX v${{ inputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: GoProX v${{ steps.version.outputs.version }}
           body_path: release_notes.md
           draft: false
           prerelease: false
-          files: goprox-v${{ inputs.version }}.tar.gz
+          files: goprox-v${{ steps.version.outputs.version }}.tar.gz
 
   update-homebrew:
     name: Update Homebrew
     runs-on: ubuntu-latest
     needs: [create-release]
-    if: inputs.dry_run != 'true'
+    if: needs.validate-version.outputs.dry_run != 'true'
     env:
       HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-packages
+          path: .
 
-      - name: Wait for GitHub release propagation
-        run: |
-          echo "Waiting for GitHub release to be fully propagated..."
-          echo "This ensures the tarball is available before calculating SHA256"
-          sleep 60
-
-      - name: Calculate SHA256 from codeload tarball
+      - name: Calculate SHA256
         id: sha256
         run: |
-          # Calculate SHA256 from the codeload tarball (same URL Homebrew uses)
-          # GitHub tarball might not be immediately available after release creation
-          MAX_RETRIES=5
-          RETRY_DELAY=15
+          SHA256=$(shasum -a 256 "goprox-v${{ steps.version.outputs.version }}.tar.gz" | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "SHA256: $SHA256"
 
-          for i in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt $i of $MAX_RETRIES to calculate codeload tarball SHA256..."
+      - name: Update Homebrew Formula
+        run: |
+          # Clone the homebrew-core repository
+          git clone https://x-access-token:${HOMEBREW_TOKEN}@github.com/Homebrew/homebrew-core.git
+          cd homebrew-core
 
-            # Download the tarball from codeload (same URL Homebrew uses)
-            if curl -sL "https://codeload.github.com/fxstein/GoProX/tar.gz/refs/tags/v${{ inputs.version }}" -o goprox-codeload.tar.gz; then
-              # Calculate SHA256 of the downloaded file
-              if SHA256=$(shasum -a 256 goprox-codeload.tar.gz | cut -d' ' -f1); then
-                if [[ -n "$SHA256" && "$SHA256" != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
-                  # e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 is the SHA256 of an empty file
-                  echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-                  echo "Successfully calculated codeload tarball SHA256: $SHA256"
-                  echo "File size: $(wc -c < goprox-codeload.tar.gz) bytes"
-                  break
-                else
-                  echo "Received empty or invalid response, retrying in $RETRY_DELAY seconds..."
-                fi
-              else
-                echo "Failed to calculate SHA256, retrying in $RETRY_DELAY seconds..."
-              fi
+          # Download the tarball from codeload (same URL Homebrew uses)
+          if curl -sL "https://codeload.github.com/fxstein/GoProX/tar.gz/refs/tags/v${{ steps.version.outputs.version }}" -o goprox-codeload.tar.gz; then
+            # Calculate SHA256 of the downloaded file
+            if SHA256=$(shasum -a 256 goprox-codeload.tar.gz | cut -d' ' -f1); then
+              echo "✅ Successfully downloaded and verified tarball"
+              echo "SHA256: $SHA256"
             else
-              echo "Failed to download tarball, retrying in $RETRY_DELAY seconds..."
-            fi
-
-            if [[ $i -lt $MAX_RETRIES ]]; then
-              sleep $RETRY_DELAY
-            else
-              echo "Error: Failed to calculate SHA256 after $MAX_RETRIES attempts"
-              echo "GitHub tarball may not be available yet. Please retry the workflow."
+              echo "❌ Failed to calculate SHA256 of downloaded file"
               exit 1
             fi
-          done
-
-      - name: Update Homebrew formula
-        run: |
-          echo "Updating Homebrew formula..."
-
-          # Use Personal Access Token for cross-repository access
-          if [[ -z "$HOMEBREW_TOKEN" ]]; then
-            echo "Error: HOMEBREW_TOKEN not set. Cannot update Homebrew formula."
-            echo "Please add a Personal Access Token with 'repo' scope as HOMEBREW_TOKEN secret."
+          else
+            echo "❌ Failed to download tarball from codeload"
             exit 1
           fi
 
-          # Clone the homebrew tap repository with PAT
-          git clone https://x-access-token:$HOMEBREW_TOKEN@github.com/fxstein/homebrew-fxstein.git
-          cd homebrew-fxstein
-
           # Update the formula with the correct SHA256 from codeload
-          sed -i "s|url \".*\"|url \"https://github.com/fxstein/GoProX/archive/refs/tags/v${{ inputs.version }}.tar.gz\"|" Formula/goprox.rb
+          sed -i "s|url \".*\"|url \"https://github.com/fxstein/GoProX/archive/refs/tags/v${{ steps.version.outputs.version }}.tar.gz\"|" Formula/goprox.rb
           sed -i "s|sha256 \".*\"|sha256 \"${{ steps.sha256.outputs.sha256 }}\"|" Formula/goprox.rb
 
-          # Show the changes
-          echo "Changes to Formula/goprox.rb:"
-          git diff Formula/goprox.rb
-
-          # Commit and push
+          # Commit and push the changes
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Formula/goprox.rb
-          git commit -m "Update goprox to v${{ inputs.version }}"
+          git commit -m "Update goprox to v${{ steps.version.outputs.version }}"
           git push
-
-          echo "Homebrew formula updated successfully with SHA256: ${{ steps.sha256.outputs.sha256 }}"
 
   dry-run-summary:
     name: Dry Run Summary
     runs-on: ubuntu-latest
     needs: [build-packages, generate-release-notes]
-    if: inputs.dry_run == 'true'
+    if: needs.validate-version.outputs.dry_run == 'true'
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-packages
+          path: .
 
       - name: Download release notes
         uses: actions/download-artifact@v4
         with:
           name: release-notes
+          path: .
 
-      - name: Show dry run summary
+      - name: Display summary
         run: |
           echo "=== DRY RUN SUMMARY ==="
-          echo "Version: ${{ inputs.version }}"
-          echo "Previous version: ${{ inputs.prev_version }}"
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "Previous version: ${{ steps.version.outputs.prev_version }}"
           echo ""
           echo "Package created:"
-          ls -la goprox-v${{ inputs.version }}.tar.gz
+          ls -la goprox-v${{ steps.version.outputs.version }}.tar.gz
           echo ""
           echo "SHA256:"
-          shasum -a 256 goprox-v${{ inputs.version }}.tar.gz
+          shasum -a 256 goprox-v${{ steps.version.outputs.version }}.tar.gz
           echo ""
           echo "Release notes:"
           cat release_notes.md
