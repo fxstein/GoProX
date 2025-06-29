@@ -429,6 +429,10 @@ What happens after approval/rejection.
 - **For all release and summary generation tasks, you MUST read and follow:**
   - [`docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`](docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md)
 - Do NOT rely on this file for summary content/formatting rules; always refer to the dedicated instructions document.
+- **CRITICAL: NEVER create placeholder summaries for releases.**
+- **ALWAYS generate real, accurate summaries based on actual changes, commits, and implemented features.**
+- **Placeholder content is strictly forbidden and violates project standards.**
+- **Real summaries must reflect actual work completed, not hypothetical or generic content.**
 
 ## [Add more rules as needed...]
 
