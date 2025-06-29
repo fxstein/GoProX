@@ -307,7 +307,7 @@ main() {
     fi
 
     # Parse intended new version from bump-version output
-    intended_new_version=$(echo "$bump_output" | grep -Eo 'Auto-incrementing to: [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $4}' | tail -n1)
+    intended_new_version=$(echo "$bump_output" | grep -Eo 'Auto-incrementing \([^)]+\) to: [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $4}' | tail -n1)
     if [[ -z "$intended_new_version" ]]; then
         intended_new_version=$(get_current_version)
         print_warning "Could not parse intended new version, falling back to current version: $intended_new_version"
