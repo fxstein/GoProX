@@ -314,6 +314,78 @@ git commit -m "revert: rollback to previous version (refs #XX)"
 - Documentation validation
 - Multi-channel Homebrew updates
 
+## Monitoring and Verification
+
+### Automated Workflow Monitoring
+
+The git-flow release process includes comprehensive monitoring and verification capabilities:
+
+#### **1. Release Monitoring**
+```zsh
+# Monitor a release process in real-time
+./scripts/release/gitflow-monitor.zsh --monitor-release --base-version 01.10.00 --branch develop --dry-run
+
+# Monitor a real release with automatic verification
+./scripts/release/gitflow-monitor.zsh --monitor-release --base-version 01.10.00 --branch main
+```
+
+#### **2. Automatic Monitoring in Release Script**
+```zsh
+# Release with automatic workflow verification
+./scripts/release/gitflow-release.zsh --monitor 01.10.00
+
+# Custom timeout for monitoring (default: 15 minutes)
+./scripts/release/gitflow-release.zsh --monitor --monitor-timeout 30 01.10.00
+```
+
+#### **3. Manual Workflow Verification**
+```zsh
+# Check current workflow status
+./scripts/release/gitflow-monitor.zsh --check-workflow
+
+# Check AI summary status
+./scripts/release/gitflow-monitor.zsh --check-summary
+
+# Run all checks
+./scripts/release/gitflow-monitor.zsh --all
+```
+
+### GitHub Actions Integration
+
+#### **Automatic Verification Workflow**
+The `release-verification.yml` workflow automatically:
+- Triggers after release workflows complete
+- Verifies release process success
+- Generates verification reports
+- Comments on workflow runs with results
+
+#### **Manual Verification**
+You can manually trigger verification:
+1. Go to GitHub Actions → Release Verification
+2. Click "Run workflow"
+3. Enter base version, branch, and dry-run status
+4. Review verification results
+
+### Verification Features
+
+#### **Real-time Monitoring**
+- Polls GitHub Actions API every 30 seconds
+- Configurable timeout (default: 15 minutes)
+- Detailed status reporting
+- Automatic error detection
+
+#### **Comprehensive Reporting**
+- Workflow status and conclusion
+- Branch-specific validation
+- Error logs and debugging info
+- Success/failure verification
+
+#### **Integration Points**
+- Pre-release validation
+- Post-release verification
+- Automated error handling
+- Manual override capabilities
+
 ## Next Steps
 
 1. **Practice**: Create test branches and practice the workflow

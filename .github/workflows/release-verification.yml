@@ -1,0 +1,145 @@
+name: Release Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: 'Base version for verification (e.g., 01.10.00)'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to verify (e.g., develop, main)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Is this a dry-run verification?'
+        required: false
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["Multi-Channel Release Management", "Comprehensive Testing"]
+    types: [completed]
+    branches: [main, develop, release/*]
+
+jobs:
+  verify-release:
+    name: Verify Release Process
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion != 'skipped'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh exiftool jq
+
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/release/*.zsh
+          chmod +x goprox
+
+      - name: Setup output directories
+        run: |
+          mkdir -p output/verification
+
+      - name: Determine verification parameters
+        id: verify-params
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "base_version=${{ github.event.inputs.base_version }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> $GITHUB_OUTPUT
+          else
+            # Extract from workflow_run event
+            BRANCH="${{ github.event.workflow_run.head_branch }}"
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+            # Try to determine base version from branch or recent tags
+            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/v//' || echo "01.10.00")
+            echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+
+            # Determine if this was a dry run based on workflow name
+            if [[ "${{ github.event.workflow_run.name }}" == *"Testing"* ]]; then
+              echo "dry_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "dry_run=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Run release verification
+        run: |
+          echo "🔍 Running release verification..."
+          echo "Base version: ${{ steps.verify-params.outputs.base_version }}"
+          echo "Branch: ${{ steps.verify-params.outputs.branch }}"
+          echo "Dry run: ${{ steps.verify-params.outputs.dry_run }}"
+          echo ""
+
+          ./scripts/release/gitflow-monitor.zsh \
+            --monitor-release \
+            --base-version "${{ steps.verify-params.outputs.base_version }}" \
+            --branch "${{ steps.verify-params.outputs.branch }}" \
+            $([ "${{ steps.verify-params.outputs.dry_run }}" == "true" ] && echo "--dry-run")
+
+      - name: Generate verification report
+        if: always()
+        run: |
+          echo "📊 Release Verification Report" > output/verification/report.txt
+          echo "=============================" >> output/verification/report.txt
+          echo "Generated: $(date)" >> output/verification/report.txt
+          echo "Workflow: ${{ github.workflow }}" >> output/verification/report.txt
+          echo "Run ID: ${{ github.run_id }}" >> output/verification/report.txt
+          echo "Branch: ${{ steps.verify-params.outputs.branch }}" >> output/verification/report.txt
+          echo "Base version: ${{ steps.verify-params.outputs.base_version }}" >> output/verification/report.txt
+          echo "Dry run: ${{ steps.verify-params.outputs.dry_run }}" >> output/verification/report.txt
+          echo "Status: ${{ job.status }}" >> output/verification/report.txt
+          echo "" >> output/verification/report.txt
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Verification completed successfully" >> output/verification/report.txt
+          else
+            echo "❌ Verification failed" >> output/verification/report.txt
+          fi
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-verification-report
+          path: output/verification/
+          retention-days: 30
+
+      - name: Comment on workflow run
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runId = ${{ github.event.workflow_run.id }};
+
+            const comment = `## 🔍 Release Verification Complete
+
+            **Verification Details:**
+            - Branch: ${{ steps.verify-params.outputs.branch }}
+            - Base Version: ${{ steps.verify-params.outputs.base_version }}
+            - Dry Run: ${{ steps.verify-params.outputs.dry_run }}
+            - Status: ${{ job.status }}
+
+            **Result:** ${context.job === 'success' ? '✅ Success' : '❌ Failed'}
+
+            [View Verification Report](https://github.com/${owner}/${repo}/actions/runs/${context.runId})`;
+
+            try {
+              await github.rest.actions.createWorkflowRunComment({
+                owner,
+                repo,
+                run_id: runId,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not comment on workflow run:', error.message);
+            }

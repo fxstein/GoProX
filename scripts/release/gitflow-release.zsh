@@ -30,6 +30,8 @@ OPTIONS:
     --preserve-summary     Preserve the AI summary file (default for dry-runs)
     --remove-summary       Force removal of AI summary file
     --allow-unclean        Allow uncommitted changes (feature branches only)
+    --monitor              Automatically monitor workflow completion after release
+    --monitor-timeout      Timeout for monitoring in minutes (default: 15)
     --help                 Show this help message
 
 BASE_VERSION:
@@ -39,6 +41,7 @@ EXAMPLES:
     $0 --dry-run 01.01.01                    # Dry run from feature branch
     $0 01.01.01                              # Real release from develop
     $0 --dry-run --preserve-summary 01.01.01 # Dry run preserving summary
+    $0 --monitor 01.01.01                    # Real release with monitoring
 
 BRANCH REQUIREMENTS:
     - Feature branches: Only dry-run allowed
@@ -53,6 +56,8 @@ DRY_RUN=false
 PRESERVE_SUMMARY=false
 REMOVE_SUMMARY=false
 ALLOW_UNCLEAN=false
+MONITOR=false
+MONITOR_TIMEOUT=15
 BASE_VERSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -72,6 +77,14 @@ while [[ $# -gt 0 ]]; do
         --allow-unclean)
             ALLOW_UNCLEAN=true
             shift
+            ;;
+        --monitor)
+            MONITOR=true
+            shift
+            ;;
+        --monitor-timeout)
+            MONITOR_TIMEOUT="$2"
+            shift 2
             ;;
         --help)
             show_usage
@@ -107,6 +120,8 @@ log_info "Dry run: $DRY_RUN"
 log_info "Preserve summary: $PRESERVE_SUMMARY"
 log_info "Remove summary: $REMOVE_SUMMARY"
 log_info "Allow unclean: $ALLOW_UNCLEAN"
+log_info "Monitor: $MONITOR"
+log_info "Monitor timeout: $MONITOR_TIMEOUT minutes"
 
 # Get current branch and validate git-flow requirements
 CURRENT_BRANCH=$(git branch --show-current)
@@ -346,5 +361,34 @@ show_next_steps() {
 }
 
 show_next_steps "$CURRENT_BRANCH" "$DRY_RUN" "$NEW_VERSION"
+
+# Handle monitoring if requested
+if [[ "$MONITOR" == "true" && "$DRY_RUN" == "false" ]]; then
+    echo ""
+    echo "🔍 Starting automatic workflow monitoring..."
+    echo "============================================"
+    
+    # Call the monitor script to verify workflow completion
+    if "$SCRIPT_DIR/gitflow-monitor.zsh" --monitor-release --base-version "$BASE_VERSION" --branch "$CURRENT_BRANCH"; then
+        echo ""
+        echo "✅ Release process verified successfully!"
+        log_info "Release process verified successfully"
+    else
+        echo ""
+        echo "❌ Release process verification failed!"
+        log_error "Release process verification failed"
+        echo ""
+        echo "📋 Manual verification steps:"
+        echo "   1. Check GitHub Actions: https://github.com/fxstein/GoProX/actions"
+        echo "   2. Look for the latest workflow run for branch: $CURRENT_BRANCH"
+        echo "   3. Verify the workflow completed successfully"
+        echo "   4. Check for any error messages in the workflow logs"
+        exit 1
+    fi
+elif [[ "$MONITOR" == "true" && "$DRY_RUN" == "true" ]]; then
+    echo ""
+    echo "ℹ️  Monitoring skipped for dry-run (no workflow triggered)"
+    echo "   To monitor manually, check: https://github.com/fxstein/GoProX/actions"
+fi
 
 log_info "Git-flow release process completed successfully" 
