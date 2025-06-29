@@ -67,11 +67,34 @@ for model_dir in firmware/labs/*/; do
     fi
 done
 
-# Sort models for output
+# Sort models in custom order
 sorted_models=()
-while IFS= read -r model; do
-    sorted_models+=("$model")
-done < <(printf '%s\n' "${all_models[@]}" | sort)
+custom_order=(
+    "HERO13 Black"
+    "HERO (2024)"
+    "HERO12 Black"
+    "HERO11 Black"
+    "HERO11 Black Mini"
+    "HERO10 Black"
+    "HERO9 Black"
+    "HERO8 Black"
+    "GoPro Max"
+    "The Remote"
+)
+
+# Add models in custom order if they exist
+for model in "${custom_order[@]}"; do
+    if [[ " ${all_models[@]} " =~ " ${model} " ]]; then
+        sorted_models+=("$model")
+    fi
+done
+
+# Add any remaining models that weren't in the custom order (alphabetically)
+for model in "${all_models[@]}"; do
+    if [[ ! " ${sorted_models[@]} " =~ " ${model} " ]]; then
+        sorted_models+=("$model")
+    fi
+done
 
 # Calculate column widths
 model_width=5  # "Model" header length
