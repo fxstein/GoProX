@@ -218,4 +218,58 @@ log_debug() {
         echo "[$timestamp] [$branch_display] [DEBUG] $message" >> "$LOGFILE"
     fi
     echo "[$timestamp] [$branch_display] [DEBUG] $message" >&2
+}
+
+# Test function to demonstrate branch type prefixes
+test_branch_display() {
+    echo "=== Branch Type Prefix Examples ==="
+    
+    # Test different branch name patterns
+    local test_branches=(
+        "fix/bug-description-123-20250629-120000"
+        "feature/new-awesome-feature-456-20250629-120000"
+        "release/01.12.1-dev"
+        "hotfix/critical-security-fix-789-20250629-120000"
+        "develop"
+        "main"
+        "custom/unknown-branch-type"
+    )
+    
+    for branch in "${test_branches[@]}"; do
+        local hash=$(get_branch_hash "$branch")
+        local display=$(get_branch_display_for_test "$branch")
+        echo "Branch: $branch"
+        echo "  Display: $display"
+        echo "  Hash: $hash"
+        echo ""
+    done
+}
+
+# Helper function for testing (simulates get_branch_display with a specific branch)
+get_branch_display_for_test() {
+    local current_branch="$1"
+    local branch_hash=$(get_branch_hash "$current_branch")
+    
+    if [[ ${#current_branch} -le 15 ]]; then
+        echo "$current_branch"
+    else
+        local branch_type=""
+        if [[ "$current_branch" =~ ^fix/ ]]; then
+            branch_type="fix"
+        elif [[ "$current_branch" =~ ^feature/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^release/ ]]; then
+            branch_type="rel"
+        elif [[ "$current_branch" =~ ^hotfix/ ]]; then
+            branch_type="hot"
+        elif [[ "$current_branch" == "develop" ]]; then
+            branch_type="dev"
+        elif [[ "$current_branch" == "main" ]]; then
+            branch_type="main"
+        else
+            branch_type="br"
+        fi
+        
+        echo "${branch_type}/${branch_hash}"
+    fi
 } 

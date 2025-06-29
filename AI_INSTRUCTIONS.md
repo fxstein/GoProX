@@ -568,7 +568,8 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 
 ### **Logger Branch Awareness (NEW)**
 - **Hash-based branch display** - Long branch names are automatically shortened using Git-style SHA1 hashes
-- **Smart display logic** - Branches ≤15 characters show full name, longer branches show 8-character hash
+- **Branch type prefixes** - Hash includes type prefix for easy identification (fix/, feat/, rel/, hot/, dev/, main/, br/)
+- **Smart display logic** - Branches ≤15 characters show full name, longer branches show type/hash
 - **Deterministic hashing** - Same branch always produces same hash for consistency
 - **Debug support** - `get_full_branch_name()` function can resolve hash back to full branch name
 
@@ -576,17 +577,32 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 ```zsh
 # Short branches (≤15 chars): show full name
 [2025-06-29 12:18:18] [develop] [INFO] Operation
+[2025-06-29 12:18:18] [main] [INFO] Operation
 
-# Long branches (>15 chars): show hash
-[2025-06-29 12:18:27] [457b7107] [INFO] Operation
+# Long branches (>15 chars): show type/hash
+[2025-06-29 12:18:27] [fix/457b7107] [INFO] Fix branch operation
+[2025-06-29 12:18:27] [feat/3c9124e7] [INFO] Feature branch operation
+[2025-06-29 12:18:27] [rel/d3dd2f4f] [INFO] Release branch operation
+[2025-06-29 12:18:27] [hot/911dc37d] [INFO] Hotfix branch operation
+[2025-06-29 12:18:27] [br/1fd2853b] [INFO] Unknown branch type operation
 
 # Debug with full name lookup
-[2025-06-29 12:18:31] [457b7107] [DEBUG] Full branch name: fix/enhancement-add-hash-based-branch-display-to-logger-20-20250629-121736
+[2025-06-29 12:18:31] [fix/457b7107] [DEBUG] Full branch name: fix/enhancement-add-hash-based-branch-display-to-logger-20-20250629-121736
 ```
+
+### **Branch Type Prefixes**
+- `fix/` - Fix branches (bug fixes, enhancements)
+- `feat/` - Feature branches (new features)
+- `rel/` - Release branches (release preparation)
+- `hot/` - Hotfix branches (critical fixes)
+- `dev/` - Develop branch
+- `main/` - Main branch
+- `br/` - Other/unknown branch types
 
 ### **Hash Resolution**
 - **Current branch lookup**: `get_full_branch_name <hash>` returns full name if hash matches current branch
 - **Git command fallback**: `git branch -a | grep <hash>` can find branches by hash
 - **Deterministic**: Same branch name always produces same hash across sessions
+- **Type identification**: Prefix makes it easy to identify branch purpose at a glance
 
-**RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach.
+**RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach with meaningful type prefixes for easy identification.
