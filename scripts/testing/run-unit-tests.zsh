@@ -30,7 +30,7 @@ cd "$PROJECT_ROOT"
 
 # Run logger unit tests
 echo "${YELLOW}Running Logger Unit Tests...${NC}"
-if ./scripts/testing/run-tests.zsh --logger; then
+if "$SCRIPT_DIR/run-tests.zsh" --logger; then
     echo "${GREEN}✅ Logger unit tests passed${NC}"
 else
     echo "${RED}❌ Logger unit tests failed${NC}"
@@ -41,7 +41,7 @@ echo ""
 
 # Run firmware summary unit tests
 echo "${YELLOW}Running Firmware Summary Unit Tests...${NC}"
-if ./scripts/testing/run-tests.zsh --firmware-summary; then
+if "$SCRIPT_DIR/run-tests.zsh" --firmware-summary; then
     echo "${GREEN}✅ Firmware summary unit tests passed${NC}"
 else
     echo "${RED}❌ Firmware summary unit tests failed${NC}"
