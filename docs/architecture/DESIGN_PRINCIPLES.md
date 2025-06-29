@@ -398,6 +398,95 @@ mountoptions=(--archive --import --clean --firmware)
 - If a dependency is not available via Homebrew, document the alternative installation method and rationale
 - Ensure CI/CD and local environments use the same dependency installation approach for consistency
 
+### 11. Git-Flow Release Management
+
+**Principle:** Implement and maintain a strict git-flow branching model for all releases, ensuring proper separation between development, release preparation, and production deployment.
+
+**Rationale:** Git-flow provides a structured approach to managing releases, hotfixes, and feature development. It ensures that production releases are always stable, that release preparation is properly validated, and that urgent fixes can be deployed without disrupting ongoing development.
+
+**Implementation Requirements:**
+- **Branch Structure**: Maintain strict adherence to git-flow branch naming and purpose
+  - `main`: Production-ready code only
+  - `develop`: Integration branch for development features
+  - `release/*`: Release preparation branches (e.g., `release/v01.02.00`)
+  - `hotfix/*`: Urgent production fixes (e.g., `hotfix/v01.02.01`)
+  - `feature/*`: Individual feature development (optional)
+
+- **Release Process Validation**:
+  - All releases must be prepared on `release/*` branches
+  - Dry runs must be performed on preparation branches before merging to `main`
+  - Real releases must only be executed from `main` branch
+  - Summary files must be created/updated on preparation branches
+  - Successful dry run validation required before merge to `main`
+
+- **Branch Validation in Scripts**:
+  - Release scripts must validate current branch before proceeding
+  - Real releases: Must be on `main` branch
+  - Dry runs: Can be on `develop`, `release/*`, or `hotfix/*` branches
+  - Clear error messages for invalid branch operations
+
+- **Release Automation Integration**:
+  - GitHub Actions workflows must respect git-flow branch structure
+  - Automatic triggers for dry runs on `develop` and `release/*` branches
+  - Real release workflows only triggered from `main` branch
+  - Proper artifact handling and workflow dependencies
+
+**Git-Flow Workflow Standards:**
+```zsh
+# Development workflow
+git checkout develop
+# ... develop features ...
+git checkout -b feature/new-feature
+# ... implement feature ...
+git checkout develop
+git merge feature/new-feature
+
+# Release preparation
+git checkout -b release/v01.02.00 develop
+# ... prepare release (update version, summary file, etc.) ...
+./scripts/release/full-release.zsh --dry-run
+# ... validate dry run results ...
+git checkout main
+git merge release/v01.02.00
+git tag v01.02.00
+./scripts/release/full-release.zsh  # Real release
+
+# Hotfix workflow
+git checkout -b hotfix/v01.02.01 main
+# ... implement urgent fix ...
+./scripts/release/full-release.zsh --dry-run
+git checkout main
+git merge hotfix/v01.02.01
+git tag v01.02.01
+./scripts/release/full-release.zsh  # Real release
+```
+
+**Validation Requirements:**
+- All release scripts must include branch validation
+- Pre-commit hooks should validate branch naming conventions
+- CI/CD pipelines must respect git-flow branch purposes
+- Release automation must prevent invalid branch operations
+
+**Documentation Requirements:**
+- All git-flow procedures must be documented in project documentation
+- Release process must include branch-specific instructions
+- Hotfix procedures must be clearly documented
+- Branch naming conventions must be standardized
+
+**Benefits:**
+- **Stable Production**: `main` branch always contains production-ready code
+- **Controlled Releases**: Release preparation happens in isolated branches
+- **Emergency Fixes**: Hotfixes can be deployed without disrupting development
+- **Clear History**: Git history clearly shows release preparation and deployment
+- **Automated Validation**: CI/CD ensures proper branch usage and validation
+
+**Examples in GoProX:**
+- Release automation workflow validates branch before proceeding
+- Dry runs performed on `release/*` branches before merge to `main`
+- Summary files created on preparation branches and validated during dry runs
+- Real releases only executed from `main` after successful validation
+- Hotfix branches follow same validation process as release branches
+
 ## Decision Recording Process
 
 When making significant design or architectural decisions:

@@ -50,16 +50,23 @@ This document establishes the foundational architectural decisions and design pa
      - Use bullet points for all lists
      - Group firmware by model and type (Official vs Labs)
 
-2. **Check for Uncommitted Changes**
+2. **Branch Validation** (MANDATORY FOR GIT-FLOW)
+   - **Real Releases**: Must be performed from `main` branch only
+   - **Dry Runs**: Can be performed from `develop`, `release/*`, or `hotfix/*` branches
+   - **Release Preparation**: Summary file must be created/updated on the preparation branch (typically `release/*`)
+   - **Pre-Release Validation**: Successful dry run required on preparation branch before merging to `main`
+
+3. **Check for Uncommitted Changes**
    - Ensure `scripts/release/` directory is clean (no uncommitted changes)
    - Ensure `.github/workflows/` directory is clean (no uncommitted changes)
+   - Ensure summary file is committed and pushed to the preparation branch
    - Commit and push all changes before proceeding
 
-3. **Use Full Release Script**
+4. **Use Full Release Script**
    - Always use `scripts/release/full-release.zsh` for releases
    - Never run individual scripts unless specifically instructed
 
-4. **Output File Requirements** (CRITICAL)
+5. **Output File Requirements** (CRITICAL)
    - ALL transient output files MUST be placed in the `output/` directory
    - NEVER create test files, logs, or any output in the repo root
    - This includes release notes, test files, debug output, etc.
@@ -107,6 +114,14 @@ This document establishes the foundational architectural decisions and design pa
 - By default, all test runs should be performed as dry runs (using `--dry-run`), unless a real release is explicitly requested.
 - Do not run the bump-version, release, or monitor scripts individually unless specifically instructed.
 
+**Git-Flow Release Process Requirements:**
+- **Development Phase**: All development work happens on `develop` branch
+- **Release Preparation**: Create `release/*` branch from `develop` for release preparation
+- **Dry Run Validation**: Perform dry run on `release/*` branch to validate release process
+- **Merge to Main**: Only merge to `main` after successful dry run validation
+- **Real Release**: Perform real release only from `main` branch
+- **Hotfix Process**: Use `hotfix/*` branches for urgent fixes, following same validation process
+
 ## Issue Creation Automation
 
 - Whenever the user requests an issue to be created, always create it as a GitHub tracker issue.
@@ -118,6 +133,11 @@ This document establishes the foundational architectural decisions and design pa
 ## Release Testing
 
 - Always perform test runs for releases as dry runs by default (using the dry-run option), unless a real release is explicitly requested by the user.
+- **Git-Flow Testing Requirements:**
+  - **Development Testing**: Run tests on `develop` branch during development
+  - **Release Testing**: Perform dry run on `release/*` branch before merging to `main`
+  - **Production Testing**: Real releases only from `main` branch after successful dry run validation
+  - **Hotfix Testing**: Perform dry run on `hotfix/*` branch before merging to `main`
 
 ## Script Language Requirements
 
@@ -141,6 +161,15 @@ This document establishes the foundational architectural decisions and design pa
 - **IMPORTANT**: Before any release or dry run, always check the entire `scripts/release/` directory for changes. Commit and push all changes in `scripts/release/` before running a release or dry run. The GitHub workflow uses the repository state on GitHub, not local changes. Failure to commit and push will result in the workflow using outdated scripts.
 - If a full release (without `--dry-run`) is requested and there are changes in `scripts/release/`, first commit and push those changes, then perform a dry run. Only proceed with the real release if the dry run completes successfully.
 - Whenever a release is requested (dry-run or real), always create or update a file in `docs/release` with a summary of major changes since the requested previous release. The filename must match the convention used by the release process: `docs/release/latest-major-changes-since-<BASE>.md` (where `<BASE>` is the previous version, no leading 'v'). This file must be created every time a release is requested, before the release process starts.
+
+**Git-Flow Release Automation Requirements:**
+- **Branch Validation**: Script must validate current branch before proceeding
+  - Real releases: Must be on `main` branch
+  - Dry runs: Can be on `develop`, `release/*`, or `hotfix/*` branches
+- **Release Preparation**: Summary file must be created/updated on preparation branch
+- **Pre-Release Validation**: Successful dry run required before real release
+- **Merge Requirements**: Real releases only after successful merge to `main`
+- **Hotfix Handling**: Support for urgent fixes via `hotfix/*` branches with same validation
 
 ## GitHub Issue Management
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
