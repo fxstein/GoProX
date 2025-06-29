@@ -307,7 +307,7 @@ main() {
     fi
 
     # Parse intended new version from bump-version output
-    intended_new_version=$(echo "$bump_output" | grep -Eo 'Auto-incrementing to: [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $4}' | tail -n1)
+    intended_new_version=$(echo "$bump_output" | grep -Eo 'Auto-incrementing \([^)]+\) to: [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $4}' | tail -n1)
     if [[ -z "$intended_new_version" ]]; then
         intended_new_version=$(get_current_version)
         print_warning "Could not parse intended new version, falling back to current version: $intended_new_version"
@@ -344,9 +344,8 @@ main() {
     if [[ -n "$prev_version" ]]; then
         release_args+=(--prev "$prev_version")
     fi
-    if [[ -n "$version" ]]; then
-        release_args+=(--version "$version")
-    fi
+    # Always pass the intended new version to the release script
+    release_args+=(--version "$intended_new_version")
     release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1)
     echo "$release_output"
     if [[ $? -ne 0 ]]; then
@@ -356,70 +355,83 @@ main() {
     print_success "Release workflow triggered successfully"
     
     # Step 3: Monitor the release
-    print_status "Step 3: Monitoring release process..."
-    print_status "Monitoring workflow for version: $intended_new_version"
-    ./scripts/release/monitor-release.zsh "$intended_new_version"
-    if [[ $? -ne 0 ]]; then
-        print_error "Release monitoring failed"
-        exit 1
-    fi
-    print_success "Release process completed!"
-    echo ""
-    print_status "Release Summary:"
-    echo "  Version: $intended_new_version"
-    echo "  Status: Completed"
-    echo "  Monitor: Finished"
-    echo ""
-    print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
-
-    # Fetch and display the latest release notes artifact
-    print_status "Fetching release notes artifact for version: $intended_new_version..."
-    # Wait for the workflow to complete (polling for completion)
-    run_id=""
-    for i in {1..30}; do
-        run_id=$(gh run list --workflow release-automation.yml --json databaseId,headBranch,status,createdAt --limit 1 --jq '.[0] | select(.headBranch=="main") | .databaseId')
-        if [[ -n "$run_id" ]]; then
-            wf_status=$(gh run view "$run_id" --json status,conclusion --jq '.status')
-            if [[ "$wf_status" == "completed" ]]; then
-                break
-            fi
-        fi
-        sleep 10
-    done
-    if [[ -z "$run_id" ]]; then
-        print_error "Could not find a recent workflow run."
-        exit 1
-    fi
-    print_success "Workflow run $run_id completed. Downloading release notes artifact..."
-
-    # Download the release-notes artifact
-    tmpdir=$(mktemp -d)
-    gh run download "$run_id" --name release-notes --dir "$tmpdir" --repo fxstein/GoProX
-    if [[ $? -ne 0 ]]; then
-        print_error "Failed to download release notes artifact."
-        exit 1
-    fi
-    # Find the release_notes.md file
-    notes_file=$(find "$tmpdir" -name 'release_notes.md' | head -n 1)
-    if [[ ! -f "$notes_file" ]]; then
-        print_error "release_notes.md not found in artifact."
-        exit 1
-    fi
-    # Prepare output filename
-    mkdir -p output
     if [[ "$dry_run" == "true" ]]; then
-        out_file="output/release-notes-${intended_new_version}-dry-run.md"
+        print_status "Step 3: Skipping monitoring (dry-run mode)"
+        print_success "Dry-run release process completed!"
+        echo ""
+        print_status "Dry-Run Summary:"
+        echo "  Version: $intended_new_version"
+        echo "  Status: Simulated successfully"
+        echo "  Monitor: Skipped (dry-run)"
+        echo ""
+        print_status "All dry-run checks passed. Ready for real release."
     else
-        out_file="output/release-notes-${intended_new_version}.md"
+        print_status "Step 3: Monitoring release process..."
+        print_status "Monitoring workflow for version: $intended_new_version"
+        ./scripts/release/monitor-release.zsh "$intended_new_version"
+        if [[ $? -ne 0 ]]; then
+            print_error "Release monitoring failed"
+            exit 1
+        fi
+        print_success "Release process completed!"
+        echo ""
+        print_status "Release Summary:"
+        echo "  Version: $intended_new_version"
+        echo "  Status: Completed"
+        echo "  Monitor: Finished"
+        echo ""
+        print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
     fi
-    cp "$notes_file" "$out_file"
-    print_success "Release notes saved to $out_file"
-    echo
-    print_status "==== RELEASE NOTES ===="
-    cat "$out_file"
-    print_status "==== END OF RELEASE NOTES ===="
-    # Clean up
-    rm -rf "$tmpdir"
+
+    # Fetch and display the latest release notes artifact (skip in dry-run mode)
+    if [[ "$dry_run" == "true" ]]; then
+        print_status "Skipping artifact fetch (dry-run mode)"
+        print_success "Dry-run release process completed successfully!"
+    else
+        print_status "Fetching release notes artifact for version: $intended_new_version..."
+        # Wait for the workflow to complete (polling for completion)
+        run_id=""
+        for i in {1..30}; do
+            run_id=$(gh run list --workflow release-automation.yml --json databaseId,headBranch,status,createdAt --limit 1 --jq '.[0] | select(.headBranch=="main") | .databaseId')
+            if [[ -n "$run_id" ]]; then
+                wf_status=$(gh run view "$run_id" --json status,conclusion --jq '.status')
+                if [[ "$wf_status" == "completed" ]]; then
+                    break
+                fi
+            fi
+            sleep 10
+        done
+        if [[ -z "$run_id" ]]; then
+            print_error "Could not find a recent workflow run."
+            exit 1
+        fi
+        print_success "Workflow run $run_id completed. Downloading release notes artifact..."
+
+        # Download the release-notes artifact
+        tmpdir=$(mktemp -d)
+        gh run download "$run_id" --name release-notes --dir "$tmpdir" --repo fxstein/GoProX
+        if [[ $? -ne 0 ]]; then
+            print_error "Failed to download release notes artifact."
+            exit 1
+        fi
+        # Find the release_notes.md file
+        notes_file=$(find "$tmpdir" -name 'release_notes.md' | head -n 1)
+        if [[ ! -f "$notes_file" ]]; then
+            print_error "release_notes.md not found in artifact."
+            exit 1
+        fi
+        # Prepare output filename
+        mkdir -p output
+        out_file="output/release-notes-${intended_new_version}.md"
+        cp "$notes_file" "$out_file"
+        print_success "Release notes saved to $out_file"
+        echo
+        print_status "==== RELEASE NOTES ===="
+        cat "$out_file"
+        print_status "==== END OF RELEASE NOTES ===="
+        # Clean up
+        rm -rf "$tmpdir"
+    fi
 
     # --- Major changes summary file handling (only after successful release) ---
     if [[ -n "$base_version" && -f "$summary_file" ]]; then

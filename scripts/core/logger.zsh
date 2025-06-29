@@ -60,7 +60,13 @@ function log_time_end() {
   log_info "Elapsed time: ${duration}s"
 }
 
-trap 'log_error "Error on line $LINENO"' ERR
+# Set up error trap for debugging (only in interactive mode or when explicitly enabled)
+# More robust error trap that only triggers on actual script errors
+if [[ "${INTERACTIVE:-}" == "true" || "${ENABLE_ERROR_TRAP:-}" == "true" ]]; then
+    # Only trap errors from the main script, not from expected command failures
+    # Use a more specific condition to avoid false positives
+    trap 'if [[ $? -ne 0 && $BASH_SUBSHELL -eq 0 && -n "${SCRIPT_NAME:-}" ]]; then log_error "Error on line $LINENO (exit code: $?)"; fi' ERR
+fi
 
 # --- Usage Example ---
 # source scripts/core/logger.zsh
@@ -71,3 +77,210 @@ trap 'log_error "Error on line $LINENO"' ERR
 # ... your code ...
 # log_time_end
 # log_trap_errors 
+
+# Function to prominently display current branch information
+display_branch_info() {
+    local operation="$1"
+    local additional_info="$2"
+    
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    local git_status=$(git status --porcelain 2>/dev/null | wc -l)
+    local status_text=""
+    
+    if [[ $git_status -gt 0 ]]; then
+        status_text="⚠️  UNCOMMITTED CHANGES: $git_status files"
+    else
+        status_text="✅ Clean working directory"
+    fi
+    
+    echo ""
+    echo "🌿 BRANCH INFORMATION"
+    echo "===================="
+    echo "📍 CURRENT BRANCH: $current_branch"
+    echo "📍 OPERATION: $operation"
+    echo "📍 STATUS: $status_text"
+    if [[ -n "$additional_info" ]]; then
+        echo "📍 INFO: $additional_info"
+    fi
+    echo "===================="
+    echo ""
+}
+
+# Function to display branch info before critical operations
+display_branch_warning() {
+    local operation="$1"
+    local target_branch="$2"
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    
+    if [[ "$current_branch" != "$target_branch" ]]; then
+        echo ""
+        echo "⚠️  BRANCH MISMATCH WARNING"
+        echo "=========================="
+        echo "📍 CURRENT BRANCH: $current_branch"
+        echo "📍 EXPECTED BRANCH: $target_branch"
+        echo "📍 OPERATION: $operation"
+        echo "=========================="
+        echo ""
+        echo "❓ Do you want to continue anyway? (y/N)"
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            log_error "Operation cancelled due to branch mismatch"
+            exit 1
+        fi
+    fi
+}
+
+# Function to generate short branch hash (Git-style)
+get_branch_hash() {
+    local branch="$1"
+    echo "$branch" | sha1sum | cut -c1-8
+}
+
+# Function to get current branch with hash display
+get_branch_display() {
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    local branch_hash=$(get_branch_hash "$current_branch")
+    
+    # For short branches (≤15 chars), show full name
+    # For longer branches, show type prefix + hash
+    if [[ ${#current_branch} -le 15 ]]; then
+        echo "$current_branch"
+    else
+        # Extract branch type prefix
+        local branch_type=""
+        if [[ "$current_branch" =~ ^fix/ ]]; then
+            branch_type="fix"
+        elif [[ "$current_branch" =~ ^feat/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^feature/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^release/ ]]; then
+            branch_type="rel"
+        elif [[ "$current_branch" =~ ^hotfix/ ]]; then
+            branch_type="hot"
+        elif [[ "$current_branch" == "develop" ]]; then
+            branch_type="dev"
+        elif [[ "$current_branch" == "main" ]]; then
+            branch_type="main"
+        else
+            branch_type="br"
+        fi
+        
+        echo "${branch_type}/${branch_hash}"
+    fi
+}
+
+# Function to get full branch name from hash (for debugging)
+get_full_branch_name() {
+    local hash="$1"
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    local current_hash=$(get_branch_hash "$current_branch")
+    
+    if [[ "$current_hash" == "$hash" ]]; then
+        echo "$current_branch"
+    else
+        echo "unknown"
+    fi
+}
+
+# Enhanced logging functions with branch awareness
+log_info() {
+    local message="$1"
+    local branch_display=$(get_branch_display)
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    if [[ -n "$LOGFILE" ]]; then
+        echo "[$timestamp] [$branch_display] [INFO] $message" >> "$LOGFILE"
+    fi
+    echo "[$timestamp] [$branch_display] [INFO] $message" >&2
+}
+
+log_error() {
+    local message="$1"
+    local branch_display=$(get_branch_display)
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    if [[ -n "$LOGFILE" ]]; then
+        echo "[$timestamp] [$branch_display] [ERROR] $message" >> "$LOGFILE"
+    fi
+    echo "[$timestamp] [$branch_display] [ERROR] $message" >&2
+}
+
+log_warn() {
+    local message="$1"
+    local branch_display=$(get_branch_display)
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    if [[ -n "$LOGFILE" ]]; then
+        echo "[$timestamp] [$branch_display] [WARN] $message" >> "$LOGFILE"
+    fi
+    echo "[$timestamp] [$branch_display] [WARN] $message" >&2
+}
+
+log_debug() {
+    local message="$1"
+    local branch_display=$(get_branch_display)
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    if [[ -n "$LOGFILE" ]]; then
+        echo "[$timestamp] [$branch_display] [DEBUG] $message" >> "$LOGFILE"
+    fi
+    echo "[$timestamp] [$branch_display] [DEBUG] $message" >&2
+}
+
+# Test function to demonstrate branch type prefixes
+test_branch_display() {
+    echo "=== Branch Type Prefix Examples ==="
+    
+    # Test different branch name patterns
+    local test_branches=(
+        "fix/bug-description-123-20250629-120000"
+        "feat/enhancement-description-456-20250629-120000"
+        "feature/new-awesome-feature-456-20250629-120000"
+        "release/01.12.1-dev"
+        "hotfix/critical-security-fix-789-20250629-120000"
+        "develop"
+        "main"
+        "custom/unknown-branch-type"
+    )
+    
+    for branch in "${test_branches[@]}"; do
+        local hash=$(get_branch_hash "$branch")
+        local display=$(get_branch_display_for_test "$branch")
+        echo "Branch: $branch"
+        echo "  Display: $display"
+        echo "  Hash: $hash"
+        echo ""
+    done
+}
+
+# Helper function for testing (simulates get_branch_display with a specific branch)
+get_branch_display_for_test() {
+    local current_branch="$1"
+    local branch_hash=$(get_branch_hash "$current_branch")
+    
+    if [[ ${#current_branch} -le 15 ]]; then
+        echo "$current_branch"
+    else
+        local branch_type=""
+        if [[ "$current_branch" =~ ^fix/ ]]; then
+            branch_type="fix"
+        elif [[ "$current_branch" =~ ^feat/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^feature/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^release/ ]]; then
+            branch_type="rel"
+        elif [[ "$current_branch" =~ ^hotfix/ ]]; then
+            branch_type="hot"
+        elif [[ "$current_branch" == "develop" ]]; then
+            branch_type="dev"
+        elif [[ "$current_branch" == "main" ]]; then
+            branch_type="main"
+        else
+            branch_type="br"
+        fi
+        
+        echo "${branch_type}/${branch_hash}"
+    fi
+} 

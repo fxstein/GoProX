@@ -130,6 +130,15 @@ This document establishes the foundational architectural decisions and design pa
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
 - After generating the issue list, read the output file (`output/github_issues.md`) to ensure you are memorizing and referencing the latest issues in all future work and communication.
 
+## Pull Request Issue Closure Rules (MANDATORY)
+- **NEVER assume whether a PR closes an issue** - always ask the user if the PR closes the entire issue or is just a partial implementation
+- **Use "Related to #X" instead of "Closes #X"** unless explicitly told by the user that the PR closes the issue
+- **Let the user determine issue closure** - only they can decide if the PR fully addresses the issue requirements
+- **Be conservative with issue closure** - it's better to under-claim than over-claim the scope of work
+- **Ask explicitly**: "Does this PR close issue #X entirely, or is this a partial implementation?"
+
+**RATIONALE**: Prevents incorrect assumptions about issue scope and ensures proper issue management. Only the user knows the full requirements and can determine when an issue is truly complete.
+
 ## Release Summary File Creation
 - Never copy an existing release summary file to create the required latest major changes file (e.g., `docs/release/latest-major-changes-since-<BASE>.md`).
 - Always create or update this file through the AI, ensuring it is up-to-date and accurate for the requested release base.
@@ -515,3 +524,105 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 - Always prioritize reading over immediate action
 - When in doubt, read more documents rather than fewer
 - If a document is missing or inaccessible, inform the user immediately 
+
+## Branch Management and Git Flow
+- **ALWAYS create separate branches for unrelated work** using `scripts/maintenance/create-branch.zsh`
+- Use appropriate branch types: `bug`, `enhancement`, `feature`, `cleanup`, `refactor`, `release`, `hotfix`, `documentation`, `test`
+- Branch naming follows the pattern: `<prefix>/<type>-<description>-<issue>-<timestamp>`
+- Examples:
+  ```zsh
+  ./scripts/maintenance/create-branch.zsh "fix CI test failures" --type bug --issue 123
+  ./scripts/maintenance/create-branch.zsh "add new feature" --type enhancement
+  ./scripts/maintenance/create-branch.zsh "update documentation" --type cleanup
+  ```
+
+## Branch Safety and Fix Management (MANDATORY)
+
+### **Prominent Branch Display**
+- **ALWAYS display current branch prominently** before any git operations, especially releases, commits, and pushes
+- **Use the `display_branch_info()` function** from `scripts/core/logger.zsh` to show branch information
+- **Display branch warnings** when operating on unexpected branches
+- **Never assume the current branch** - always verify and display it clearly
+
+### **Separate Fix Branches (MANDATORY)**
+- **ALWAYS create separate branches for unrelated fixes** using `scripts/maintenance/create-fix-branch.zsh`
+- **Never mix unrelated fixes** in the same branch or commit
+- **Use descriptive branch names** with fix type, description, and timestamp
+- **Link fixes to GitHub issues** when applicable
+
+### **Fix Branch Creation Process**
+```zsh
+# For bug fixes
+./scripts/maintenance/create-fix-branch.zsh "fix CI test failures" --type bug --issue 123
+
+# For enhancements
+./scripts/maintenance/create-fix-branch.zsh "add new feature" --type enhancement
+
+# For cleanup
+./scripts/maintenance/create-fix-branch.zsh "update documentation" --type cleanup
+```
+
+### **Branch Naming Convention**
+- Format: `fix/<type>-<description-slug>-<issue>-<timestamp>`
+- Examples:
+  - `fix/bug-ci-test-failures-123-20250629-114500`
+  - `fix/enhancement-new-feature-20250629-114500`
+  - `fix/cleanup-documentation-20250629-114500`
+
+### **When to Use Fix Branches**
+- **Bug fixes** that are unrelated to current work
+- **Documentation updates** that don't belong in feature branches
+- **CI/CD improvements** that are separate from features
+- **Code cleanup** that should be isolated
+- **Any change** that could be applied independently
+
+**RATIONALE**: Prevents branch confusion, maintains clean git history, and ensures fixes can be applied independently without affecting other work.
+
+### **Release Branch Policy (UPDATED)**
+- **Dry-run releases are allowed on any branch** to validate release readiness and catch issues early
+- **Real releases are only allowed on develop, release/*, or main**
+- **If a dry-run is run on a non-standard branch, display a warning but do not block**
+- **If a real release is attempted on an unsupported branch, block and display an error**
+
+**RATIONALE**: This enables early detection of release blockers and improves CI/CD and developer workflows, while maintaining strict controls for real releases.
+
+### **Logger Branch Awareness (NEW)**
+- **Hash-based branch display** - Long branch names are automatically shortened using Git-style SHA1 hashes
+- **Branch type prefixes** - Hash includes type prefix for easy identification (fix/, feat/, rel/, hot/, dev/, main/, br/)
+- **Smart display logic** - Branches ≤15 characters show full name, longer branches show type/hash
+- **Deterministic hashing** - Same branch always produces same hash for consistency
+- **Debug support** - `get_full_branch_name()` function can resolve hash back to full branch name
+
+### **Branch Display Examples**
+```zsh
+# Short branches (≤15 chars): show full name
+[2025-06-29 12:18:18] [develop] [INFO] Operation
+[2025-06-29 12:18:18] [main] [INFO] Operation
+
+# Long branches (>15 chars): show type/hash
+[2025-06-29 12:18:27] [fix/457b7107] [INFO] Fix branch operation
+[2025-06-29 12:18:27] [feat/3c9124e7] [INFO] Feature branch operation
+[2025-06-29 12:18:27] [rel/d3dd2f4f] [INFO] Release branch operation
+[2025-06-29 12:18:27] [hot/911dc37d] [INFO] Hotfix branch operation
+[2025-06-29 12:18:27] [br/1fd2853b] [INFO] Unknown branch type operation
+
+# Debug with full name lookup
+[2025-06-29 12:18:31] [fix/457b7107] [DEBUG] Full branch name: fix/enhancement-add-hash-based-branch-display-to-logger-20-20250629-121736
+```
+
+### **Branch Type Prefixes**
+- `fix/` - Fix branches (bug fixes, enhancements)
+- `feat/` - Feature branches (new features)
+- `rel/` - Release branches (release preparation)
+- `hot/` - Hotfix branches (critical fixes)
+- `dev/` - Develop branch
+- `main/` - Main branch
+- `br/` - Other/unknown branch types
+
+### **Hash Resolution**
+- **Current branch lookup**: `get_full_branch_name <hash>` returns full name if hash matches current branch
+- **Git command fallback**: `git branch -a | grep <hash>` can find branches by hash
+- **Deterministic**: Same branch name always produces same hash across sessions
+- **Type identification**: Prefix makes it easy to identify branch purpose at a glance
+
+**RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach with meaningful type prefixes for easy identification.
