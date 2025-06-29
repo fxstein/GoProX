@@ -515,3 +515,78 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 - Always prioritize reading over immediate action
 - When in doubt, read more documents rather than fewer
 - If a document is missing or inaccessible, inform the user immediately 
+
+## Branch Safety and Fix Management (MANDATORY)
+
+### **Prominent Branch Display**
+- **ALWAYS display current branch prominently** before any git operations, especially releases, commits, and pushes
+- **Use the `display_branch_info()` function** from `scripts/core/logger.zsh` to show branch information
+- **Display branch warnings** when operating on unexpected branches
+- **Never assume the current branch** - always verify and display it clearly
+
+### **Separate Fix Branches (MANDATORY)**
+- **ALWAYS create separate branches for unrelated fixes** using `scripts/maintenance/create-fix-branch.zsh`
+- **Never mix unrelated fixes** in the same branch or commit
+- **Use descriptive branch names** with fix type, description, and timestamp
+- **Link fixes to GitHub issues** when applicable
+
+### **Fix Branch Creation Process**
+```zsh
+# For bug fixes
+./scripts/maintenance/create-fix-branch.zsh "fix CI test failures" --type bug --issue 123
+
+# For enhancements
+./scripts/maintenance/create-fix-branch.zsh "add new feature" --type enhancement
+
+# For cleanup
+./scripts/maintenance/create-fix-branch.zsh "update documentation" --type cleanup
+```
+
+### **Branch Naming Convention**
+- Format: `fix/<type>-<description-slug>-<issue>-<timestamp>`
+- Examples:
+  - `fix/bug-ci-test-failures-123-20250629-114500`
+  - `fix/enhancement-new-feature-20250629-114500`
+  - `fix/cleanup-documentation-20250629-114500`
+
+### **When to Use Fix Branches**
+- **Bug fixes** that are unrelated to current work
+- **Documentation updates** that don't belong in feature branches
+- **CI/CD improvements** that are separate from features
+- **Code cleanup** that should be isolated
+- **Any change** that could be applied independently
+
+**RATIONALE**: Prevents branch confusion, maintains clean git history, and ensures fixes can be applied independently without affecting other work.
+
+### **Release Branch Policy (UPDATED)**
+- **Dry-run releases are allowed on any branch** to validate release readiness and catch issues early
+- **Real releases are only allowed on develop, release/*, or main**
+- **If a dry-run is run on a non-standard branch, display a warning but do not block**
+- **If a real release is attempted on an unsupported branch, block and display an error**
+
+**RATIONALE**: This enables early detection of release blockers and improves CI/CD and developer workflows, while maintaining strict controls for real releases.
+
+### **Logger Branch Awareness (NEW)**
+- **Hash-based branch display** - Long branch names are automatically shortened using Git-style SHA1 hashes
+- **Smart display logic** - Branches ≤15 characters show full name, longer branches show 8-character hash
+- **Deterministic hashing** - Same branch always produces same hash for consistency
+- **Debug support** - `get_full_branch_name()` function can resolve hash back to full branch name
+
+### **Branch Display Examples**
+```zsh
+# Short branches (≤15 chars): show full name
+[2025-06-29 12:18:18] [develop] [INFO] Operation
+
+# Long branches (>15 chars): show hash
+[2025-06-29 12:18:27] [457b7107] [INFO] Operation
+
+# Debug with full name lookup
+[2025-06-29 12:18:31] [457b7107] [DEBUG] Full branch name: fix/enhancement-add-hash-based-branch-display-to-logger-20-20250629-121736
+```
+
+### **Hash Resolution**
+- **Current branch lookup**: `get_full_branch_name <hash>` returns full name if hash matches current branch
+- **Git command fallback**: `git branch -a | grep <hash>` can find branches by hash
+- **Deterministic**: Same branch name always produces same hash across sessions
+
+**RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach.
