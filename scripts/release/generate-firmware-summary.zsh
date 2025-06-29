@@ -108,14 +108,22 @@ known_models=()
 unknown_models=()
 
 for model in "${all_models[@]}"; do
-    if [[ " ${custom_order[@]} " =~ " ${model} " ]]; then
+    local found=false
+    for known_model in "${custom_order[@]}"; do
+        if [[ "$model" == "$known_model" ]]; then
+            found=true
+            break
+        fi
+    done
+    
+    if [[ "$found" == true ]]; then
         known_models+=("$model")
     else
         unknown_models+=("$model")
     fi
 done
 
-# Sort unknown models by firmware version (newest first)
+# Sort unknown models by firmware version (newest first) and add at the top
 if [[ ${#unknown_models[@]} -gt 0 ]]; then
     # Create temporary array with model and version pairs
     temp_models=()
@@ -141,11 +149,14 @@ if [[ ${#unknown_models[@]} -gt 0 ]]; then
     sorted_models+=("${sorted_unknown[@]}")
 fi
 
-# Add known models in custom order
+# Add known models in the exact custom order specified
 for model in "${custom_order[@]}"; do
-    if [[ " ${known_models[@]} " =~ " ${model} " ]]; then
-        sorted_models+=("$model")
-    fi
+    for known in "${known_models[@]}"; do
+        if [[ "$model" == "$known" ]]; then
+            sorted_models+=("$model")
+            break
+        fi
+    done
 done
 
 # Calculate column widths
