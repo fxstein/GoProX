@@ -9,7 +9,7 @@ set -euo pipefail
 source "$(dirname "$0")/../core/logger.zsh"
 
 # Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RELEASE_DIR="$PROJECT_ROOT/docs/release"
 OUTPUT_DIR="$PROJECT_ROOT/output"
