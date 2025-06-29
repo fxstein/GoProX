@@ -34,7 +34,7 @@ fi
 __author__='Oliver Ratzesberger <https://github.com/fxstein>'
 __copyright__='Copyright (C) 2021-2025 Oliver Ratzesberger'
 __license__='MIT'
-__version__='01.13.00'
+__version__='01.14.00'
 __github__='https://github.com/fxstein/GoProX'
 __this__=$(basename $0)
 
