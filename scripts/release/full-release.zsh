@@ -344,9 +344,8 @@ main() {
     if [[ -n "$prev_version" ]]; then
         release_args+=(--prev "$prev_version")
     fi
-    if [[ -n "$version" ]]; then
-        release_args+=(--version "$version")
-    fi
+    # Always pass the intended new version to the release script
+    release_args+=(--version "$intended_new_version")
     release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1)
     echo "$release_output"
     if [[ $? -ne 0 ]]; then
