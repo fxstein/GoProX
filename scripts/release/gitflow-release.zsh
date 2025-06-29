@@ -313,11 +313,11 @@ monitor_github_actions() {
             echo ""
             echo "   📊 Workflow Status:"
             
-            while IFS='|' read -r run_number workflow_name status conclusion; do
+            while IFS='|' read -r run_number workflow_name wf_status conclusion; do
                 [[ -z "$run_number" ]] && continue
                 workflow_count=$((workflow_count + 1))
                 
-                case "$status" in
+                case "$wf_status" in
                     "completed")
                         case "$conclusion" in
                             "success")
@@ -333,11 +333,11 @@ monitor_github_actions() {
                         esac
                         ;;
                     "in_progress"|"queued"|"waiting")
-                        echo "   🔄 $workflow_name (#$run_number) - $status"
+                        echo "   🔄 $workflow_name (#$run_number) - $wf_status"
                         all_completed=false
                         ;;
                     *)
-                        echo "   ❓ $workflow_name (#$run_number) - Unknown status ($status)"
+                        echo "   ❓ $workflow_name (#$run_number) - Unknown status ($wf_status)"
                         all_completed=false
                         ;;
                 esac
