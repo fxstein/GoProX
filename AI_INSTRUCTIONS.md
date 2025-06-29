@@ -139,6 +139,66 @@ This document establishes the foundational architectural decisions and design pa
 
 **RATIONALE**: Prevents incorrect assumptions about issue scope and ensures proper issue management. Only the user knows the full requirements and can determine when an issue is truly complete.
 
+## Pull Request Assignment and Labeling (MANDATORY)
+**CRITICAL: For EVERY pull request created, you MUST follow these assignment and labeling requirements:**
+
+### Assignment Requirements
+- **ALWAYS assign the PR to the user who created it** (the person who requested the PR)
+- **Use the GitHub CLI assignment parameter**: `--assignee <username>`
+- **Default assignment**: If no specific user is mentioned, assign to `fxstein`
+- **Multiple assignees**: If the user requests multiple assignees, use `--assignee <user1> --assignee <user2>`
+
+### Labeling Requirements
+- **ALWAYS add appropriate labels** to categorize and prioritize the PR
+- **Use the GitHub CLI label parameter**: `--label <label_name>`
+- **Required labels based on PR type**:
+  - **Feature PRs**: `enhancement`, `feature`
+  - **Bug Fix PRs**: `bug`, `fix`
+  - **Documentation PRs**: `documentation`, `docs`
+  - **Release PRs**: `release`, `version-bump`
+  - **Maintenance PRs**: `maintenance`, `cleanup`
+  - **Testing PRs**: `testing`, `test`
+  - **CI/CD PRs**: `ci-cd`, `automation`
+  - **Security PRs**: `security`, `vulnerability`
+
+### Label Selection Guidelines
+- **Primary label**: Choose the most appropriate primary category (enhancement, bug, documentation, etc.)
+- **Secondary labels**: Add additional relevant labels for better categorization
+- **Priority labels**: Add `high-priority`, `medium-priority`, or `low-priority` if specified
+- **Breaking changes**: Add `breaking-change` if the PR introduces breaking changes
+- **Dependencies**: Add `dependencies` if the PR updates dependencies
+
+### Implementation Commands
+```zsh
+# Basic PR with assignment and labels
+gh pr create --title "title" --body "body" --base develop --assignee fxstein --label enhancement --label feature
+
+# Multiple assignees and labels
+gh pr create --title "title" --body "body" --base develop --assignee fxstein --assignee user2 --label bug --label fix --label high-priority
+
+# Documentation PR
+gh pr create --title "title" --body "body" --base develop --assignee fxstein --label documentation --label docs
+```
+
+### Label Definitions
+- **enhancement**: New features or improvements to existing functionality
+- **bug**: Bug fixes and error corrections
+- **documentation**: Documentation updates, README changes, wiki updates
+- **release**: Version releases, release notes, version bumps
+- **maintenance**: Code cleanup, refactoring, technical debt
+- **testing**: Test additions, test improvements, test framework changes
+- **ci-cd**: CI/CD pipeline changes, GitHub Actions updates
+- **security**: Security fixes, vulnerability patches
+- **breaking-change**: Changes that break existing functionality
+- **dependencies**: Dependency updates, package changes
+- **high-priority**: Urgent changes requiring immediate attention
+- **medium-priority**: Important changes with normal priority
+- **low-priority**: Nice-to-have changes with lower urgency
+
+**RATIONALE**: Proper assignment ensures accountability and ownership, while appropriate labeling enables efficient PR management, filtering, and prioritization. This improves the overall development workflow and project organization.
+
+**ENFORCEMENT**: This requirement applies to ALL pull requests created by the AI assistant. Failure to assign or label PRs correctly will result in immediate correction.
+
 ## Release Summary File Creation
 - Never copy an existing release summary file to create the required latest major changes file (e.g., `docs/release/latest-major-changes-since-<BASE>.md`).
 - Always create or update this file through the AI, ensuring it is up-to-date and accurate for the requested release base.

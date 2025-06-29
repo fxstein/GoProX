@@ -1,0 +1,123 @@
+---
+name: "Branch Cleanup on PR Merge"
+
+on:
+  pull_request:
+    types: ["closed"]
+    branches:
+      - "develop"
+      - "main"
+
+jobs:
+  cleanup-branches:
+    if: github.event.pull_request.merged == true
+    runs-on: "ubuntu-latest"
+    permissions:
+      actions: "read"
+      contents: "write"
+
+    steps:
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Setup Git"
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: "Install GitHub CLI"
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+            sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+            sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+
+      - name: "Authenticate with GitHub CLI"
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: "Get merged PR information"
+        id: "pr-info"
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+          TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+
+          echo "PR Number: $PR_NUMBER"
+          echo "Source Branch: $SOURCE_BRANCH"
+          echo "Target Branch: $TARGET_BRANCH"
+
+          # Store information for next steps
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "source_branch=$SOURCE_BRANCH" >> $GITHUB_OUTPUT
+          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: "Delete source branch"
+        run: |
+          SOURCE_BRANCH="${{ steps.pr-info.outputs.source_branch }}"
+
+          echo "🔄 Deleting source branch: $SOURCE_BRANCH"
+
+          # Delete the remote branch
+          if gh api repos/${{ github.repository }}/git/refs/heads/$SOURCE_BRANCH >/dev/null 2>&1; then
+            echo "🗑️  Deleting remote branch: $SOURCE_BRANCH"
+            gh api repos/${{ github.repository }}/git/refs/heads/$SOURCE_BRANCH -X DELETE
+            echo "✅ Remote branch deleted successfully"
+          else
+            echo "ℹ️  Remote branch $SOURCE_BRANCH not found or already deleted"
+          fi
+
+      - name: "Find and cleanup related branches"
+        run: |
+          SOURCE_BRANCH="${{ steps.pr-info.outputs.source_branch }}"
+          PR_NUMBER="${{ steps.pr-info.outputs.pr_number }}"
+
+          echo "🔍 Looking for related branches to cleanup..."
+
+          # Get all branches that might be related
+          ALL_BRANCHES=$(gh api repos/${{ github.repository }}/branches --jq ".[].name")
+
+          # Look for branches with similar names or same PR number
+          for branch in $ALL_BRANCHES; do
+            # Skip main branches
+            if [[ "$branch" == "main" || "$branch" == "develop" ]]; then
+              continue
+            fi
+
+            # Check if branch name contains the PR number
+            if [[ "$branch" == *"$PR_NUMBER"* ]]; then
+              echo "🗑️  Found related branch with PR number: $branch"
+              gh api repos/${{ github.repository }}/git/refs/heads/$branch -X DELETE
+              echo "✅ Deleted branch: $branch"
+            fi
+
+            # Check if branch name is similar to source branch (for feature branches)
+            if [[ "$branch" != "$SOURCE_BRANCH" && "$branch" == *"${SOURCE_BRANCH#*/}"* ]]; then
+              echo "🗑️  Found similar branch: $branch"
+              gh api repos/${{ github.repository }}/git/refs/heads/$branch -X DELETE
+              echo "✅ Deleted similar branch: $branch"
+            fi
+          done
+
+      - name: "Cleanup stale remote references"
+        run: |
+          echo "🧹 Cleaning up stale remote references..."
+          git remote prune origin
+          echo "✅ Stale references cleaned up"
+
+      - name: "Log cleanup summary"
+        run: |
+          echo "🎉 Branch cleanup completed successfully!"
+          echo "📋 Summary:"
+          echo "  - Source branch: ${{ steps.pr-info.outputs.source_branch }}"
+          echo "  - Target branch: ${{ steps.pr-info.outputs.target_branch }}"
+          echo "  - PR number: ${{ steps.pr-info.outputs.pr_number }}"
+          echo "  - Repository: ${{ github.repository }}"
+          echo "  - Event: PR merged successfully"

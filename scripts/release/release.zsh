@@ -125,7 +125,12 @@ trigger_workflow() {
     print_status "Previous version: $prev_version"
     print_status "Dry run: $dry_run"
     
+    # Get current branch name
+    local current_branch=$(git branch --show-current)
+    print_status "Triggering workflow on branch: $current_branch"
+    
     gh workflow run release-automation.yml \
+        --ref "$current_branch" \
         -f version="$version" \
         -f prev_version="$prev_version" \
         -f dry_run="$dry_run"
