@@ -355,7 +355,7 @@ function test_storage_cleanup() {
 function test_error_invalid_source() {
     # Test handling of invalid source
     local output
-    output=$(../goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
+    output=$(goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
     
     # Should handle the error gracefully
     assert_exit_code 1 "$?" "Should exit with error code for non-existent source"
@@ -366,7 +366,7 @@ function test_error_invalid_source() {
 function test_error_invalid_library() {
     # Test handling of invalid library
     local output
-    output=$(../goprox --library "/nonexistent/path" --import 2>&1)
+    output=$(goprox --library "/nonexistent/path" --import 2>&1)
     
     # Should handle the error gracefully
     assert_exit_code 1 "$?" "Should exit with error code for non-existent library"
