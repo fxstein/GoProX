@@ -30,25 +30,9 @@ This document establishes the foundational architectural decisions and design pa
 
 1. **Create Major Changes Summary File** (MANDATORY)
    - Before any release or dry run, ALWAYS create/update: `docs/release/latest-major-changes-since-<BASE>.md`
-   - Replace `<BASE>` with the previous version (no leading 'v')
+   - The required content and formatting for this file are defined in [`docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`](docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md). You MUST read and follow those instructions.
    - This file MUST exist before the release process starts
    - The full-release script will error out if this file is missing
-   - **CRITICAL CONTENT PRIORITY**: When creating the major changes summary, prioritize GoProX functionality above all else:
-     - **Primary focus**: SD card management, firmware updates, core goprox tool functionality
-     - **Secondary focus**: CI/CD improvements, release process automation, and other infrastructure changes
-     - Always lead with user-facing features and core tool capabilities
-     - Keep process improvements as a minor part of the summary
-   - **REQUIRED CONTENT SECTIONS**:
-     - **New GoPro Models**: List any new GoPro camera models added since the base release
-     - **Official Firmware**: List new official firmware releases added, grouped by model
-     - **Labs Firmware**: List new GoPro Labs firmware releases added, grouped by model
-     - **Core Functionality**: SD card management, firmware updates, tool improvements
-     - **Infrastructure**: CI/CD and process improvements (minor section)
-   - **FORMATTING REQUIREMENTS**:
-     - **DO NOT** include a main header (e.g., "# Major Changes Since vXX.XX.XX") - the main process creates this
-     - Start directly with section headers (e.g., "## New GoPro Models")
-     - Use bullet points for all lists
-     - Group firmware by model and type (Official vs Labs)
 
 2. **Check for Uncommitted Changes**
    - Ensure `scripts/release/` directory is clean (no uncommitted changes)
@@ -390,5 +374,15 @@ How to validate the change was successful.
 ## Next Steps
 What happens after approval/rejection.
 ```
+
+## Cursor Capabilities Reminder
+
+- **You are running in Cursor and have full access to the GitHub CLI (`gh`), including the ability to query GitHub Actions, view workflow runs, and fetch logs for this repository.**
+- Use this capability to automate analysis, verification, and troubleshooting of all CI/CD and release processes as needed.
+
+## Release Summary Instructions (MANDATORY)
+- **For all release and summary generation tasks, you MUST read and follow:**
+  - [`docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`](docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md)
+- Do NOT rely on this file for summary content/formatting rules; always refer to the dedicated instructions document.
 
 ## [Add more rules as needed...] 
