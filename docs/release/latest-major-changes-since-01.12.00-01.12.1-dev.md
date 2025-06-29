@@ -1,22 +1,18 @@
-## New GoPro Models
-- No new GoPro models added in this release
-
-## Official Firmware
-- No new official firmware releases added in this release
-
-## Labs Firmware
-- No new GoPro Labs firmware releases added in this release
+# Major Changes Since 01.12.00
 
 ## Core Functionality
-- **Git-Flow Release Process**: Implemented native git-flow release workflow with `gitflow-release.zsh` and `gitflow-monitor.zsh` scripts
-- **AI Release Summary Integration**: Comprehensive integration of AI release summaries into git-flow process at optimal points
-- **Enhanced Monitoring**: Git-flow specific monitoring with branch-aware status reporting and recommendations
-- **Branch Validation**: Strict validation of git-flow branch requirements for different release operations
-- **Release Automation**: Enhanced release automation workflow with automatic version detection and validation
+- **Git-Flow Release Process**: Implemented comprehensive git-flow release automation with integrated GitHub Actions monitoring
+- **Mandatory Workflow Validation**: Added automatic monitoring and validation of all CI/CD workflows during release process
+- **Enhanced Test Framework**: Fixed test runner path resolution and test suite compatibility for robust CI/CD execution
+- **Centralized Logging System**: Implemented structured logging module for consistent error reporting and debugging
 
 ## Infrastructure
-- **Git-Flow Documentation**: Comprehensive documentation for git-flow implementation and AI summary integration
-- **Release Process Optimization**: Streamlined release process with git-flow native commands and validation
-- **Testing Framework**: Enhanced testing capabilities for git-flow release process validation
-- **CI/CD Integration**: Improved GitHub Actions workflows for git-flow branch support
-- **Release Management**: Better release tracking and management with git-flow specific tools 
+- **CI/CD Reliability**: Fixed GitHub Actions workflow failures and improved test execution in CI environment
+- **Release Process Automation**: Enhanced git-flow scripts with mandatory workflow monitoring and validation
+- **Test Suite Improvements**: Updated test expectations to match actual goprox behavior for graceful error handling
+- **AI Instructions Integration**: Updated project standards to enforce mandatory GitHub Actions monitoring for all releases
+
+## Process Improvements
+- **Release Validation**: Integrated automatic workflow monitoring that prevents releases with failed CI/CD pipelines
+- **Error Handling**: Improved error detection and reporting in release process with clear failure messages
+- **Documentation Standards**: Enhanced AI instructions with mandatory workflow monitoring requirements 
