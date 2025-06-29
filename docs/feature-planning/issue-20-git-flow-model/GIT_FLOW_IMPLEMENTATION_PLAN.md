@@ -11,11 +11,11 @@ This plan provides a focused approach to implementing git-flow for the GoProX pr
 
 ### Release Channels Overview
 
-**1. Latest Build Channel (develop branch)**
+**1. Dev Build Channel (develop branch)**
 - **Purpose**: Continuous integration builds for development testing
 - **Source**: `develop` branch
 - **Audience**: Developers, early adopters, testing
-- **Installation**: `brew install fxstein/tap/goprox@latest`
+- **Installation**: `brew install fxstein/tap/goprox@dev`
 - **Update Frequency**: On every develop branch push
 - **Stability**: Development quality, may contain bugs
 
@@ -73,9 +73,9 @@ class GoproxBeta < Formula
   end
 end
 
-# Formula/goprox@latest.rb - Latest build channel
-class GoproxLatest < Formula
-  desc "GoPro media management tool (latest build)"
+# Formula/goprox@dev.rb - Dev build channel
+class GoproxDev < Formula
+  desc "GoPro media management tool (development build)"
   homepage "https://github.com/fxstein/GoProX"
   version "01.11.00-dev.$(date +%Y%m%d)"
   url "https://github.com/fxstein/GoProX/archive/develop.tar.gz"
@@ -106,17 +106,17 @@ on:
     types: [published]
 
 jobs:
-  latest-build:
+  dev-build:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
-      - name: Build Latest Version
-      - name: Update Homebrew Latest Channel
+      - name: Build Dev Version
+      - name: Update Homebrew Dev Channel
         env:
           HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
         run: |
-          # Update goprox@latest formula
-          ./scripts/release/update-homebrew-channel.zsh latest
+          # Update goprox@dev formula
+          ./scripts/release/update-homebrew-channel.zsh dev
 
   beta-release:
     if: startsWith(github.ref, 'refs/heads/release/')
@@ -151,7 +151,7 @@ jobs:
 # scripts/release/update-homebrew-channel.zsh
 
 # Update Homebrew formula for specific channel
-# Usage: ./update-homebrew-channel.zsh [latest|beta|official]
+# Usage: ./update-homebrew-channel.zsh [dev|beta|official]
 
 local channel="$1"
 local version=""
@@ -159,7 +159,7 @@ local url=""
 local sha256=""
 
 case $channel in
-  latest)
+  dev)
     version="$(date +%Y%m%d)-dev"
     url="https://github.com/fxstein/GoProX/archive/develop.tar.gz"
     ;;
@@ -172,7 +172,7 @@ case $channel in
     url="https://github.com/fxstein/GoProX/archive/v${version}.tar.gz"
     ;;
   *)
-    echo "Error: Invalid channel. Use: latest, beta, or official"
+    echo "Error: Invalid channel. Use: dev, beta, or official"
     exit 1
     ;;
 esac
@@ -274,7 +274,7 @@ _update_homebrew_formula "$channel" "$version" "$url" "$sha256"
 
 **Multi-Channel Implementation Steps:**
 1. **Homebrew Tap Enhancement**
-   - Create additional formula files for beta and latest channels
+   - Create additional formula files for beta and dev channels
    - Set up channel-specific versioning and naming conventions
    - Configure channel-specific installation paths and dependencies
 
@@ -401,7 +401,7 @@ on:
 - [ ] First successful release using git-flow
 
 ### Multi-Channel Release Criteria
-- [ ] Three Homebrew channels operational (latest, beta, official)
+- [ ] Three Homebrew channels operational (dev, beta, official)
 - [ ] Automated formula updates for all channels
 - [ ] Channel-specific versioning and naming conventions
 - [ ] User documentation for channel selection and installation
@@ -444,7 +444,7 @@ brew install fxstein/tap/goprox@beta
 **For Developers (Latest Builds):**
 ```zsh
 # Install latest development build
-brew install fxstein/tap/goprox@latest
+brew install fxstein/tap/goprox@dev
 ```
 - **Use Case**: Development testing, early adopters, debugging
 - **Stability**: Development quality - may contain bugs
@@ -459,12 +459,12 @@ brew install fxstein/tap/goprox@latest
 brew uninstall fxstein/tap/goprox
 brew install fxstein/tap/goprox@beta
 
-# Switch from beta to latest
+# Switch from beta to dev
 brew uninstall fxstein/tap/goprox@beta
-brew install fxstein/tap/goprox@latest
+brew install fxstein/tap/goprox@dev
 
-# Downgrade from latest to official
-brew uninstall fxstein/tap/goprox@latest
+# Downgrade from dev to official
+brew uninstall fxstein/tap/goprox@dev
 brew install fxstein/tap/goprox
 ```
 
@@ -482,7 +482,7 @@ brew info fxstein/tap/goprox@beta
 
 ### Channel-Specific Features
 
-**Latest Build Channel:**
+**Dev Build Channel:**
 - Access to cutting-edge features
 - Development debugging information
 - Experimental functionality

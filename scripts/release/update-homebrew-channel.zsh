@@ -2,13 +2,38 @@
 
 # Homebrew Multi-Channel Update Script
 # Updates Homebrew formula for specific release channel
-# Usage: ./update-homebrew-channel.zsh [latest|beta|official]
+# Usage: ./update-homebrew-channel.zsh [dev|beta|official]
 
 # Source logger
-source "$(dirname "$0")/../../scripts/core/logger.zsh"
+SCRIPT_DIR="${0:A:h}"
+source "$SCRIPT_DIR/../../scripts/core/logger.zsh"
 
-# Initialize logger
-init_logger "homebrew-channel-update" "info"
+# Function to display help
+show_help() {
+    echo "Homebrew Multi-Channel Update Script"
+    echo ""
+    echo "Usage: $0 [dev|beta|official]"
+    echo ""
+    echo "Channels:"
+    echo "  dev      - Update goprox@dev formula (develop branch)"
+    echo "  beta     - Update goprox@beta formula (release branches)"
+    echo "  official - Update goprox formula (main branch releases)"
+    echo ""
+    echo "Environment Variables:"
+    echo "  HOMEBREW_TOKEN - GitHub Personal Access Token with 'repo' scope"
+    echo ""
+    echo "Examples:"
+    echo "  $0 dev       # Update dev build channel"
+    echo "  $0 beta      # Update beta channel"
+    echo "  $0 official  # Update official channel"
+    echo ""
+}
+
+# Check for help flag
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
 
 log_info "Starting Homebrew channel update for channel: $1"
 
@@ -16,18 +41,18 @@ log_info "Starting Homebrew channel update for channel: $1"
 local channel="$1"
 if [[ -z "$channel" ]]; then
     log_error "Error: Channel parameter required"
-    echo "Usage: $0 [latest|beta|official]"
+    show_help
     exit 1
 fi
 
 # Validate channel value
 case $channel in
-    latest|beta|official)
+    dev|beta|official)
         log_info "Valid channel specified: $channel"
         ;;
     *)
-        log_error "Error: Invalid channel '$channel'. Use: latest, beta, or official"
-        echo "Usage: $0 [latest|beta|official]"
+        log_error "Error: Invalid channel '$channel'. Use: dev, beta, or official"
+        show_help
         exit 1
         ;;
 esac
@@ -46,12 +71,12 @@ local formula_name=""
 local formula_file=""
 
 case $channel in
-    latest)
+    dev)
         version="$(date +%Y%m%d)-dev"
         url="https://github.com/fxstein/GoProX/archive/develop.tar.gz"
-        formula_name="goprox@latest"
-        formula_file="Formula/goprox@latest.rb"
-        log_info "Latest build channel - version: $version"
+        formula_name="goprox@dev"
+        formula_file="Formula/goprox@dev.rb"
+        log_info "Dev build channel - version: $version"
         ;;
     beta)
         version="$(git describe --tags --abbrev=0)-beta.$(date +%Y%m%d)"
@@ -93,10 +118,10 @@ cd homebrew-fxstein
 log_info "Updating formula file: $formula_file"
 
 case $channel in
-    latest)
+    dev)
         cat > "$formula_file" << EOF
-class GoproxLatest < Formula
-  desc "GoPro media management tool (latest build)"
+class GoproxDev < Formula
+  desc "GoPro media management tool (dev build)"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
   url "$url"
