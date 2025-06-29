@@ -180,3 +180,40 @@ jobs:
           name: "logger-test-results"
           path: "output/test-results/"
           retention-days: 7
+
+  firmware-summary-test:
+    name: "Firmware Summary Unit Test"
+    runs-on: "ubuntu-latest"
+    if: >-
+      github.event_name == 'push' || github.event_name == 'pull_request'
+    needs: []
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh exiftool jq
+
+      - name: "Make test scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+
+      - name: "Setup output directories"
+        run: |
+          mkdir -p output/test-results
+          mkdir -p output/test-temp
+
+      - name: "Run firmware summary unit test"
+        run: |
+          echo "🧪 Running firmware summary unit test..."
+          ./scripts/testing/run-tests.zsh --firmware-summary
+
+      - name: "Upload firmware summary test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "firmware-summary-test-results"
+          path: "output/test-results/"
+          retention-days: 7

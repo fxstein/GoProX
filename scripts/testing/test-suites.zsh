@@ -47,6 +47,17 @@ function test_integration_suite() {
     run_test "integration_error_handling" test_integration_error_handling "Test error handling scenarios"
 }
 
+# Firmware Summary Tests
+function test_firmware_summary_suite() {
+    run_test "firmware_summary_basic_generation" test_firmware_summary_basic_generation "Test basic firmware summary generation"
+    run_test "firmware_summary_custom_sorting" test_firmware_summary_custom_sorting "Test custom model sorting order"
+    run_test "firmware_summary_model_names_with_spaces" test_firmware_summary_model_names_with_spaces "Test handling of model names with spaces"
+    run_test "firmware_summary_unknown_models" test_firmware_summary_unknown_models "Test handling of unknown models"
+    run_test "firmware_summary_missing_firmware" test_firmware_summary_missing_firmware "Test handling of models with missing firmware"
+    run_test "firmware_summary_table_formatting" test_firmware_summary_table_formatting "Test proper markdown table formatting"
+    run_test "firmware_summary_column_alignment" test_firmware_summary_column_alignment "Test column width calculation and alignment"
+}
+
 # Logger Tests
 function test_logger_suite() {
     if [[ "$DEBUG" == true ]]; then
@@ -394,4 +405,226 @@ function assert_not_contains() {
         echo "   Pattern: '$pattern'"
         return 1
     fi
+}
+
+## Firmware Summary Tests
+function test_firmware_summary_basic_generation() {
+    # Create test firmware structure
+    create_test_firmware_structure
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    local exit_code=$?
+    
+    # Test basic functionality
+    assert_exit_code 0 "$exit_code" "Firmware summary script should exit successfully"
+    assert_contains "$output" "## Supported GoPro Models" "Output should contain section header"
+    assert_contains "$output" "Model" "Output should contain table header"
+    assert_contains "$output" "HERO13 Black" "Output should contain HERO13 Black model"
+    assert_contains "$output" "HERO \\(2024\\)" "Output should contain HERO (2024) model"
+    
+    cleanup_test_firmware_structure
+}
+
+function test_firmware_summary_custom_sorting() {
+    # Create test firmware structure
+    create_test_firmware_structure
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test custom sorting order
+    local hero13_pos=$(echo "$output" | grep -n "HERO13 Black" | cut -d: -f1)
+    local hero2024_pos=$(echo "$output" | grep -n "HERO (2024)" | cut -d: -f1)
+    local hero12_pos=$(echo "$output" | grep -n "HERO12 Black" | cut -d: -f1)
+    local gopro_max_pos=$(echo "$output" | grep -n "GoPro Max" | cut -d: -f1)
+    
+    # Verify custom order: HERO13 -> HERO (2024) -> HERO12 -> ... -> GoPro Max
+    assert_equal true "$(($hero13_pos < $hero2024_pos))" "HERO13 should come before HERO (2024)"
+    assert_equal true "$(($hero2024_pos < $hero12_pos))" "HERO (2024) should come before HERO12"
+    assert_equal true "$(($hero12_pos < $gopro_max_pos))" "HERO12 should come before GoPro Max"
+    
+    cleanup_test_firmware_structure
+}
+
+function test_firmware_summary_model_names_with_spaces() {
+    # Create test firmware structure with models that have spaces
+    create_test_firmware_structure
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test handling of model names with spaces
+    assert_contains "$output" "HERO \\(2024\\)" "Should handle model name with parentheses and spaces"
+    assert_contains "$output" "HERO11 Black Mini" "Should handle model name with multiple spaces"
+    assert_contains "$output" "GoPro Max" "Should handle model name with space"
+    
+    cleanup_test_firmware_structure
+}
+
+function test_firmware_summary_unknown_models() {
+    # Create test firmware structure with unknown models
+    create_test_firmware_structure_with_unknown_models
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test handling of unknown models
+    assert_contains "$output" "Unknown Model X" "Should include unknown models"
+    assert_contains "$output" "Test Camera Y" "Should include other unknown models"
+    
+    # Unknown models should appear at the top (sorted by firmware version)
+    local unknown_x_pos=$(echo "$output" | grep -n "Unknown Model X" | cut -d: -f1)
+    local hero13_pos=$(echo "$output" | grep -n "HERO13 Black" | cut -d: -f1)
+    assert_equal true "$(($unknown_x_pos < $hero13_pos))" "Unknown models should appear before known models"
+    
+    cleanup_test_firmware_structure_with_unknown_models
+}
+
+function test_firmware_summary_missing_firmware() {
+    # Create test firmware structure with some models missing firmware
+    create_test_firmware_structure_with_missing_firmware
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test handling of missing firmware
+    assert_contains "$output" "N/A" "Should show N/A for missing firmware"
+    assert_contains "$output" "HERO13 Black" "Should still include models with missing firmware"
+    
+    cleanup_test_firmware_structure_with_missing_firmware
+}
+
+function test_firmware_summary_table_formatting() {
+    # Create test firmware structure
+    create_test_firmware_structure
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test proper markdown table formatting
+    assert_contains "$output" "Model" "Should have table header with Model column"
+    assert_contains "$output" "Latest Official" "Should have table header with Latest Official column"
+    assert_contains "$output" "Latest Labs" "Should have table header with Latest Labs column"
+    assert_contains "$output" "---" "Should have table separator line"
+    assert_contains "$output" "HERO13 Black" "Should have properly formatted table rows"
+    
+    cleanup_test_firmware_structure
+}
+
+function test_firmware_summary_column_alignment() {
+    # Create test firmware structure with varying model name lengths
+    create_test_firmware_structure_with_varying_lengths
+    
+    # Run the firmware summary script
+    local output
+    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    
+    # Test column alignment
+    # Check that all table rows have the same number of pipe characters (3 columns)
+    local table_rows=$(echo "$output" | grep "^|" | wc -l | tr -d ' ')
+    local expected_rows=12  # Header + separator + 10 models
+    assert_equal "$expected_rows" "$table_rows" "Should have correct number of table rows"
+    
+    # Check that each row has exactly 3 pipe characters (indicating 3 columns)
+    local malformed_rows=$(echo "$output" | grep "^|" | grep -v "^|.*|.*|$" | wc -l | tr -d ' ')
+    assert_equal "0" "$malformed_rows" "All table rows should have exactly 3 columns"
+    
+    cleanup_test_firmware_structure_with_varying_lengths
+}
+
+# Helper functions for firmware summary tests
+function create_test_firmware_structure() {
+    # Create official firmware structure
+    mkdir -p "firmware/official/HERO13 Black/H24.01.02.02.00"
+    mkdir -p "firmware/official/HERO (2024)/H24.03.02.20.00"
+    mkdir -p "firmware/official/HERO12 Black/H23.01.02.32.00"
+    mkdir -p "firmware/official/HERO11 Black/H22.01.02.32.00"
+    mkdir -p "firmware/official/HERO11 Black Mini/H22.03.02.50.00"
+    mkdir -p "firmware/official/HERO10 Black/H21.01.01.62.00"
+    mkdir -p "firmware/official/HERO9 Black/HD9.01.01.72.00"
+    mkdir -p "firmware/official/HERO8 Black/HD8.01.02.51.00"
+    mkdir -p "firmware/official/GoPro Max/H19.03.02.02.00"
+    mkdir -p "firmware/official/The Remote/GP.REMOTE.FW.02.00.01"
+    
+    # Create labs firmware structure
+    mkdir -p "firmware/labs/HERO13 Black/H24.01.02.02.70"
+    mkdir -p "firmware/labs/HERO12 Black/H23.01.02.32.70"
+    mkdir -p "firmware/labs/HERO11 Black/H22.01.02.32.70"
+    mkdir -p "firmware/labs/HERO11 Black Mini/H22.03.02.50.71b"
+    mkdir -p "firmware/labs/HERO10 Black/H21.01.01.62.70"
+    mkdir -p "firmware/labs/HERO9 Black/HD9.01.01.72.70"
+    mkdir -p "firmware/labs/HERO8 Black/HD8.01.02.51.75"
+    mkdir -p "firmware/labs/GoPro Max/H19.03.02.02.70"
+}
+
+function create_test_firmware_structure_with_unknown_models() {
+    create_test_firmware_structure
+    
+    # Add unknown models with newer firmware versions
+    mkdir -p "firmware/official/Unknown Model X/Z99.99.99.99.99"
+    mkdir -p "firmware/official/Test Camera Y/Y88.88.88.88.88"
+    mkdir -p "firmware/labs/Unknown Model X/Z99.99.99.99.99"
+    mkdir -p "firmware/labs/Test Camera Y/Y88.88.88.88.88"
+}
+
+function create_test_firmware_structure_with_missing_firmware() {
+    create_test_firmware_structure
+    
+    # Remove some firmware directories to simulate missing firmware
+    rm -rf "firmware/labs/HERO (2024)"
+    rm -rf "firmware/labs/The Remote"
+}
+
+function create_test_firmware_structure_with_varying_lengths() {
+    create_test_firmware_structure
+    
+    # Add models with very long names
+    mkdir -p "firmware/official/Very Long Model Name That Exceeds Normal Length/H99.99.99.99.99"
+    mkdir -p "firmware/official/Short/H11.11.11.11.11"
+}
+
+function cleanup_test_firmware_structure() {
+    rm -rf "firmware/official/HERO13 Black"
+    rm -rf "firmware/official/HERO (2024)"
+    rm -rf "firmware/official/HERO12 Black"
+    rm -rf "firmware/official/HERO11 Black"
+    rm -rf "firmware/official/HERO11 Black Mini"
+    rm -rf "firmware/official/HERO10 Black"
+    rm -rf "firmware/official/HERO9 Black"
+    rm -rf "firmware/official/HERO8 Black"
+    rm -rf "firmware/official/GoPro Max"
+    rm -rf "firmware/official/The Remote"
+    rm -rf "firmware/labs/HERO13 Black"
+    rm -rf "firmware/labs/HERO12 Black"
+    rm -rf "firmware/labs/HERO11 Black"
+    rm -rf "firmware/labs/HERO11 Black Mini"
+    rm -rf "firmware/labs/HERO10 Black"
+    rm -rf "firmware/labs/HERO9 Black"
+    rm -rf "firmware/labs/HERO8 Black"
+    rm -rf "firmware/labs/GoPro Max"
+}
+
+function cleanup_test_firmware_structure_with_unknown_models() {
+    cleanup_test_firmware_structure
+    rm -rf "firmware/official/Unknown Model X"
+    rm -rf "firmware/official/Test Camera Y"
+    rm -rf "firmware/labs/Unknown Model X"
+    rm -rf "firmware/labs/Test Camera Y"
+}
+
+function cleanup_test_firmware_structure_with_missing_firmware() {
+    cleanup_test_firmware_structure
+}
+
+function cleanup_test_firmware_structure_with_varying_lengths() {
+    cleanup_test_firmware_structure
+    rm -rf "firmware/official/Very Long Model Name That Exceeds Normal Length"
+    rm -rf "firmware/official/Short"
 } 
