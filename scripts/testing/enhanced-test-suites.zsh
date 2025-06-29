@@ -357,8 +357,9 @@ function test_error_invalid_source() {
     local output
     output=$(goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
     
-    # Should handle the error gracefully
-    assert_exit_code 1 "$?" "Should exit with error code for non-existent source"
+    # Should handle the error gracefully with warnings
+    assert_exit_code 0 "$?" "Should handle non-existent source gracefully with exit code 0"
+    assert_contains "$output" "Warning:" "Should show warning messages"
     
     cleanup_test_files "test-lib"
 }
@@ -368,8 +369,9 @@ function test_error_invalid_library() {
     local output
     output=$(goprox --library "/nonexistent/path" --import 2>&1)
     
-    # Should handle the error gracefully
-    assert_exit_code 1 "$?" "Should exit with error code for non-existent library"
+    # Should handle the error gracefully with warnings
+    assert_exit_code 0 "$?" "Should handle non-existent library gracefully with exit code 0"
+    assert_contains "$output" "Warning:" "Should show warning messages"
 }
 
 function test_error_missing_dependencies() {

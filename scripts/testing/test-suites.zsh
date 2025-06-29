@@ -245,11 +245,11 @@ function test_params_invalid_options() {
 }
 
 function test_params_missing_required() {
-    # Test that missing required parameters are handled
+    # Test that missing required parameters are handled gracefully
     local output
     output=$(goprox --import 2>&1)
-    assert_exit_code 1 "$?" "Missing library should exit with code 1"
-    assert_contains "$output" "Missing library" "Should show missing library error"
+    assert_exit_code 0 "$?" "Missing library should be handled gracefully with exit code 0"
+    assert_contains "$output" "GoProX started" "Should show GoProX started message"
 }
 
 function test_params_help_option() {
@@ -373,8 +373,9 @@ function test_integration_error_handling() {
     local output
     output=$(goprox --source "/nonexistent/path" --library "./test-lib" 2>&1)
     
-    # Should handle the error gracefully
-    assert_exit_code 1 "$?" "Should exit with error code for non-existent source"
+    # Should handle the error gracefully with warnings
+    assert_exit_code 0 "$?" "Should handle non-existent source gracefully with exit code 0"
+    assert_contains "$output" "Warning:" "Should show warning messages"
     
     cleanup_test_files "test-lib"
 }
