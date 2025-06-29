@@ -5,17 +5,16 @@
 
 set -euo pipefail
 
-# Source the logger
-source "$(dirname "$0")/../core/logger.zsh"
-
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RELEASE_DIR="$PROJECT_ROOT/docs/release"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
-# Initialize logger
-init_logger "$OUTPUT_DIR/gitflow-release.log" "INFO"
+# Source the logger
+export LOGFILE="$OUTPUT_DIR/gitflow-release.log"
+mkdir -p "$(dirname "$LOGFILE")"
+source "$(dirname "$0")/../core/logger.zsh"
 
 log_info "Starting git-flow release process"
 

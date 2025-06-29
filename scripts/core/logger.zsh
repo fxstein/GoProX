@@ -60,7 +60,7 @@ function log_time_end() {
   log_info "Elapsed time: ${duration}s"
 }
 
-trap 'log_error "Error on line $LINENO: $BASH_COMMAND"' ERR
+trap 'log_error "Error on line $LINENO"' ERR
 
 # --- Usage Example ---
 # source scripts/core/logger.zsh
