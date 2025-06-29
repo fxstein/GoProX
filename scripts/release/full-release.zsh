@@ -355,21 +355,33 @@ main() {
     print_success "Release workflow triggered successfully"
     
     # Step 3: Monitor the release
-    print_status "Step 3: Monitoring release process..."
-    print_status "Monitoring workflow for version: $intended_new_version"
-    ./scripts/release/monitor-release.zsh "$intended_new_version"
-    if [[ $? -ne 0 ]]; then
-        print_error "Release monitoring failed"
-        exit 1
+    if [[ "$dry_run" == "true" ]]; then
+        print_status "Step 3: Skipping monitoring (dry-run mode)"
+        print_success "Dry-run release process completed!"
+        echo ""
+        print_status "Dry-Run Summary:"
+        echo "  Version: $intended_new_version"
+        echo "  Status: Simulated successfully"
+        echo "  Monitor: Skipped (dry-run)"
+        echo ""
+        print_status "All dry-run checks passed. Ready for real release."
+    else
+        print_status "Step 3: Monitoring release process..."
+        print_status "Monitoring workflow for version: $intended_new_version"
+        ./scripts/release/monitor-release.zsh "$intended_new_version"
+        if [[ $? -ne 0 ]]; then
+            print_error "Release monitoring failed"
+            exit 1
+        fi
+        print_success "Release process completed!"
+        echo ""
+        print_status "Release Summary:"
+        echo "  Version: $intended_new_version"
+        echo "  Status: Completed"
+        echo "  Monitor: Finished"
+        echo ""
+        print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
     fi
-    print_success "Release process completed!"
-    echo ""
-    print_status "Release Summary:"
-    echo "  Version: $intended_new_version"
-    echo "  Status: Completed"
-    echo "  Monitor: Finished"
-    echo ""
-    print_status "You can view the release at: https://github.com/fxstein/GoProX/releases"
 
     # Fetch and display the latest release notes artifact
     print_status "Fetching release notes artifact for version: $intended_new_version..."
