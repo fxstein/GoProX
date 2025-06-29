@@ -260,7 +260,7 @@ commit_and_push() {
     # Check if there are any changes to commit
     if git diff-index --quiet HEAD --; then
         log_info "No changes to commit - version already up to date"
-        return 0
+        return 1  # Signal to caller that nothing was committed
     fi
     
     # Add and commit changes
@@ -285,9 +285,20 @@ commit_and_push() {
         echo "   Please fix the workflow issues and retry the release."
         exit 1
     fi
+    return 0
 }
 
-commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"
+# Only handle cleanup if this is a real release (not dry run) or if explicitly requested
+if [[ "$DRY_RUN" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
+    # Only run summary cleanup if there were changes or if summary needs to be archived
+    if ! commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"; then
+        log_info "No changes to commit or archive; release process is already up to date."
+    else
+        handle_summary_cleanup "$DRY_RUN" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$BASE_VERSION" "$MONITOR_TIMEOUT"
+    fi
+else
+    commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"
+fi
 
 # Handle summary file cleanup
 handle_summary_cleanup() {
@@ -338,11 +349,6 @@ handle_summary_cleanup() {
         log_info "Preserving summary file"
     fi
 }
-
-# Only handle cleanup if this is a real release (not dry run) or if explicitly requested
-if [[ "$DRY_RUN" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
-    handle_summary_cleanup "$DRY_RUN" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$BASE_VERSION" "$MONITOR_TIMEOUT"
-fi
 
 # Display next steps
 show_next_steps() {
