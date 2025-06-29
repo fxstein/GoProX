@@ -385,4 +385,84 @@ What happens after approval/rejection.
   - [`docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`](docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md)
 - Do NOT rely on this file for summary content/formatting rules; always refer to the dedicated instructions document.
 
-## [Add more rules as needed...] 
+## [Add more rules as needed...]
+
+## MANDATORY READING REQUIREMENTS
+
+**CRITICAL: Before beginning ANY work on this project, you MUST execute the following reading sequence:**
+
+### **Step 1: Read AI Instructions**
+- Read the complete `AI_INSTRUCTIONS.md` file (this document)
+
+### **Step 2: Read Design Principles** 
+- Read the complete `docs/architecture/DESIGN_PRINCIPLES.md` file
+- This document establishes foundational architectural decisions and design patterns
+
+### **Step 3: Read Release Summary Instructions** (if applicable)
+- If working on releases, summaries, or version management, read `docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`
+- This document defines required content and formatting for release summaries
+
+### **Step 4: Read Next Steps** (if applicable)
+- If starting new work or providing progress updates, read `docs/NEXT_STEPS.md`
+- This document tracks current priorities and dependencies
+
+### **Validation Requirements:**
+- **NO EXCEPTIONS**: You must read ALL applicable documents before proceeding
+- **CONFIRMATION**: After reading, confirm you have read all required documents
+- **CONTEXT**: Reference specific principles/rules from the documents in your responses
+- **COMPLIANCE**: If you cannot read a document, inform the user and wait for guidance
+
+### **Reading Confirmation Format:**
+After reading all required documents, respond with:
+```
+## **Complete Reading Status** ✅
+
+1. **AI Instructions** ✅ - [Brief summary of key requirements and standards]
+2. **Design Principles** ✅ - [Brief summary of core principles and architectural decisions]
+3. **Release Summary Instructions** ✅ - [Brief summary if applicable to current work]
+4. **Next Steps** ✅ - [Brief summary if applicable to current work]
+
+I'm now fully equipped with all mandatory reading requirements and ready to proceed.
+```
+
+### **Failure to Read Consequences:**
+- If you proceed without reading required documents, you risk violating project standards
+- Always prioritize reading over immediate action
+- When in doubt, read more documents rather than fewer 
+
+## MANDATORY READING CONFIRMATION
+
+**CRITICAL: You MUST read and confirm all required documents BEFORE performing ANY work or responding to ANY requests.**
+
+### **Required Reading Sequence (NO EXCEPTIONS):**
+1. **AI Instructions** - Read complete `AI_INSTRUCTIONS.md`
+2. **Design Principles** - Read complete `docs/architecture/DESIGN_PRINCIPLES.md`
+3. **Release Summary Instructions** - Read `docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md` (if working on releases/summaries)
+4. **Next Steps** - Read `docs/NEXT_STEPS.md` (if starting new work or providing progress updates)
+
+### **Mandatory Confirmation Format:**
+After reading ALL required documents, you MUST respond with this exact format:
+
+```
+## **Complete Reading Status** ✅
+
+1. **AI Instructions** ✅ - [Brief summary of key requirements and standards]
+2. **Design Principles** ✅ - [Brief summary of core principles and architectural decisions]
+3. **Release Summary Instructions** ✅ - [Brief summary if applicable to current work]
+4. **Next Steps** ✅ - [Brief summary if applicable to current work]
+
+I'm now fully equipped with all mandatory reading requirements and ready to proceed.
+```
+
+### **Enforcement Rules:**
+- **NO WORK WITHOUT CONFIRMATION**: You must provide the reading confirmation before any task, analysis, or response
+- **REFUSE TO PROCEED**: If you cannot read a required document, inform the user and wait for guidance
+- **COMPLETE SUMMARIES**: Each summary must show understanding of the document's key points
+- **CONTEXT REFERENCE**: Reference specific principles/rules from the documents in your responses
+- **SESSION REQUIREMENT**: Provide this confirmation at the start of every new session or major task
+
+### **Failure Consequences:**
+- If you proceed without reading confirmation, you risk violating project standards
+- Always prioritize reading over immediate action
+- When in doubt, read more documents rather than fewer
+- If a document is missing or inaccessible, inform the user immediately 
