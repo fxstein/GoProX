@@ -136,11 +136,29 @@ get_branch_display() {
     local branch_hash=$(get_branch_hash "$current_branch")
     
     # For short branches (≤15 chars), show full name
-    # For longer branches, show hash
+    # For longer branches, show type prefix + hash
     if [[ ${#current_branch} -le 15 ]]; then
         echo "$current_branch"
     else
-        echo "$branch_hash"
+        # Extract branch type prefix
+        local branch_type=""
+        if [[ "$current_branch" =~ ^fix/ ]]; then
+            branch_type="fix"
+        elif [[ "$current_branch" =~ ^feature/ ]]; then
+            branch_type="feat"
+        elif [[ "$current_branch" =~ ^release/ ]]; then
+            branch_type="rel"
+        elif [[ "$current_branch" =~ ^hotfix/ ]]; then
+            branch_type="hot"
+        elif [[ "$current_branch" == "develop" ]]; then
+            branch_type="dev"
+        elif [[ "$current_branch" == "main" ]]; then
+            branch_type="main"
+        else
+            branch_type="br"
+        fi
+        
+        echo "${branch_type}/${branch_hash}"
     fi
 }
 
