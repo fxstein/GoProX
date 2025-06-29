@@ -11,6 +11,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RELEASE_DIR="$PROJECT_ROOT/docs/release"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
+# Set script name for error trap
+export SCRIPT_NAME="gitflow-release"
+
 # Source the logger
 export LOGFILE="$OUTPUT_DIR/gitflow-release.log"
 mkdir -p "$(dirname "$LOGFILE")"
