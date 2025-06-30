@@ -119,12 +119,35 @@ This document establishes the foundational architectural decisions and design pa
 - Use this awareness to ensure all work is properly linked to relevant issues and to provide accurate context during development and communication.
 
 ## Release Script Automation
-- Always use `scripts/release/full-release.zsh` for all release and dry-run operations. This script performs version bumping, workflow triggering, and monitoring in a single automated process.
-- For dry runs, use: `./scripts/release/full-release.zsh --dry-run` (this will run non-interactively and monitor the workflow).
-- Default to this format whenever the user requests a release or dry run of the release process.
+- **ALWAYS use the new simplified top-level release script**: `./release.zsh` for all release and dry-run operations
+- **For AI/Automation**: Use batch mode with all parameters specified: `./release.zsh --batch <type> --prev <version> [options]`
+- **For Interactive Use**: Use interactive mode: `./release.zsh` (default) or `./release.zsh --interactive`
+- **Release Types**: 
+  - `dry-run`: Test release process without actual release (any branch)
+  - `official`: Production releases (main/develop/release/* branches)
+  - `beta`: Beta releases (release/* branches)
+  - `dev`: Development releases (feature/*/fix/* branches)
+- **Default to batch mode for automation** whenever the user requests a release or dry run of the release process
 - **IMPORTANT**: Before any release or dry run, always check the entire `scripts/release/` directory for changes. Commit and push all changes in `scripts/release/` before running a release or dry run. The GitHub workflow uses the repository state on GitHub, not local changes. Failure to commit and push will result in the workflow using outdated scripts.
 - If a full release (without `--dry-run`) is requested and there are changes in `scripts/release/`, first commit and push those changes, then perform a dry run. Only proceed with the real release if the dry run completes successfully.
 - Whenever a release is requested (dry-run or real), always create or update a file in `docs/release` with a summary of major changes since the requested previous release. The filename must match the convention used by the release process: `docs/release/latest-major-changes-since-<BASE>.md` (where `<BASE>` is the previous version, no leading 'v'). This file must be created every time a release is requested, before the release process starts.
+
+**Examples for AI/Automation:**
+```zsh
+# Dry run for testing
+./release.zsh --batch dry-run --prev 01.50.00 --minor
+
+# Official release with monitoring
+./release.zsh --batch official --prev 01.50.00 --minor --monitor
+
+# Beta release with specific version
+./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
+
+# Development release
+./release.zsh --batch dev --prev 01.50.00 --patch
+```
+
+**Legacy Scripts**: The old `scripts/release/full-release.zsh` and `scripts/release/gitflow-release.zsh` are now called internally by the new `release.zsh` script and should not be used directly unless for advanced troubleshooting.
 
 ## GitHub Issue Management
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
@@ -587,7 +610,11 @@ What happens after approval/rejection.
 - If working on releases, summaries, or version management, read `docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md`
 - This document defines required content and formatting for release summaries
 
-### **Step 4: Read Next Steps** (if applicable)
+### **Step 4: Read Release System Documentation** (if applicable)
+- If working on releases, deployment, or release automation, read `docs/RELEASE_SYSTEM.md`
+- This document defines the new simplified release system with interactive and batch modes
+
+### **Step 5: Read Next Steps** (if applicable)
 - If starting new work or providing progress updates, read `docs/NEXT_STEPS.md`
 - This document tracks current priorities and dependencies
 
@@ -605,7 +632,8 @@ After reading all required documents, respond with:
 1. **AI Instructions** ✅ - [Brief summary of key requirements and standards]
 2. **Design Principles** ✅ - [Brief summary of core principles and architectural decisions]
 3. **Release Summary Instructions** ✅ - [Brief summary if applicable to current work]
-4. **Next Steps** ✅ - [Brief summary if applicable to current work]
+4. **Release System Documentation** ✅ - [Brief summary if applicable to current work]
+5. **Next Steps** ✅ - [Brief summary if applicable to current work]
 
 I'm now fully equipped with all mandatory reading requirements and ready to proceed.
 ```
@@ -623,7 +651,8 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 1. **AI Instructions** - Read complete `AI_INSTRUCTIONS.md`
 2. **Design Principles** - Read complete `docs/architecture/DESIGN_PRINCIPLES.md`
 3. **Release Summary Instructions** - Read `docs/release/RELEASE_SUMMARY_INSTRUCTIONS.md` (if working on releases/summaries)
-4. **Next Steps** - Read `docs/NEXT_STEPS.md` (if starting new work or providing progress updates)
+4. **Release System Documentation** - Read `docs/RELEASE_SYSTEM.md` (if working on releases/deployment)
+5. **Next Steps** - Read `docs/NEXT_STEPS.md` (if starting new work or providing progress updates)
 
 ### **Mandatory Confirmation Format:**
 After reading ALL required documents, you MUST respond with this exact format:
@@ -634,7 +663,8 @@ After reading ALL required documents, you MUST respond with this exact format:
 1. **AI Instructions** ✅ - [Brief summary of key requirements and standards]
 2. **Design Principles** ✅ - [Brief summary of core principles and architectural decisions]
 3. **Release Summary Instructions** ✅ - [Brief summary if applicable to current work]
-4. **Next Steps** ✅ - [Brief summary if applicable to current work]
+4. **Release System Documentation** ✅ - [Brief summary if applicable to current work]
+5. **Next Steps** ✅ - [Brief summary if applicable to current work]
 
 I'm now fully equipped with all mandatory reading requirements and ready to proceed.
 ```
