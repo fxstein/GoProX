@@ -1,5 +1,4 @@
 #!/bin/zsh
-echo "Release script starting..." >&2
 #
 # release.zsh: Simplified top-level release script for GoProX
 #
@@ -16,6 +15,9 @@ set -euo pipefail
 
 # Source project logger
 source "$SCRIPT_DIR/../core/logger.zsh"
+
+# Log script start
+log_info "Release script starting..."
 
 # Configuration
 GITFLOW_SCRIPT="$SCRIPT_DIR/gitflow-release.zsh"
