@@ -119,9 +119,9 @@ This document establishes the foundational architectural decisions and design pa
 - Use this awareness to ensure all work is properly linked to relevant issues and to provide accurate context during development and communication.
 
 ## Release Script Automation
-- **ALWAYS use the new simplified top-level release script**: `./release.zsh` for all release and dry-run operations
-- **For AI/Automation**: Use batch mode with all parameters specified: `./release.zsh --batch <type> --prev <version> [options]`
-- **For Interactive Use**: Use interactive mode: `./release.zsh` (default) or `./release.zsh --interactive`
+- **ALWAYS use the new simplified top-level release script**: `./scripts/release/release.zsh` for all release and dry-run operations
+- **For AI/Automation**: Use batch mode with all parameters specified: `./scripts/release/release.zsh --batch <type> --prev <version> [options]`
+- **For Interactive Use**: Use interactive mode: `./scripts/release/release.zsh` (default) or `./scripts/release/release.zsh --interactive`
 - **Release Types**: 
   - `dry-run`: Test release process without actual release (any branch)
   - `official`: Production releases (main/develop/release/* branches)
@@ -135,16 +135,16 @@ This document establishes the foundational architectural decisions and design pa
 **Examples for AI/Automation:**
 ```zsh
 # Dry run for testing
-./release.zsh --batch dry-run --prev 01.50.00 --minor
+./scripts/release/release.zsh --batch dry-run --prev 01.50.00 --minor
 
 # Official release with monitoring
-./release.zsh --batch official --prev 01.50.00 --minor --monitor
+./scripts/release/release.zsh --batch official --prev 01.50.00 --minor --monitor
 
 # Beta release with specific version
-./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
+./scripts/release/release.zsh --batch beta --prev 01.50.00 --version 01.51.00
 
 # Development release
-./release.zsh --batch dev --prev 01.50.00 --patch
+./scripts/release/release.zsh --batch dev --prev 01.50.00 --patch
 ```
 
 **Legacy Scripts**: The old `scripts/release/gitflow-release.zsh` is now the unified release script and should be used for all release operations. The `full-release.zsh` script has been deprecated and its functionality merged into `gitflow-release.zsh`.

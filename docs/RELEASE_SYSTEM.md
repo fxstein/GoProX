@@ -2,18 +2,18 @@
 
 ## Overview
 
-The GoProX project now includes a simplified top-level release script (`release.zsh`) that provides both interactive and batch modes for creating various types of releases. This system streamlines the release process while maintaining the flexibility needed for different release scenarios.
+The GoProX project now includes a simplified top-level release script (`scripts/release/release.zsh`) that provides both interactive and batch modes for creating various types of releases. This system streamlines the release process while maintaining the flexibility needed for different release scenarios.
 
 ## Quick Start
 
 ### Interactive Mode (Recommended for Developers)
 ```zsh
-./release.zsh
+./scripts/release/release.zsh
 ```
 
 ### Batch Mode (Recommended for AI/Automation)
 ```zsh
-./release.zsh --batch dry-run --prev 01.50.00
+./scripts/release/release.zsh --batch dry-run --prev 01.50.00
 ```
 
 ## Release Types
@@ -38,7 +38,7 @@ The default mode that guides users through the release process with prompts and 
 
 **Example Session:**
 ```zsh
-$ ./release.zsh
+$ ./scripts/release/release.zsh
 
 ┌─────────────────────────────────────────────────────────────────┐
 │                   GoProX Release Status                        │
@@ -91,16 +91,16 @@ Designed for automation and AI use, requiring all parameters to be specified upf
 **Examples:**
 ```zsh
 # Dry run for testing
-./release.zsh --batch dry-run --prev 01.50.00 --minor
+./scripts/release/release.zsh --batch dry-run --prev 01.50.00 --minor
 
 # Beta release with specific version
-./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
+./scripts/release/release.zsh --batch beta --prev 01.50.00 --version 01.51.00
 
 # Official release with monitoring
-./release.zsh --batch official --prev 01.50.00 --minor --monitor
+./scripts/release/release.zsh --batch official --prev 01.50.00 --minor --monitor
 
 # Development release
-./release.zsh --batch dev --prev 01.50.00 --patch
+./scripts/release/release.zsh --batch dev --prev 01.50.00 --patch
 ```
 
 ## Command Line Options
@@ -265,7 +265,7 @@ gh auth login
 **"Invalid version format"**
 ```bash
 # Use correct format: XX.XX.XX
-./release.zsh --batch dry-run --prev 01.50.00
+./scripts/release/release.zsh --batch dry-run --prev 01.50.00
 ```
 
 **"Branch not allowed for release type"**
@@ -285,7 +285,7 @@ git checkout release/1.51  # for beta releases
 For troubleshooting, you can enable debug output:
 ```bash
 # Set debug environment variable
-DEBUG=1 ./release.zsh --batch dry-run --prev 01.50.00
+DEBUG=1 ./scripts/release/release.zsh --batch dry-run --prev 01.50.00
 ```
 
 ## Migration from Legacy Scripts
@@ -298,7 +298,7 @@ DEBUG=1 ./release.zsh --batch dry-run --prev 01.50.00
 ./scripts/release/full-release.zsh --dry-run --prev 01.50.00
 
 # New
-./release.zsh --batch dry-run --prev 01.50.00
+./scripts/release/release.zsh --batch dry-run --prev 01.50.00
 ```
 
 **GitFlow Release:**
@@ -307,7 +307,7 @@ DEBUG=1 ./release.zsh --batch dry-run --prev 01.50.00
 ./scripts/release/gitflow-release.zsh --prev 01.50.00
 
 # New
-./release.zsh --batch official --prev 01.50.00
+./scripts/release/release.zsh --batch official --prev 01.50.00
 ```
 
 ### Benefits of New System
@@ -349,7 +349,7 @@ When referencing issues in commit messages and documentation, use the following 
 
 The release system uses a unified approach with these key scripts:
 
-- `release.zsh` - Top-level simplified release script
+- `scripts/release/release.zsh` - Top-level simplified release script
 - `scripts/release/gitflow-release.zsh` - Unified release backend (handles all operations)
 - `scripts/release/trigger-workflow.zsh` - GitHub Actions workflow trigger
 - `scripts/release/bump-version.zsh` - Version management utilities
