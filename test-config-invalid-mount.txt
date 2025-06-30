@@ -1,5 +1,0 @@
-source="."
-library="~/test-goprox"
-copyright="Test User"
-geonamesacct=""
-mountoptions=not_an_array
