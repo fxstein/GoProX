@@ -133,7 +133,7 @@ log_info "Updating formula file: $formula_file"
 case $channel in
     dev)
         cat > "$formula_file" << EOF
-class GoproxDev < Formula
+class GoproxATDev < Formula
   desc "GoPro media management tool (dev build)"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
@@ -157,7 +157,7 @@ EOF
         ;;
     beta)
         cat > "$formula_file" << EOF
-class GoproxBeta < Formula
+class GoproxATBeta < Formula
   desc "GoPro media management tool (beta)"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
