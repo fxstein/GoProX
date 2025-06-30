@@ -28,7 +28,10 @@
 
 # Function to check if running in interactive mode
 is_interactive() {
-    [[ -t 0 ]] && [[ -t 1 ]]
+    local t0=0
+    if [[ -t 0 ]]; then t0=1; fi
+    echo "[DEBUG] is_interactive: -t 0: $t0" >&2
+    [[ $t0 -eq 1 ]]
 }
 
 # Function to safely prompt for yes/no confirmation
@@ -40,9 +43,13 @@ safe_confirm() {
     local auto_confirm="${AUTO_CONFIRM:-false}"
     local non_interactive="${NON_INTERACTIVE:-false}"
     
+    echo "[DEBUG] safe_confirm called with prompt: '$prompt', default: '$default_answer'" >&2
+    echo "[DEBUG] auto_confirm: '$auto_confirm', non_interactive: '$non_interactive'" >&2
+    
     # Check if we should force non-interactive mode
     if [[ "$non_interactive" == "true" ]]; then
-        log_warn "Forced non-interactive mode, using default answer: $default_answer"
+        echo "[DEBUG] Forced non-interactive mode" >&2
+        log_warning "Forced non-interactive mode, using default answer: $default_answer"
         if [[ "$default_answer" =~ ^[Yy]$ ]]; then
             return 0
         else
@@ -52,10 +59,12 @@ safe_confirm() {
     
     # Check if running in interactive mode
     if is_interactive; then
+        echo "[DEBUG] Running in interactive mode" >&2
         # Interactive mode - prompt user
         local reply
         read -q "reply?$prompt "
         echo
+        echo "[DEBUG] User input: '$reply'" >&2
         
         if [[ $reply =~ ^[Yy]$ ]]; then
             log_info "User confirmed: $prompt"
@@ -65,8 +74,9 @@ safe_confirm() {
             return 1
         fi
     else
+        echo "[DEBUG] Running in non-interactive mode" >&2
         # Non-interactive mode - use default or environment variable
-        log_warn "Running in non-interactive mode, using default behavior"
+        log_warning "Running in non-interactive mode, using default behavior"
         
         if [[ "$auto_confirm" == "true" ]]; then
             log_info "Auto-confirm enabled, proceeding with operation"
@@ -85,15 +95,19 @@ safe_confirm() {
 # Usage: safe_prompt "prompt message" [default_value] [variable_name]
 # Returns: The user input or default value
 safe_prompt() {
-    local prompt="$1"
-    local default_value="$2"
-    local variable_name="$3"
+    local prompt="${1:-}"
+    local default_value="${2:-}"
+    local variable_name="${3:-}"
     local auto_confirm="${AUTO_CONFIRM:-false}"
     local non_interactive="${NON_INTERACTIVE:-false}"
     
+    echo "[DEBUG] safe_prompt called with prompt: '$prompt', default: '$default_value'" >&2
+    echo "[DEBUG] auto_confirm: '$auto_confirm', non_interactive: '$non_interactive'" >&2
+    
     # Check if we should force non-interactive mode
     if [[ "$non_interactive" == "true" ]]; then
-        log_warn "Forced non-interactive mode, using default value: $default_value"
+        echo "[DEBUG] Forced non-interactive mode" >&2
+        log_warning "Forced non-interactive mode, using default value: $default_value"
         if [[ -n "$variable_name" ]]; then
             eval "$variable_name=\"$default_value\""
         fi
@@ -103,6 +117,7 @@ safe_prompt() {
     
     # Check if running in interactive mode
     if is_interactive; then
+        echo "[DEBUG] Running in interactive mode" >&2
         # Interactive mode - prompt user
         local reply
         if [[ -n "$default_value" ]]; then
@@ -114,6 +129,7 @@ safe_prompt() {
             read "reply?$prompt: "
         fi
         
+        echo "[DEBUG] User input: '$reply'" >&2
         log_info "User input: $reply"
         if [[ -n "$variable_name" ]]; then
             eval "$variable_name=\"$reply\""
@@ -121,8 +137,9 @@ safe_prompt() {
         echo "$reply"
         return 0
     else
+        echo "[DEBUG] Running in non-interactive mode" >&2
         # Non-interactive mode - use default or fail
-        log_warn "Running in non-interactive mode, using default value"
+        log_warning "Running in non-interactive mode, using default value"
         
         if [[ -n "$default_value" ]]; then
             log_info "Using default value: $default_value"
@@ -150,7 +167,7 @@ safe_confirm_timeout() {
     
     # Check if we should force non-interactive mode
     if [[ "$non_interactive" == "true" ]]; then
-        log_warn "Forced non-interactive mode, using default answer: $default_answer"
+        log_warning "Forced non-interactive mode, using default answer: $default_answer"
         if [[ "$default_answer" =~ ^[Yy]$ ]]; then
             return 0
         else
@@ -173,7 +190,7 @@ safe_confirm_timeout() {
         fi
     else
         # Non-interactive mode - use default or environment variable
-        log_warn "Running in non-interactive mode, using default behavior"
+        log_warning "Running in non-interactive mode, using default behavior"
         
         if [[ "$auto_confirm" == "true" ]]; then
             log_info "Auto-confirm enabled, proceeding with operation"
@@ -194,46 +211,6 @@ export -f safe_confirm
 export -f safe_prompt
 export -f safe_confirm_timeout
 
-# Function to parse safe prompt command line arguments
-# Usage: parse_safe_prompt_args "$@"
-parse_safe_prompt_args() {
-    local args=("$@")
-    local i=0
-    
-    while [[ $i -lt ${#args[@]} ]]; do
-        case "${args[$i]}" in
-            --non-interactive)
-                NON_INTERACTIVE=true
-                # Remove the argument from the array
-                args=("${args[@]:0:$i}" "${args[@]:$((i+1))}")
-                ;;
-            --auto-confirm)
-                AUTO_CONFIRM=true
-                # Remove the argument from the array
-                args=("${args[@]:0:$i}" "${args[@]:$((i+1))}")
-                ;;
-            --default-yes)
-                DEFAULT_YES=true
-                # Remove the argument from the array
-                args=("${args[@]:0:$i}" "${args[@]:$((i+1))}")
-                ;;
-            --help|-h)
-                echo "Safe Prompt Options:"
-                echo "  --non-interactive  Force non-interactive mode"
-                echo "  --auto-confirm     Automatically confirm all prompts"
-                echo "  --default-yes      Default to 'yes' for all prompts"
-                echo "  --help, -h         Show this help"
-                ;;
-            *)
-                ((i++))
-                ;;
-        esac
-    done
-    
-    # Return the remaining arguments
-    printf '%s\n' "${args[@]}"
-}
-
 # Function to show safe prompt usage
 show_safe_prompt_usage() {
     echo "Safe Prompt Usage:"
@@ -250,7 +227,4 @@ show_safe_prompt_usage() {
     echo ""
     echo "Note: Environment variables are not supported for interactive control."
     echo "Use command-line arguments for explicit, local control."
-}
-
-export -f parse_safe_prompt_args
-export -f show_safe_prompt_usage 
+} 

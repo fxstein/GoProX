@@ -35,7 +35,7 @@ function _log_write() {
   ts="$(date '+%Y-%m-%d %H:%M:%S')"
   local branch_display=$(get_branch_display)
   _log_rotate_if_needed
-  echo "[$ts] [$branch_display] [$level] $msg" | tee -a "$LOGFILE"
+  echo "[$ts] [$branch_display] [$level] $msg" | tee -a "$LOGFILE" >&2
 }
 
 function log_info()    { _log_write "INFO"    "$*"; }
