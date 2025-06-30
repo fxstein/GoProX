@@ -1,7 +1,8 @@
 #!/bin/zsh
 
 # Load environment variables, using GitHub CLI for tokens when available
-# Usage: source load-env.zsh
+# Usage: source scripts/core/load-env.zsh (from repo root)
+#        source ../core/load-env.zsh (from scripts subdirectory)
 
 echo "🔐 Loading environment variables..."
 
