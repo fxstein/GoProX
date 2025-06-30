@@ -18,41 +18,12 @@ The GoProX project now includes a simplified top-level release script (`release.
 
 ## Release Types
 
-### 1. Official Release
-- **Purpose**: Production releases for end users
-- **Branches**: `main`, `develop`, or `release/*`
-- **Homebrew**: Updates both default and versioned formulae
-- **Usage**: 
-  ```zsh
-  ./release.zsh --batch official --prev 01.50.00 --minor --monitor
-  ```
+The system supports different release types through the unified `gitflow-release.zsh` script:
 
-### 2. Beta Release
-- **Purpose**: Pre-release testing for beta testers
-- **Branches**: `release/*` branches
-- **Homebrew**: Updates beta channel only
-- **Usage**:
-  ```zsh
-  ./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
-  ```
-
-### 3. Development Release
-- **Purpose**: Feature testing and development builds
-- **Branches**: `feature/*` or `fix/*` branches
-- **Homebrew**: Updates development channel
-- **Usage**:
-  ```zsh
-  ./release.zsh --batch dev --prev 01.50.00 --patch
-  ```
-
-### 4. Dry Run
-- **Purpose**: Test release process without actual release
-- **Branches**: Any branch (for testing)
-- **Homebrew**: No updates (simulation only)
-- **Usage**:
-  ```zsh
-  ./release.zsh --batch dry-run --prev 01.50.00 --minor
-  ```
+- **Official releases**: From main/develop branches
+- **Beta releases**: From release/* branches  
+- **Development releases**: From feature/fix branches
+- **Dry runs**: Simulated releases for testing
 
 ## Modes
 
@@ -123,7 +94,7 @@ Designed for automation and AI use, requiring all parameters to be specified upf
 ./release.zsh --batch dry-run --prev 01.50.00 --minor
 
 # Beta release with specific version
-./release.zsh --batch beta --prev 01.50.00 --version 01.51.00 --monitor
+./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
 
 # Official release with monitoring
 ./release.zsh --batch official --prev 01.50.00 --minor --monitor
@@ -372,4 +343,13 @@ For issues with the release system:
 When referencing issues in commit messages and documentation, use the following format:
 
 - **Single issue**: `(refs #n)` - e.g., `(refs #20)`
-- **Multiple issues**: `(refs #n #n ...)` - e.g., `(refs #20 #25 #30)` 
+- **Multiple issues**: `(refs #n #n ...)` - e.g., `(refs #20 #25 #30)`
+
+## Script Architecture
+
+The release system uses a unified approach with these key scripts:
+
+- `release.zsh` - Top-level simplified release script
+- `scripts/release/gitflow-release.zsh` - Unified release backend (handles all operations)
+- `scripts/release/bump-version.zsh` - Version management utilities
+- `scripts/release/monitor-release.zsh` - Workflow monitoring utilities 

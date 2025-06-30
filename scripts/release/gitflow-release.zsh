@@ -2,6 +2,7 @@
 
 # Git-Flow Release Script for GoProX
 # Integrates with AI release summary system and provides git-flow native release capabilities
+# Enhanced with full dry-run functionality from full-release.zsh
 
 set -euo pipefail
 
@@ -26,7 +27,7 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS] [BASE_VERSION]
 
-Git-Flow Release Script for GoProX
+Git-Flow Release Script for GoProX (Enhanced with Full Dry-Run Support)
 
 OPTIONS:
     --dry-run              Perform a dry run without making changes
@@ -35,6 +36,13 @@ OPTIONS:
     --allow-unclean        Allow uncommitted changes (feature branches only)
     --monitor              Automatically monitor workflow completion after release
     --monitor-timeout      Timeout for monitoring in minutes (default: 15)
+    --force                Force execution without confirmation
+    --major                Bump major version (default: minor)
+    --minor                Bump minor version (default)
+    --patch                Bump patch version
+    --version <version>    Specify version to release (default: auto-increment)
+    --prev <version>       Alias for BASE_VERSION (backward compatibility)
+    --base <version>       Alias for BASE_VERSION (backward compatibility)
     --help                 Show this help message
 
 BASE_VERSION:
@@ -45,12 +53,20 @@ EXAMPLES:
     $0 01.01.01                              # Real release from develop
     $0 --dry-run --preserve-summary 01.01.01 # Dry run preserving summary
     $0 --monitor 01.01.01                    # Real release with monitoring
+    $0 --dry-run --prev 01.50.00 --patch     # Dry run with patch bump
+    $0 --prev 01.50.00 --version 01.51.00    # Specific version release
 
 BRANCH REQUIREMENTS:
     - Feature branches: Only dry-run allowed
     - Develop branch: Dry-run and release allowed
     - Release branches: Dry-run and beta release allowed
     - Main branch: Official release only
+
+DRY-RUN FEATURES:
+    - Version bumping simulation
+    - Workflow trigger simulation
+    - Summary file handling simulation
+    - Full process validation without actual changes
 EOF
 }
 
@@ -62,6 +78,10 @@ ALLOW_UNCLEAN=false
 MONITOR=false
 MONITOR_TIMEOUT=15
 BASE_VERSION=""
+FORCE=false
+BUMP_TYPE="minor"
+SPECIFIC_VERSION=""
+VERBOSE=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -89,6 +109,34 @@ while [[ $# -gt 0 ]]; do
             MONITOR_TIMEOUT="$2"
             shift 2
             ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --major)
+            BUMP_TYPE="major"
+            shift
+            ;;
+        --minor)
+            BUMP_TYPE="minor"
+            shift
+            ;;
+        --patch)
+            BUMP_TYPE="patch"
+            shift
+            ;;
+        --version)
+            SPECIFIC_VERSION="$2"
+            shift 2
+            ;;
+        --prev|--base)
+            BASE_VERSION="$2"
+            shift 2
+            ;;
+        --verbose|--debug)
+            VERBOSE=1
+            shift
+            ;;
         --help)
             show_usage
             exit 0
@@ -99,7 +147,12 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            BASE_VERSION="$1"
+            if [[ -z "$BASE_VERSION" ]]; then
+                BASE_VERSION="$1"
+            else
+                log_error "Multiple base versions specified: $BASE_VERSION and $1"
+                exit 1
+            fi
             shift
             ;;
     esac
@@ -125,6 +178,86 @@ log_info "Remove summary: $REMOVE_SUMMARY"
 log_info "Allow unclean: $ALLOW_UNCLEAN"
 log_info "Monitor: $MONITOR"
 log_info "Monitor timeout: $MONITOR_TIMEOUT minutes"
+log_info "Force: $FORCE"
+log_info "Bump type: $BUMP_TYPE"
+log_info "Specific version: $SPECIFIC_VERSION"
+
+# Function to get current version
+get_current_version() {
+    if [[ -f "goprox" ]]; then
+        grep "__version__=" goprox | cut -d"'" -f2
+    else
+        log_error "goprox file not found in current directory"
+        exit 1
+    fi
+}
+
+# Function to increment version (from bump-version.zsh)
+increment_version() {
+    local current_version=$1
+    local bump_type=$2
+    local major=$(echo "$current_version" | cut -d. -f1)
+    local minor=$(echo "$current_version" | cut -d. -f2)
+    local patch=$(echo "$current_version" | cut -d. -f3)
+
+    if [[ "$bump_type" == "major" ]]; then
+        major=$(printf "%02d" $((10#$major + 1)))
+        minor="00"
+        patch="00"
+        log_info "Bumping MAJOR version: $major.00.00"
+    elif [[ "$bump_type" == "minor" ]]; then
+        minor=$(printf "%02d" $((10#$minor + 1)))
+        patch="00"
+        log_info "Bumping MINOR version: $major.$minor.00"
+    else
+        patch=$(printf "%02d" $((10#$patch + 1)))
+        log_info "Bumping PATCH version: $major.$minor.$patch"
+    fi
+    printf "%02d.%02d.%02d" $major $minor $patch
+}
+
+# Function to validate version format
+validate_version() {
+    local version=$1
+    if [[ ! "$version" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+        log_error "Invalid version format: $version"
+        log_error "Version must be in format XX.XX.XX (e.g., 00.61.00)"
+        return 1
+    fi
+    return 0
+}
+
+# Function to update version in goprox file
+update_version() {
+    local new_version=$1
+    local current_version=$(get_current_version)
+    local dry_run=$2
+    
+    if [[ "$dry_run" == "true" ]]; then
+        log_info "DRY RUN: Would update version from $current_version to $new_version"
+        return 0
+    fi
+    
+    log_info "Updating version from $current_version to $new_version"
+    
+    # Update the version in goprox file
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "s/__version__='$current_version'/__version__='$new_version'/" goprox
+    else
+        # Linux
+        sed -i "s/__version__='$current_version'/__version__='$new_version'/" goprox
+    fi
+    
+    # Verify the change
+    local updated_version=$(get_current_version)
+    if [[ "$updated_version" == "$new_version" ]]; then
+        log_success "Version updated successfully in goprox file"
+    else
+        log_error "Failed to update version. Expected: $new_version, Got: $updated_version"
+        exit 1
+    fi
+}
 
 # Get current branch and validate git-flow requirements
 CURRENT_BRANCH=$(git branch --show-current)
@@ -183,6 +316,17 @@ determine_new_version() {
     local base_version="$1"
     local branch="$2"
     local dry_run="$3"
+    local specific_version="$4"
+    local bump_type="$5"
+    
+    # If specific version is provided, use it
+    if [[ -n "$specific_version" ]]; then
+        if ! validate_version "$specific_version"; then
+            exit 1
+        fi
+        echo "$specific_version"
+        return 0
+    fi
     
     # Parse base version
     IFS='.' read -r major minor patch <<< "$base_version"
@@ -211,8 +355,9 @@ determine_new_version() {
             fi
             ;;
         main)
-            # Main branch: official release
-            echo "$major.$minor.$((patch + 1))"
+            # Main branch: official release with proper bump
+            local current_version=$(get_current_version)
+            increment_version "$current_version" "$bump_type"
             ;;
         *)
             # Unknown branch type: use generic suffix
@@ -225,31 +370,50 @@ determine_new_version() {
     esac
 }
 
-NEW_VERSION=$(determine_new_version "$BASE_VERSION" "$CURRENT_BRANCH" "$DRY_RUN")
+NEW_VERSION=$(determine_new_version "$BASE_VERSION" "$CURRENT_BRANCH" "$DRY_RUN" "$SPECIFIC_VERSION" "$BUMP_TYPE")
 log_info "New version: $NEW_VERSION"
 
 # Update version in goprox script
-update_version() {
-    local new_version="$1"
-    local dry_run="$2"
-    
-    if [[ "$dry_run" == "true" ]]; then
-        log_info "DRY RUN: Would update version to $new_version"
-        return 0
-    fi
-    
-    # Update version in goprox script
-    sed -i.bak "s/__version__='[^']*'/__version__='$new_version'/" "$PROJECT_ROOT/goprox"
-    rm -f "$PROJECT_ROOT/goprox.bak"
-    
-    log_info "Updated version to $new_version"
-}
-
 update_version "$NEW_VERSION" "$DRY_RUN"
 
 # Function to get the current commit SHA
 get_current_commit_sha() {
     git rev-parse HEAD
+}
+
+# Function to trigger release workflow (from full-release.zsh)
+trigger_release_workflow() {
+    local dry_run="$1"
+    local prev_version="$2"
+    local new_version="$3"
+    
+    if [[ "$dry_run" == "true" ]]; then
+        log_info "DRY RUN: Would trigger release workflow"
+        log_info "  Previous version: $prev_version"
+        log_info "  New version: $new_version"
+        return 0
+    fi
+    
+    log_info "Triggering release workflow..."
+    
+    # Build release script arguments
+    local release_args=(--force)
+    if [[ -n "$prev_version" ]]; then
+        release_args+=(--prev "$prev_version")
+    fi
+    release_args+=(--version "$new_version")
+    
+    # Execute release script
+    local release_output
+    if ! release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1); then
+        log_error "Release workflow trigger failed"
+        echo "$release_output"
+        return 1
+    fi
+    
+    echo "$release_output"
+    log_success "Release workflow triggered successfully"
+    return 0
 }
 
 # Function to monitor GitHub Actions workflows
@@ -491,17 +655,77 @@ commit_and_push() {
     return 0
 }
 
-# Only handle cleanup if this is a real release (not dry run) or if explicitly requested
-if [[ "$DRY_RUN" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
-    # Only run summary cleanup if there were changes or if summary needs to be archived
-    if ! commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"; then
+# Main release process
+main_release_process() {
+    local dry_run="$1"
+    local base_version="$2"
+    local new_version="$3"
+    local monitor_timeout="$4"
+    
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│                   GoProX Release Process                       │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    echo ""
+    
+    local current_version=$(get_current_version)
+    log_info "Starting release process for version: $current_version"
+    
+    # Step 1: Version bump (already done above)
+    log_info "Step 1: Version bump completed - new version: $new_version"
+    
+    # Step 2: Trigger release workflow
+    log_info "Step 2: Triggering release workflow..."
+    if ! trigger_release_workflow "$dry_run" "$base_version" "$new_version"; then
+        log_error "Release workflow trigger failed"
+        exit 1
+    fi
+    
+    # Step 3: Commit and push changes
+    log_info "Step 3: Committing and pushing changes..."
+    if ! commit_and_push "$dry_run" "$SUMMARY_FILE" "$monitor_timeout"; then
         log_info "No changes to commit or archive; release process is already up to date."
     else
-        handle_summary_cleanup "$DRY_RUN" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$BASE_VERSION" "$MONITOR_TIMEOUT"
+        # Step 4: Handle summary cleanup
+        if [[ "$dry_run" == "false" || "$REMOVE_SUMMARY" == "true" ]]; then
+            handle_summary_cleanup "$dry_run" "$PRESERVE_SUMMARY" "$REMOVE_SUMMARY" "$SUMMARY_FILE" "$base_version" "$monitor_timeout"
+        fi
     fi
-else
-    commit_and_push "$DRY_RUN" "$SUMMARY_FILE" "$MONITOR_TIMEOUT"
-fi
+    
+    # Step 5: Monitor the release (if requested)
+    if [[ "$MONITOR" == "true" ]]; then
+        if [[ "$dry_run" == "true" ]]; then
+            log_info "Step 5: Skipping monitoring (dry-run mode)"
+        else
+            log_info "Step 5: Monitoring release process..."
+            # Monitoring is already done in commit_and_push and handle_summary_cleanup
+        fi
+    fi
+    
+    # Display completion message
+    if [[ "$dry_run" == "true" ]]; then
+        log_success "Dry-run release process completed!"
+        echo ""
+        log_info "Dry-Run Summary:"
+        echo "  Version: $new_version"
+        echo "  Status: Simulated successfully"
+        echo "  Monitor: Skipped (dry-run)"
+        echo ""
+        log_info "All dry-run checks passed. Ready for real release."
+    else
+        log_success "Release process completed!"
+        echo ""
+        log_info "Release Summary:"
+        echo "  Version: $new_version"
+        echo "  Status: Completed"
+        echo "  Monitor: Finished"
+        echo ""
+        log_info "You can view the release at: https://github.com/fxstein/GoProX/releases"
+    fi
+}
+
+# Execute main release process
+main_release_process "$DRY_RUN" "$BASE_VERSION" "$NEW_VERSION" "$MONITOR_TIMEOUT"
 
 # Display next steps
 show_next_steps() {

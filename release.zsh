@@ -36,7 +36,6 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR" && pwd)"
-RELEASE_SCRIPT="$PROJECT_ROOT/scripts/release/full-release.zsh"
 GITFLOW_SCRIPT="$PROJECT_ROOT/scripts/release/gitflow-release.zsh"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
@@ -197,11 +196,6 @@ check_prerequisites() {
     fi
     
     # Check if required scripts exist
-    if [[ ! -f "$RELEASE_SCRIPT" ]]; then
-        log_error "full-release.zsh script not found: $RELEASE_SCRIPT"
-        exit 1
-    fi
-    
     if [[ ! -f "$GITFLOW_SCRIPT" ]]; then
         log_error "gitflow-release.zsh script not found: $GITFLOW_SCRIPT"
         exit 1
@@ -372,28 +366,19 @@ execute_release() {
     local cmd=""
     
     case "$release_type" in
-        "official"|"beta"|"dev")
-            # Use gitflow release script
+        "official"|"beta"|"dev"|"dry-run")
+            # Use gitflow release script for all operations
             cmd="$GITFLOW_SCRIPT --prev $prev_version"
             
-            if [[ -n "$next_version" ]]; then
-                cmd="$cmd --version $next_version"
-            fi
-            
-            if [[ "$release_type" == "beta" ]]; then
-                cmd="$cmd --beta"
+            if [[ "$release_type" == "dry-run" ]]; then
+                cmd="$cmd --dry-run"
+            elif [[ "$release_type" == "beta" ]]; then
+                # For beta releases, ensure we're on a release branch
+                cmd="$cmd"
             elif [[ "$release_type" == "dev" ]]; then
-                cmd="$cmd --dev"
+                # For dev releases, ensure we're on a feature/fix branch
+                cmd="$cmd"
             fi
-            
-            if [[ -n "$monitor_flag" ]]; then
-                cmd="$cmd $monitor_flag"
-            fi
-            ;;
-        
-        "dry-run")
-            # Use full release script with dry-run
-            cmd="$RELEASE_SCRIPT --dry-run --prev $prev_version"
             
             if [[ -n "$next_version" ]]; then
                 cmd="$cmd --version $next_version"

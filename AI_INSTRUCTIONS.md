@@ -40,7 +40,7 @@ This document establishes the foundational architectural decisions and design pa
    - Commit and push all changes before proceeding
 
 3. **Use Full Release Script**
-   - Always use `scripts/release/full-release.zsh` for releases
+   - Always use `scripts/release/gitflow-release.zsh` for releases
    - Never run individual scripts unless specifically instructed
 
 4. **Output File Requirements** (CRITICAL)
@@ -87,7 +87,7 @@ This document establishes the foundational architectural decisions and design pa
 
 ## Release Workflow Automation
 
-- When the user requests a release, always use the `./scripts/release/full-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
+- When the user requests a release, always use the `./scripts/release/gitflow-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
 - By default, all test runs should be performed as dry runs (using `--dry-run`), unless a real release is explicitly requested.
 - Do not run the bump-version, release, or monitor scripts individually unless specifically instructed.
 
@@ -147,7 +147,7 @@ This document establishes the foundational architectural decisions and design pa
 ./release.zsh --batch dev --prev 01.50.00 --patch
 ```
 
-**Legacy Scripts**: The old `scripts/release/full-release.zsh` and `scripts/release/gitflow-release.zsh` are now called internally by the new `release.zsh` script and should not be used directly unless for advanced troubleshooting.
+**Legacy Scripts**: The old `scripts/release/gitflow-release.zsh` is now the unified release script and should be used for all release operations. The `full-release.zsh` script has been deprecated and its functionality merged into `gitflow-release.zsh`.
 
 ## GitHub Issue Management
 - Whenever a new GitHub issue is created, immediately run `scripts/maintenance/generate-issues-markdown.zsh` to update the local Markdown issue list.
