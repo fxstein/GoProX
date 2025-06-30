@@ -1,4 +1,0 @@
-source="."
-copyright="Test User"
-geonamesacct=""
-mountoptions=(--archive --import --clean --firmware)

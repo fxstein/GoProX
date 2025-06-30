@@ -11,6 +11,9 @@
 # Source the test framework
 source "$(dirname "$0")/test-framework.zsh"
 
+# At the top of the file, define the absolute path to the firmware summary script
+FIRMWARE_SUMMARY_SCRIPT="$(cd "$(dirname "$0")/../.." && pwd)/scripts/release/generate-firmware-summary.zsh"
+
 # Configuration Tests
 function test_configuration_suite() {
     run_test "config_valid_format" test_config_valid_format "Test valid configuration file format"
@@ -71,11 +74,10 @@ function test_logger_suite() {
         echo "[DEBUG] test_logger_suite: about to call run_test"
     fi
     run_test "logger_rotation" test_logger_rotation "Test logger log rotation at 16KB threshold"
+    run_test "duplicate_function_definitions" test_duplicate_function_definitions "Test for duplicate function definitions in core scripts"
+    run_test "repo_root_cleanliness" test_repo_root_cleanliness "Test that no files are created in repo root during testing"
     if [[ "$DEBUG" == true ]]; then
-        echo "[DEBUG] test_logger_suite: run_test call completed"
-    fi
-    if [[ "$DEBUG" == true ]]; then
-        echo "[DEBUG] test_logger_suite: end"
+        echo "[DEBUG] test_logger_suite: run_test calls completed"
     fi
 }
 
@@ -83,10 +85,11 @@ function test_logger_rotation() {
     if [[ "$DEBUG" == true ]]; then
         echo "[DEBUG] test_logger_rotation: start"
     fi
-    local log_dir="output"
+    local log_dir="$TEST_TEMP_DIR/logger-test"
     local log_file="$log_dir/goprox.log"
     local log_file_old="$log_dir/goprox.log.old"
     rm -f "$log_file" "$log_file_old"
+    mkdir -p "$log_dir"
     export LOG_MAX_SIZE=16384
     export LOGFILE="$log_file"
     export LOGFILE_OLD="$log_file_old"
@@ -108,9 +111,37 @@ function test_logger_rotation() {
     # Check that the current log contains later log entries
     assert_contains "$(tail -n 1 "$log_file")" "Logger rotation test entry" "Current log should contain recent entries"
     rm -f "$log_file" "$log_file_old"
+    rm -rf "$log_dir"
     if [[ "$DEBUG" == true ]]; then
         echo "[DEBUG] test_logger_rotation: end"
     fi
+}
+
+function test_duplicate_function_definitions() {
+    # Test to detect duplicate function definitions in shell scripts
+    local script_files=(
+        "scripts/core/logger.zsh"
+        "scripts/testing/test-framework.zsh"
+        "scripts/testing/test-suites.zsh"
+        "scripts/release/release.zsh"
+        "scripts/maintenance/install-commit-hooks.zsh"
+    )
+    
+    for script_file in "${script_files[@]}"; do
+        if [[ -f "$script_file" ]]; then
+            # Extract function names and check for duplicates
+            local function_names=$(grep -E '^(function )?[a-zA-Z_][a-zA-Z0-9_]*\(\)' "$script_file" | sed 's/^function //' | sed 's/()$//' | sort)
+            local duplicate_functions=$(echo "$function_names" | uniq -d)
+            
+            if [[ -n "$duplicate_functions" ]]; then
+                echo "❌ Duplicate function definitions found in $script_file:"
+                echo "$duplicate_functions"
+                return 1
+            fi
+        fi
+    done
+    
+    echo "✅ No duplicate function definitions found in core scripts"
 }
 
 # Individual test functions
@@ -368,15 +399,16 @@ function test_integration_archive_import_clean() {
 }
 
 function test_integration_firmware_check() {
-    # Create test firmware structure
-    mkdir -p "test-firmware/MISC"
-    echo '{"camera type": "HERO10 Black", "firmware version": "H21.01.01.10.00"}' > "test-firmware/MISC/version.txt"
+    # Create test firmware structure in test temp directory
+    local test_dir="$TEST_TEMP_DIR/test-firmware"
+    mkdir -p "$test_dir/MISC"
+    echo '{"camera type": "HERO10 Black", "firmware version": "H21.01.01.10.00"}' > "$test_dir/MISC/version.txt"
     
     # Test firmware detection
-    assert_file_exists "test-firmware/MISC/version.txt" "Firmware version file should exist"
-    assert_contains "$(cat test-firmware/MISC/version.txt)" "HERO10 Black" "Should contain camera type"
+    assert_file_exists "$test_dir/MISC/version.txt" "Firmware version file should exist"
+    assert_contains "$(cat "$test_dir/MISC/version.txt")" "HERO10 Black" "Should contain camera type"
     
-    cleanup_test_files "test-firmware"
+    cleanup_test_files "$test_dir"
 }
 
 function test_integration_error_handling() {
@@ -414,7 +446,7 @@ function test_firmware_summary_basic_generation() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     local exit_code=$?
     
     # Test basic functionality
@@ -433,7 +465,7 @@ function test_firmware_summary_custom_sorting() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test custom sorting order
     local hero13_pos=$(echo "$output" | grep -n "HERO13 Black" | cut -d: -f1)
@@ -455,7 +487,7 @@ function test_firmware_summary_model_names_with_spaces() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test handling of model names with spaces
     assert_contains "$output" "HERO \\(2024\\)" "Should handle model name with parentheses and spaces"
@@ -471,7 +503,7 @@ function test_firmware_summary_unknown_models() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test handling of unknown models
     assert_contains "$output" "Unknown Model X" "Should include unknown models"
@@ -491,7 +523,7 @@ function test_firmware_summary_missing_firmware() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test handling of missing firmware
     assert_contains "$output" "N/A" "Should show N/A for missing firmware"
@@ -506,7 +538,7 @@ function test_firmware_summary_table_formatting() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test proper markdown table formatting
     assert_contains "$output" "Model" "Should have table header with Model column"
@@ -524,7 +556,7 @@ function test_firmware_summary_column_alignment() {
     
     # Run the firmware summary script
     local output
-    output=$(./scripts/release/generate-firmware-summary.zsh 2>&1)
+    output=$("$FIRMWARE_SUMMARY_SCRIPT" 2>&1)
     
     # Test column alignment
     # Check that all table rows have the same number of pipe characters (3 columns)
@@ -541,27 +573,32 @@ function test_firmware_summary_column_alignment() {
 
 # Helper functions for firmware summary tests
 function create_test_firmware_structure() {
+    local test_dir="$TEST_TEMP_DIR/firmware-test"
+    
     # Create official firmware structure
-    mkdir -p "firmware/official/HERO13 Black/H24.01.02.02.00"
-    mkdir -p "firmware/official/HERO (2024)/H24.03.02.20.00"
-    mkdir -p "firmware/official/HERO12 Black/H23.01.02.32.00"
-    mkdir -p "firmware/official/HERO11 Black/H22.01.02.32.00"
-    mkdir -p "firmware/official/HERO11 Black Mini/H22.03.02.50.00"
-    mkdir -p "firmware/official/HERO10 Black/H21.01.01.62.00"
-    mkdir -p "firmware/official/HERO9 Black/HD9.01.01.72.00"
-    mkdir -p "firmware/official/HERO8 Black/HD8.01.02.51.00"
-    mkdir -p "firmware/official/GoPro Max/H19.03.02.02.00"
-    mkdir -p "firmware/official/The Remote/GP.REMOTE.FW.02.00.01"
+    mkdir -p "$test_dir/firmware/official/HERO13 Black/H24.01.02.02.00"
+    mkdir -p "$test_dir/firmware/official/HERO (2024)/H24.03.02.20.00"
+    mkdir -p "$test_dir/firmware/official/HERO12 Black/H23.01.02.32.00"
+    mkdir -p "$test_dir/firmware/official/HERO11 Black/H22.01.02.32.00"
+    mkdir -p "$test_dir/firmware/official/HERO11 Black Mini/H22.03.02.50.00"
+    mkdir -p "$test_dir/firmware/official/HERO10 Black/H21.01.01.62.00"
+    mkdir -p "$test_dir/firmware/official/HERO9 Black/HD9.01.01.72.00"
+    mkdir -p "$test_dir/firmware/official/HERO8 Black/HD8.01.02.51.00"
+    mkdir -p "$test_dir/firmware/official/GoPro Max/H19.03.02.02.00"
+    mkdir -p "$test_dir/firmware/official/The Remote/GP.REMOTE.FW.02.00.01"
     
     # Create labs firmware structure
-    mkdir -p "firmware/labs/HERO13 Black/H24.01.02.02.70"
-    mkdir -p "firmware/labs/HERO12 Black/H23.01.02.32.70"
-    mkdir -p "firmware/labs/HERO11 Black/H22.01.02.32.70"
-    mkdir -p "firmware/labs/HERO11 Black Mini/H22.03.02.50.71b"
-    mkdir -p "firmware/labs/HERO10 Black/H21.01.01.62.70"
-    mkdir -p "firmware/labs/HERO9 Black/HD9.01.01.72.70"
-    mkdir -p "firmware/labs/HERO8 Black/HD8.01.02.51.75"
-    mkdir -p "firmware/labs/GoPro Max/H19.03.02.02.70"
+    mkdir -p "$test_dir/firmware/labs/HERO13 Black/H24.01.02.02.70"
+    mkdir -p "$test_dir/firmware/labs/HERO12 Black/H23.01.02.32.70"
+    mkdir -p "$test_dir/firmware/labs/HERO11 Black/H22.01.02.32.70"
+    mkdir -p "$test_dir/firmware/labs/HERO11 Black Mini/H22.03.02.50.71b"
+    mkdir -p "$test_dir/firmware/labs/HERO10 Black/H21.01.01.62.70"
+    mkdir -p "$test_dir/firmware/labs/HERO9 Black/HD9.01.01.72.70"
+    mkdir -p "$test_dir/firmware/labs/HERO8 Black/HD8.01.02.51.75"
+    mkdir -p "$test_dir/firmware/labs/GoPro Max/H19.03.02.02.70"
+    
+    # Change to test directory for firmware summary script
+    cd "$test_dir"
 }
 
 function create_test_firmware_structure_with_unknown_models() {
@@ -591,32 +628,15 @@ function create_test_firmware_structure_with_varying_lengths() {
 }
 
 function cleanup_test_firmware_structure() {
-    rm -rf "firmware/official/HERO13 Black"
-    rm -rf "firmware/official/HERO (2024)"
-    rm -rf "firmware/official/HERO12 Black"
-    rm -rf "firmware/official/HERO11 Black"
-    rm -rf "firmware/official/HERO11 Black Mini"
-    rm -rf "firmware/official/HERO10 Black"
-    rm -rf "firmware/official/HERO9 Black"
-    rm -rf "firmware/official/HERO8 Black"
-    rm -rf "firmware/official/GoPro Max"
-    rm -rf "firmware/official/The Remote"
-    rm -rf "firmware/labs/HERO13 Black"
-    rm -rf "firmware/labs/HERO12 Black"
-    rm -rf "firmware/labs/HERO11 Black"
-    rm -rf "firmware/labs/HERO11 Black Mini"
-    rm -rf "firmware/labs/HERO10 Black"
-    rm -rf "firmware/labs/HERO9 Black"
-    rm -rf "firmware/labs/HERO8 Black"
-    rm -rf "firmware/labs/GoPro Max"
+    local test_dir="$TEST_TEMP_DIR/firmware-test"
+    if [[ -d "$test_dir" ]]; then
+        cd - > /dev/null  # Return to original directory
+        rm -rf "$test_dir"
+    fi
 }
 
 function cleanup_test_firmware_structure_with_unknown_models() {
     cleanup_test_firmware_structure
-    rm -rf "firmware/official/Unknown Model X"
-    rm -rf "firmware/official/Test Camera Y"
-    rm -rf "firmware/labs/Unknown Model X"
-    rm -rf "firmware/labs/Test Camera Y"
 }
 
 function cleanup_test_firmware_structure_with_missing_firmware() {

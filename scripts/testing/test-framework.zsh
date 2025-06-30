@@ -324,6 +324,15 @@ function create_test_config() {
     local config_file="$1"
     local content="$2"
     
+    # Ensure config files are created in test temp directory, not repo root
+    if [[ "$config_file" != /* && ! "$config_file" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        config_file="$TEST_TEMP_DIR/$config_file"
+    fi
+    
+    # Ensure the directory exists
+    mkdir -p "$(dirname "$config_file")"
+    
     echo "$content" > "$config_file"
 }
 
@@ -331,8 +340,27 @@ function create_test_media_file() {
     local file_path="$1"
     local content="${2:-Test media content}"
     
+    # Ensure media files are created in test temp directory, not repo root
+    if [[ "$file_path" != /* && ! "$file_path" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        file_path="$TEST_TEMP_DIR/$file_path"
+    fi
+    
     mkdir -p "$(dirname "$file_path")"
     echo "$content" > "$file_path"
+}
+
+function create_test_directory() {
+    local dir_path="$1"
+    
+    # Ensure test directories are created in test temp directory, not repo root
+    if [[ "$dir_path" != /* && ! "$dir_path" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        dir_path="$TEST_TEMP_DIR/$dir_path"
+    fi
+    
+    mkdir -p "$dir_path"
+    echo "$dir_path"
 }
 
 function cleanup_test_files() {
@@ -414,6 +442,42 @@ function validate_clean_test_environment() {
     fi
     
     return 0
+}
+
+function test_repo_root_cleanliness() {
+    # Test to ensure no files are created in the repo root during testing
+    local repo_root="$(pwd)"
+    local test_files_before=$(find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
+    
+    # Run a simple test that would previously create files in repo root
+    local test_dir="$TEST_TEMP_DIR/repo-cleanliness-test"
+    mkdir -p "$test_dir"
+    
+    # Test the fixed functions
+    create_test_config "test-config.txt" "test content"
+    create_test_media_file "test-media.txt" "test content"
+    create_test_directory "test-dir"
+    
+    # Check if any files were created in repo root
+    local test_files_after=$(find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
+    
+    if [[ "$test_files_after" -gt "$test_files_before" ]]; then
+        echo "❌ Test files were created in repo root:"
+        find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null
+        return 1
+    fi
+    
+    # Verify files were created in test temp directory instead
+    assert_file_exists "$TEST_TEMP_DIR/test-config.txt" "Config file should be created in test temp directory"
+    assert_file_exists "$TEST_TEMP_DIR/test-media.txt" "Media file should be created in test temp directory"
+    assert_directory_exists "$TEST_TEMP_DIR/test-dir" "Test directory should be created in test temp directory"
+    
+    echo "✅ No files created in repo root - all test files properly isolated"
+    
+    # Cleanup
+    rm -rf "$test_dir"
+    rm -f "$TEST_TEMP_DIR/test-config.txt" "$TEST_TEMP_DIR/test-media.txt"
+    rm -rf "$TEST_TEMP_DIR/test-dir"
 }
 
 # Main test runner
