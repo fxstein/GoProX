@@ -663,6 +663,19 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
   ./scripts/maintenance/create-branch.zsh "update documentation" --type cleanup
   ```
 
+## Git Flow Branch Model (MANDATORY)
+- **ALL pull requests MUST target the `develop` branch**, NOT the `main` branch
+- The project follows the gitflow model where:
+  - `main` branch contains only production releases
+  - `develop` branch is the primary development branch
+  - Feature/fix branches are created from and merged into `develop`
+  - Only release branches and hotfixes merge into `main`
+- **When creating PRs, ALWAYS specify `--base develop`** or ensure the PR targets `develop`
+- **NEVER create PRs against `main`** unless it's a hotfix or release branch
+- **Default branch for development work is `develop`**
+
+**RATIONALE**: This maintains the established gitflow workflow and ensures all development work goes through the proper review and integration process before reaching production.
+
 ## Branch Safety and Fix Management (MANDATORY)
 
 ### **Prominent Branch Display**
