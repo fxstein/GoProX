@@ -265,12 +265,15 @@ interactive_mode() {
     
     if [[ "$suggested_prev" == "none" ]]; then
         suggested_prev="$current_version"
+    else
+        # Strip "v" prefix if present
+        suggested_prev="${suggested_prev#v}"
     fi
     
     echo ""
-    log_debug "About to call safe_prompt for previous version"
+    safe_log debug "About to call safe_prompt for previous version"
     prev_version=$(safe_prompt "Previous version for changelog" "$suggested_prev")
-    log_debug "safe_prompt returned prev_version: '$prev_version'"
+    safe_log debug "safe_prompt returned prev_version: '$prev_version'"
     
     # Validate previous version
     if ! validate_version "$prev_version"; then
@@ -285,26 +288,26 @@ interactive_mode() {
     echo "3) Patch (X.X.X)"
     echo ""
     local bump_choice
-    log_debug "About to call safe_prompt for bump choice"
+    safe_log debug "About to call safe_prompt for bump choice"
     bump_choice=$(safe_prompt "Enter choice (1-3)" "2")
-    log_debug "safe_prompt returned bump_choice: '$bump_choice'"
+    safe_log debug "safe_prompt returned bump_choice: '$bump_choice'"
     
     local bump_type="minor"
     case "$bump_choice" in
         1) bump_type="major" ;;
         2|"") bump_type="minor" ;;
         3) bump_type="patch" ;;
-        *) log_error "Invalid choice: '$bump_choice'"; exit 1 ;;
+        *) safe_log error "Invalid choice: '$bump_choice'"; exit 1 ;;
     esac
-    log_debug "Selected bump type: '$bump_type'"
+    safe_log debug "Selected bump type: '$bump_type'"
     
     # Suggest next version
     local suggested_version=$(suggest_next_version "$current_version" "$bump_type")
     
     echo ""
-    log_debug "About to call safe_prompt for next version"
+    safe_log debug "About to call safe_prompt for next version"
     next_version=$(safe_prompt "Next version" "$suggested_version")
-    log_debug "safe_prompt returned next_version: '$next_version'"
+    safe_log debug "safe_prompt returned next_version: '$next_version'"
     
     # Validate next version
     if ! validate_version "$next_version"; then
@@ -314,11 +317,11 @@ interactive_mode() {
     # Ask about monitoring
     echo ""
     local monitor_choice
-    log_debug "About to call safe_prompt for monitor choice"
+    safe_log debug "About to call safe_prompt for monitor choice"
     monitor_choice=$(safe_prompt "Monitor workflow completion? (y/N)" "N")
-    log_debug "safe_prompt returned monitor_choice: '$monitor_choice'"
+    safe_log debug "safe_prompt returned monitor_choice: '$monitor_choice'"
     local monitor_flag=""
-    if [[ "${monitor_choice,,}" == "y" ]]; then
+    if [[ "${monitor_choice}" == "y" || "${monitor_choice}" == "Y" ]]; then
         monitor_flag="--monitor"
     fi
     
@@ -332,12 +335,12 @@ interactive_mode() {
     echo "  Monitor: ${monitor_choice:-N}"
     echo ""
     
-    log_debug "About to call safe_confirm for final confirmation"
+    safe_log debug "About to call safe_confirm for final confirmation"
     if ! safe_confirm "Proceed with release? (y/N)"; then
-        log_info "Release cancelled"
+        safe_log info "Release cancelled"
         exit 0
     fi
-    log_debug "User confirmed release"
+    safe_log debug "User confirmed release"
     
     # Execute release
     execute_release "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
@@ -353,7 +356,7 @@ batch_mode() {
     
     # Validate required parameters
     if [[ -z "$release_type" || -z "$prev_version" ]]; then
-        log_error "Batch mode requires release_type and prev_version"
+        safe_log error "Batch mode requires release_type and prev_version"
         show_usage
         exit 1
     fi
@@ -379,10 +382,10 @@ execute_release() {
     local bump_type="$4"
     local monitor_flag="$5"
     
-    log_info "Executing $release_type release..."
-    log_info "Previous version: $prev_version"
-    log_info "Next version: $next_version"
-    log_info "Bump type: $bump_type"
+    safe_log info "Executing $release_type release..."
+    safe_log info "Previous version: $prev_version"
+    safe_log info "Next version: $next_version"
+    safe_log info "Bump type: $bump_type"
     
     # Build command based on release type
     local cmd=""
@@ -423,16 +426,16 @@ execute_release() {
             ;;
     esac
     
-    log_info "Executing: $cmd"
+    safe_log info "Executing: $cmd"
     echo ""
     
     # Execute the command
     eval "$cmd"
     
     if [[ $? -eq 0 ]]; then
-        log_success "$release_type release completed successfully"
+        safe_log success "$release_type release completed successfully"
     else
-        log_error "$release_type release failed"
+        safe_log error "$release_type release failed"
         exit 1
     fi
 }
