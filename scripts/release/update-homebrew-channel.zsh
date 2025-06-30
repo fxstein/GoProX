@@ -70,12 +70,24 @@ local url=""
 local formula_name=""
 local formula_file=""
 
+# Get the actual version from goprox file
+local actual_version=""
+if [[ -f "goprox" ]]; then
+    actual_version=$(grep "__version__=" goprox | cut -d"'" -f2)
+    # Convert XX.XX.XX format to X.X format for Homebrew
+    local major_minor=$(echo "$actual_version" | sed 's/^0*//;s/\.0*$//;s/\.0*$//')
+    actual_version="$major_minor"
+else
+    log_error "Error: goprox file not found"
+    exit 1
+fi
+
 case $channel in
     dev)
         version="$(date +%Y%m%d)-dev"
         url="https://github.com/fxstein/GoProX/archive/develop.tar.gz"
-        formula_name="goprox@2.0-dev"
-        formula_file="Formula/goprox@2.0-dev.rb"
+        formula_name="goprox@${actual_version}-dev"
+        formula_file="Formula/goprox@${actual_version}-dev.rb"
         log_info "Dev build channel - version: $version"
         ;;
     beta)
@@ -89,8 +101,8 @@ case $channel in
         fi
         version="${latest_tag}-beta.$(date +%Y%m%d)"
         url="https://github.com/fxstein/GoProX/archive/$(git rev-parse HEAD).tar.gz"
-        formula_name="goprox@2.0-beta"
-        formula_file="Formula/goprox@2.0-beta.rb"
+        formula_name="goprox@${actual_version}-beta"
+        formula_file="Formula/goprox@${actual_version}-beta.rb"
         log_info "Beta channel - version: $version"
         ;;
     official)
@@ -133,7 +145,7 @@ log_info "Updating formula file: $formula_file"
 case $channel in
     dev)
         cat > "$formula_file" << EOF
-class GoproxAT20Dev < Formula
+class GoproxAT${actual_version//./}Dev < Formula
   desc "GoPro media management tool (dev build)"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
@@ -157,7 +169,7 @@ EOF
         ;;
     beta)
         cat > "$formula_file" << EOF
-class GoproxAT20Beta < Formula
+class GoproxAT${actual_version//./}Beta < Formula
   desc "GoPro media management tool (beta)"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
