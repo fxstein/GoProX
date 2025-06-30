@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./scripts/testing/run-tests.zsh
+          ./scripts/testing/run-tests.zsh --force-clean
 
       - name: Update Homebrew Dev Channel
         env:
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./scripts/testing/run-tests.zsh
+          ./scripts/testing/run-tests.zsh --force-clean
 
       - name: Update Homebrew Beta Channel
         env:
@@ -85,7 +85,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./scripts/testing/run-tests.zsh
+          ./scripts/testing/run-tests.zsh --force-clean
 
       - name: Update Homebrew Official Channel
         env:

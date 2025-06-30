@@ -59,7 +59,7 @@ jobs:
       - name: "Run all unit tests"
         run: |
           echo "🧪 Running all unit tests..."
-          ./scripts/testing/run-unit-tests.zsh
+          ./scripts/testing/run-unit-tests.zsh --force-clean
 
       - name: "Upload unit test results"
         if: always()
