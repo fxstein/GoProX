@@ -1,5 +1,4 @@
 #!/bin/zsh
-echo "Release script starting..." >&2
 #
 # release.zsh: Simplified top-level release script for GoProX
 #
@@ -16,6 +15,9 @@ set -euo pipefail
 
 # Source project logger
 source "$SCRIPT_DIR/../core/logger.zsh"
+
+# Log script start
+log_info "Release script starting..."
 
 # Configuration
 GITFLOW_SCRIPT="$SCRIPT_DIR/gitflow-release.zsh"
@@ -144,62 +146,35 @@ suggest_next_version() {
     esac
 }
 
-# Function to safely call logger functions
-safe_log() {
-    local level="$1"
-    local message="$2"
-    
-    case "$level" in
-        info)
-            log_info "$message" || echo "INFO: $message" >&2
-            ;;
-        success)
-            log_success "$message" || echo "SUCCESS: $message" >&2
-            ;;
-        warning)
-            log_warning "$message" || echo "WARNING: $message" >&2
-            ;;
-        error)
-            log_error "$message" || echo "ERROR: $message" >&2
-            ;;
-        debug)
-            log_debug "$message" || echo "DEBUG: $message" >&2
-            ;;
-        *)
-            echo "UNKNOWN: $message" >&2
-            ;;
-    esac
-}
-
 # Function to check prerequisites
 check_prerequisites() {
-    safe_log info "Checking prerequisites..."
+    log_info "Checking prerequisites..."
     
     # Check if we're in a git repository
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
-        safe_log error "Not in a git repository"
+        log_error "Not in a git repository"
         exit 1
     fi
     
     # Check if gh CLI is available
     if ! command -v gh &> /dev/null; then
-        safe_log error "GitHub CLI (gh) is not installed. Please install it first: https://cli.github.com/"
+        log_error "GitHub CLI (gh) is not installed. Please install it first: https://cli.github.com/"
         exit 1
     fi
     
     if ! gh auth status &> /dev/null; then
-        safe_log error "Not authenticated with GitHub CLI. Please run: gh auth login"
+        log_error "Not authenticated with GitHub CLI. Please run: gh auth login"
         exit 1
     fi
     
     # Check if required scripts exist
     if [[ ! -f "$GITFLOW_SCRIPT" ]]; then
-        safe_log error "gitflow-release.zsh script not found: $GITFLOW_SCRIPT"
+        log_error "gitflow-release.zsh script not found: $GITFLOW_SCRIPT"
         exit 1
     fi
     
-    safe_log success "All prerequisites met"
-    safe_log debug "Prerequisites check completed, proceeding to main logic"
+    log_success "All prerequisites met"
+    log_debug "Prerequisites check completed, proceeding to main logic"
 }
 
 # Function to display current status
@@ -223,17 +198,17 @@ display_status() {
 interactive_mode() {
     local release_type="$1"
     
-    echo "Interactive mode called with release_type: '$release_type'" >&2
-    safe_log debug "Starting interactive mode with release_type: '$release_type'"
+    log_debug "Interactive mode called with release_type: '$release_type'"
+    log_debug "Starting interactive mode with release_type: '$release_type'"
     
-    echo "About to call display_status..." >&2
+    log_debug "About to call display_status..."
     display_status
-    echo "display_status completed" >&2
+    log_debug "display_status completed"
     
     # Determine release type if not specified
     if [[ -z "$release_type" ]]; then
-        echo "No release type specified, prompting user..." >&2
-        safe_log debug "No release type specified, prompting user"
+        log_debug "No release type specified, prompting user..."
+        log_debug "No release type specified, prompting user"
         echo "Select release type:"
         echo "1) Official Release (production)"
         echo "2) Beta Release (testing)"
@@ -241,21 +216,21 @@ interactive_mode() {
         echo "4) Dry Run (test without release)"
         echo ""
         local choice
-        echo "About to call safe_prompt for release type choice..." >&2
-        safe_log debug "About to call safe_prompt for release type choice"
+        log_debug "About to call safe_prompt for release type choice..."
+        log_debug "About to call safe_prompt for release type choice"
         choice=$(safe_prompt "Enter choice (1-4)" "1")
-        echo "safe_prompt returned: '$choice'" >&2
-        safe_log debug "safe_prompt returned: '$choice'"
+        log_debug "safe_prompt returned: '$choice'"
+        log_debug "safe_prompt returned: '$choice'"
         
         case "$choice" in
             1) release_type="official" ;;
             2) release_type="beta" ;;
             3) release_type="dev" ;;
             4) release_type="dry-run" ;;
-            *) safe_log error "Invalid choice: '$choice'"; exit 1 ;;
+            *) log_error "Invalid choice: '$choice'"; exit 1 ;;
         esac
-        echo "Selected release type: '$release_type'" >&2
-        safe_log debug "Selected release type: '$release_type'"
+        log_debug "Selected release type: '$release_type'"
+        log_debug "Selected release type: '$release_type'"
     fi
     
     # Get previous version
@@ -271,9 +246,9 @@ interactive_mode() {
     fi
     
     echo ""
-    safe_log debug "About to call safe_prompt for previous version"
+    log_debug "About to call safe_prompt for previous version"
     prev_version=$(safe_prompt "Previous version for changelog" "$suggested_prev")
-    safe_log debug "safe_prompt returned prev_version: '$prev_version'"
+    log_debug "safe_prompt returned prev_version: '$prev_version'"
     
     # Validate previous version
     if ! validate_version "$prev_version"; then
@@ -288,26 +263,26 @@ interactive_mode() {
     echo "3) Patch (X.X.X)"
     echo ""
     local bump_choice
-    safe_log debug "About to call safe_prompt for bump choice"
+    log_debug "About to call safe_prompt for bump choice"
     bump_choice=$(safe_prompt "Enter choice (1-3)" "2")
-    safe_log debug "safe_prompt returned bump_choice: '$bump_choice'"
+    log_debug "safe_prompt returned bump_choice: '$bump_choice'"
     
     local bump_type="minor"
     case "$bump_choice" in
         1) bump_type="major" ;;
         2|"") bump_type="minor" ;;
         3) bump_type="patch" ;;
-        *) safe_log error "Invalid choice: '$bump_choice'"; exit 1 ;;
+        *) log_error "Invalid choice: '$bump_choice'"; exit 1 ;;
     esac
-    safe_log debug "Selected bump type: '$bump_type'"
+    log_debug "Selected bump type: '$bump_type'"
     
     # Suggest next version
     local suggested_version=$(suggest_next_version "$current_version" "$bump_type")
     
     echo ""
-    safe_log debug "About to call safe_prompt for next version"
+    log_debug "About to call safe_prompt for next version"
     next_version=$(safe_prompt "Next version" "$suggested_version")
-    safe_log debug "safe_prompt returned next_version: '$next_version'"
+    log_debug "safe_prompt returned next_version: '$next_version'"
     
     # Validate next version
     if ! validate_version "$next_version"; then
@@ -317,9 +292,9 @@ interactive_mode() {
     # Ask about monitoring
     echo ""
     local monitor_choice
-    safe_log debug "About to call safe_prompt for monitor choice"
+    log_debug "About to call safe_prompt for monitor choice"
     monitor_choice=$(safe_prompt "Monitor workflow completion? (y/N)" "N")
-    safe_log debug "safe_prompt returned monitor_choice: '$monitor_choice'"
+    log_debug "safe_prompt returned monitor_choice: '$monitor_choice'"
     local monitor_flag=""
     if [[ "${monitor_choice}" == "y" || "${monitor_choice}" == "Y" ]]; then
         monitor_flag="--monitor"
@@ -335,12 +310,12 @@ interactive_mode() {
     echo "  Monitor: ${monitor_choice:-N}"
     echo ""
     
-    safe_log debug "About to call safe_confirm for final confirmation"
+    log_debug "About to call safe_confirm for final confirmation"
     if ! safe_confirm "Proceed with release? (y/N)"; then
-        safe_log info "Release cancelled"
+        log_info "Release cancelled"
         exit 0
     fi
-    safe_log debug "User confirmed release"
+    log_debug "User confirmed release"
     
     # Execute release
     execute_release "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
@@ -356,7 +331,7 @@ batch_mode() {
     
     # Validate required parameters
     if [[ -z "$release_type" || -z "$prev_version" ]]; then
-        safe_log error "Batch mode requires release_type and prev_version"
+        log_error "Batch mode requires release_type and prev_version"
         show_usage
         exit 1
     fi
@@ -382,10 +357,10 @@ execute_release() {
     local bump_type="$4"
     local monitor_flag="$5"
     
-    safe_log info "Executing $release_type release..."
-    safe_log info "Previous version: $prev_version"
-    safe_log info "Next version: $next_version"
-    safe_log info "Bump type: $bump_type"
+    log_info "Executing $release_type release..."
+    log_info "Previous version: $prev_version"
+    log_info "Next version: $next_version"
+    log_info "Bump type: $bump_type"
     
     # Build command based on release type
     local cmd=""
@@ -426,26 +401,26 @@ execute_release() {
             ;;
     esac
     
-    safe_log info "Executing: $cmd"
+    log_info "Executing: $cmd"
     echo ""
     
     # Execute the command
     eval "$cmd"
     
     if [[ $? -eq 0 ]]; then
-        safe_log success "$release_type release completed successfully"
+        log_success "$release_type release completed successfully"
     else
-        safe_log error "$release_type release failed"
+        log_error "$release_type release failed"
         exit 1
     fi
 }
 
 # Main script logic
 main() {
-    echo "Main function called with arguments: $@" >&2
+    log_debug "Main function called with arguments: $@"
     
     # Initialize variables
-    echo "Initializing variables..." >&2
+    log_debug "Initializing variables..."
     local PREV_VERSION=""
     local VERSION=""
     local VERSION_TYPE="minor"
@@ -461,10 +436,10 @@ main() {
     local VERBOSE=false
     local QUIET=false
     
-    echo "Variables initialized, starting option parsing" >&2
+    log_debug "Variables initialized, starting option parsing"
     
     # Parse options using zparseopts for strict parameter validation
-    echo "About to call zparseopts with arguments: $@" >&2
+    log_debug "About to call zparseopts with arguments: $@"
     declare -A opts
     zparseopts -D -E -F -A opts - \
                 h -help \
@@ -486,14 +461,14 @@ main() {
                 --config: \
                 || {
         # Unknown option
-        echo "zparseopts failed" >&2
+        log_debug "zparseopts failed"
         log_error "Unknown option: $@"
         exit 1
     }
-    echo "zparseopts completed successfully" >&2
+    log_debug "zparseopts completed successfully"
     
     # Process parsed options
-    echo "Processing parsed options..." >&2
+    log_debug "Processing parsed options..."
     for key val in "${(kv@)opts}"; do
         case $key in
             -h|--help)
@@ -550,10 +525,10 @@ main() {
                 ;;
         esac
     done
-    echo "Options processed" >&2
+    log_debug "Options processed"
     
     # Parse command line arguments
-    echo "Parsing command line arguments..." >&2
+    log_debug "Parsing command line arguments..."
     local release_type=""
     local prev_version="$PREV_VERSION"
     local next_version="$VERSION"
@@ -604,29 +579,29 @@ main() {
                 ;;
         esac
     done
-    echo "Command line arguments parsed" >&2
+    log_debug "Command line arguments parsed"
     
     # Check prerequisites
-    echo "About to call check_prerequisites..." >&2
-    echo "Checking prerequisites..." >&2
+    log_debug "About to call check_prerequisites..."
+    log_debug "Checking prerequisites..."
     check_prerequisites
-    echo "Prerequisites checked" >&2
-    echo "About to execute based on mode..." >&2
+    log_debug "Prerequisites checked"
+    log_debug "About to execute based on mode..."
     
     # Execute based on mode
-    echo "Executing based on mode..." >&2
+    log_debug "Executing based on mode..."
     if [[ "${BATCH_MODE:-false}" == "true" ]]; then
-        echo "Running batch mode" >&2
+        log_debug "Running batch mode"
         batch_mode "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
     else
-        echo "Running interactive mode" >&2
+        log_debug "Running interactive mode"
         interactive_mode "$release_type"
     fi
 }
 
 # Run main function
-echo "About to call main function" >&2
-echo "Arguments: $@" >&2
-echo "Function exists: $(type main 2>/dev/null || echo 'NO')" >&2
+log_debug "About to call main function"
+log_debug "Arguments: $@"
+log_debug "Function exists: $(type main 2>/dev/null || echo 'NO')"
 main "$@"
-echo "Main function call completed" >&2 
+log_debug "Main function call completed" 
