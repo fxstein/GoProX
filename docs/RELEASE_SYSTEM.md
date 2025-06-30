@@ -351,5 +351,6 @@ The release system uses a unified approach with these key scripts:
 
 - `release.zsh` - Top-level simplified release script
 - `scripts/release/gitflow-release.zsh` - Unified release backend (handles all operations)
+- `scripts/release/trigger-workflow.zsh` - GitHub Actions workflow trigger
 - `scripts/release/bump-version.zsh` - Version management utilities
 - `scripts/release/monitor-release.zsh` - Workflow monitoring utilities 

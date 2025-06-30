@@ -405,7 +405,7 @@ trigger_release_workflow() {
     
     # Execute release script
     local release_output
-    if ! release_output=$(./scripts/release/release.zsh "${release_args[@]}" 2>&1); then
+    if ! release_output=$(./scripts/release/trigger-workflow.zsh "${release_args[@]}" 2>&1); then
         log_error "Release workflow trigger failed"
         echo "$release_output"
         return 1
