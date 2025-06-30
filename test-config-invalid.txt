@@ -1,0 +1,5 @@
+source=.
+library="~/test-goprox"
+copyright="Test User"
+geonamesacct="invalid&chars"
+mountoptions=invalid_format

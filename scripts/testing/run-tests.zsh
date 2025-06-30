@@ -99,6 +99,14 @@ function parse_options() {
                 RUN_HOMEBREW_INTEGRATION_TESTS=true
                 shift
                 ;;
+            --force-clean)
+                FORCE_CLEAN=true
+                shift
+                ;;
+            --skip-env-check)
+                SKIP_ENV_CHECK=true
+                shift
+                ;;
             --verbose|-v)
                 VERBOSE=true
                 shift
@@ -149,6 +157,8 @@ function parse_options() {
         echo "  RUN_FIRMWARE_SUMMARY_TESTS=$RUN_FIRMWARE_SUMMARY_TESTS"
         echo "  RUN_HOMEBREW_TESTS=$RUN_HOMEBREW_TESTS"
         echo "  RUN_HOMEBREW_INTEGRATION_TESTS=$RUN_HOMEBREW_INTEGRATION_TESTS"
+        echo "  FORCE_CLEAN=$FORCE_CLEAN"
+        echo "  SKIP_ENV_CHECK=$SKIP_ENV_CHECK"
     fi
 }
 
@@ -231,6 +241,23 @@ function run_selected_tests() {
     source "$SCRIPT_DIR/enhanced-test-suites.zsh"
     source "$SCRIPT_DIR/test-homebrew-multi-channel.zsh"
     source "$SCRIPT_DIR/test-homebrew-integration.zsh"
+    
+    # Validate test environment unless skipped (after framework is loaded)
+    if [[ "$SKIP_ENV_CHECK" != "true" ]]; then
+        echo "🔍 Validating test environment..."
+        if ! validate_clean_test_environment "test-runner"; then
+            if [[ "$FORCE_CLEAN" == "true" ]]; then
+                echo "🔄 Force clean mode: Tests will run in isolated environments where needed"
+                export TEST_ISOLATED_MODE=true
+            else
+                echo "❌ Test environment is not clean. Use --force-clean to continue anyway."
+                echo "   Or use --skip-env-check to bypass this validation."
+                exit 1
+            fi
+        else
+            echo "✅ Test environment is clean"
+        fi
+    fi
     
     # Initialize test framework
     test_init

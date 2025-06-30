@@ -154,6 +154,21 @@ function assert_exit_code() {
     fi
 }
 
+function assert_greater_equal() {
+    local expected_min="$1"
+    local actual_value="$2"
+    local message="${3:-Value should be greater than or equal to minimum}"
+    
+    if [[ "$actual_value" -ge "$expected_min" ]]; then
+        return 0
+    else
+        echo "❌ Assertion failed: $message"
+        echo "   Expected minimum: $expected_min"
+        echo "   Actual value: $actual_value"
+        return 1
+    fi
+}
+
 # Test execution functions
 function run_test() {
     local test_name="$1"
@@ -326,6 +341,79 @@ function cleanup_test_files() {
     if [[ -d "$test_dir" ]]; then
         rm -rf "$test_dir"
     fi
+}
+
+# Test environment isolation
+function create_isolated_test_env() {
+    local test_name="$1"
+    local isolated_dir="$TEST_TEMP_DIR/isolated-$test_name"
+    
+    # Clean up any existing isolated environment
+    rm -rf "$isolated_dir"
+    mkdir -p "$isolated_dir"
+    
+    # Create a completely clean environment
+    cd "$isolated_dir"
+    
+    # Unset all potentially problematic environment variables
+    unset HOMEBREW_TOKEN
+    unset GITHUB_TOKEN
+    unset GH_TOKEN
+    unset GITHUB_ACTIONS
+    unset CI
+    unset CD
+    unset TRAVIS
+    unset JENKINS_URL
+    
+    # Create minimal required files
+    cat > "goprox" << 'EOF'
+#!/bin/zsh
+__version__='01.50.00'
+EOF
+    chmod +x goprox
+    
+    echo "$isolated_dir"
+}
+
+function cleanup_isolated_test_env() {
+    local isolated_dir="$1"
+    if [[ -n "$isolated_dir" && -d "$isolated_dir" ]]; then
+        rm -rf "$isolated_dir"
+    fi
+    cd - > /dev/null
+}
+
+function validate_clean_test_environment() {
+    local test_name="$1"
+    local issues=()
+    
+    # Check for problematic environment variables
+    if [[ -n "$HOMEBREW_TOKEN" ]]; then
+        issues+=("HOMEBREW_TOKEN is set")
+    fi
+    if [[ -n "$GITHUB_TOKEN" ]]; then
+        issues+=("GITHUB_TOKEN is set")
+    fi
+    if [[ -n "$GH_TOKEN" ]]; then
+        issues+=("GH_TOKEN is set")
+    fi
+    if [[ -n "$GITHUB_ACTIONS" ]]; then
+        issues+=("GITHUB_ACTIONS is set")
+    fi
+    
+    # Check for GitHub CLI authentication
+    if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+        issues+=("GitHub CLI is authenticated")
+    fi
+    
+    if [[ ${#issues[@]} -gt 0 ]]; then
+        echo "⚠️  WARNING: Test environment may not be clean for '$test_name':"
+        printf "   - %s\n" "${issues[@]}"
+        echo "   Consider using create_isolated_test_env() for guaranteed clean testing"
+        return 1
+    fi
+    
+    return 0
 }
 
 # Main test runner
