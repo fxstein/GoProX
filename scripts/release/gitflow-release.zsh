@@ -515,7 +515,7 @@ monitor_github_actions() {
                     echo "❌ Some workflows failed! Manual intervention required."
                     echo ""
                     echo "📋 Failed Workflow Details:"
-                    echo "$relevant_workflows" | while IFS='|' read -r run_number workflow_name status conclusion; do
+                    echo "$relevant_workflows" | while IFS='|' read -r run_number workflow_name wf_status conclusion; do
                         [[ -z "$run_number" ]] && continue
                         if [[ "$conclusion" != "success" ]]; then
                             echo "   Workflow: $workflow_name (#$run_number)"
