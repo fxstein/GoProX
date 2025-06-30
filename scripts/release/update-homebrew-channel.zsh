@@ -112,10 +112,14 @@ case $channel in
             exit 1
         fi
         version="$(git describe --tags --abbrev=0)"
-        url="https://github.com/fxstein/GoProX/archive/v${version}.tar.gz"
-        formula_name="goprox"
-        formula_file="Formula/goprox.rb"
+        # Remove 'v' prefix if present to avoid double 'v' in URL
+        local version_clean=${version#v}
+        url="https://github.com/fxstein/GoProX/archive/v${version_clean}.tar.gz"
+        
+        # Create both default and versioned formulae
+        formula_name="goprox (default) and goprox@${actual_version}"
         log_info "Official channel - version: $version"
+        log_info "Creating default formula (goprox) and versioned formula (goprox@${actual_version})"
         ;;
 esac
 
@@ -192,9 +196,36 @@ end
 EOF
         ;;
     official)
-        cat > "$formula_file" << EOF
+        # Create default formula (always latest)
+        log_info "Creating default formula: Formula/goprox.rb"
+        cat > "Formula/goprox.rb" << EOF
 class Goprox < Formula
   desc "GoPro media management tool"
+  homepage "https://github.com/fxstein/GoProX"
+  version "$version"
+  url "$url"
+  sha256 "$sha256"
+  
+  depends_on "zsh"
+  depends_on "exiftool"
+  depends_on "jq"
+  
+  def install
+    bin.install "goprox"
+    man1.install "man/goprox.1"
+  end
+  
+  test do
+    system "#{bin}/goprox", "--version"
+  end
+end
+EOF
+
+        # Create versioned formula (specific version)
+        log_info "Creating versioned formula: Formula/goprox@${actual_version}.rb"
+        cat > "Formula/goprox@${actual_version}.rb" << EOF
+class GoproxAT${actual_version//./} < Formula
+  desc "GoPro media management tool (version ${actual_version})"
   homepage "https://github.com/fxstein/GoProX"
   version "$version"
   url "$url"
@@ -223,14 +254,29 @@ log_info "Committing formula update for $formula_name"
 git config user.name "GoProX Release Bot"
 git config user.email "release-bot@goprox.dev"
 
-git add "$formula_file"
-git commit -m "Update $formula_name to version $version
+if [[ "$channel" == "official" ]]; then
+    # Add both default and versioned formulae
+    git add "Formula/goprox.rb" "Formula/goprox@${actual_version}.rb"
+    git commit -m "Update goprox to version $version and add goprox@${actual_version}
+
+- Channel: $channel
+- Default formula: goprox (latest)
+- Versioned formula: goprox@${actual_version} (specific version)
+- SHA256: $sha256
+- URL: $url
+
+Automated update from GoProX release process."
+else
+    # Add single formula for dev/beta channels
+    git add "$formula_file"
+    git commit -m "Update $formula_name to version $version
 
 - Channel: $channel
 - SHA256: $sha256
 - URL: $url
 
 Automated update from GoProX release process."
+fi
 
 # Push changes
 log_info "Pushing changes to Homebrew tap repository"
