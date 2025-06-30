@@ -6,7 +6,16 @@
 
 # Source logger
 SCRIPT_DIR="${0:A:h}"
-source "$SCRIPT_DIR/../../scripts/core/logger.zsh"
+source "$SCRIPT_DIR/../core/logger.zsh"
+
+# Load environment variables (including HOMEBREW_TOKEN)
+source "$SCRIPT_DIR/../core/load-env.zsh"
+if [[ "$AUTH_FAILED" == "1" ]]; then
+    echo "[DEBUG] AUTH_FAILED detected, exiting with code 1"
+    unset AUTH_FAILED
+    exit 1
+fi
+unset AUTH_FAILED
 
 # Function to display help
 show_help() {

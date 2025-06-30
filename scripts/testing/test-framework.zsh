@@ -154,6 +154,21 @@ function assert_exit_code() {
     fi
 }
 
+function assert_greater_equal() {
+    local expected_min="$1"
+    local actual_value="$2"
+    local message="${3:-Value should be greater than or equal to minimum}"
+    
+    if [[ "$actual_value" -ge "$expected_min" ]]; then
+        return 0
+    else
+        echo "❌ Assertion failed: $message"
+        echo "   Expected minimum: $expected_min"
+        echo "   Actual value: $actual_value"
+        return 1
+    fi
+}
+
 # Test execution functions
 function run_test() {
     local test_name="$1"
@@ -309,6 +324,15 @@ function create_test_config() {
     local config_file="$1"
     local content="$2"
     
+    # Ensure config files are created in test temp directory, not repo root
+    if [[ "$config_file" != /* && ! "$config_file" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        config_file="$TEST_TEMP_DIR/$config_file"
+    fi
+    
+    # Ensure the directory exists
+    mkdir -p "$(dirname "$config_file")"
+    
     echo "$content" > "$config_file"
 }
 
@@ -316,8 +340,27 @@ function create_test_media_file() {
     local file_path="$1"
     local content="${2:-Test media content}"
     
+    # Ensure media files are created in test temp directory, not repo root
+    if [[ "$file_path" != /* && ! "$file_path" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        file_path="$TEST_TEMP_DIR/$file_path"
+    fi
+    
     mkdir -p "$(dirname "$file_path")"
     echo "$content" > "$file_path"
+}
+
+function create_test_directory() {
+    local dir_path="$1"
+    
+    # Ensure test directories are created in test temp directory, not repo root
+    if [[ "$dir_path" != /* && ! "$dir_path" =~ ^\./ ]]; then
+        # If it's a relative path, make it relative to test temp directory
+        dir_path="$TEST_TEMP_DIR/$dir_path"
+    fi
+    
+    mkdir -p "$dir_path"
+    echo "$dir_path"
 }
 
 function cleanup_test_files() {
@@ -326,6 +369,115 @@ function cleanup_test_files() {
     if [[ -d "$test_dir" ]]; then
         rm -rf "$test_dir"
     fi
+}
+
+# Test environment isolation
+function create_isolated_test_env() {
+    local test_name="$1"
+    local isolated_dir="$TEST_TEMP_DIR/isolated-$test_name"
+    
+    # Clean up any existing isolated environment
+    rm -rf "$isolated_dir"
+    mkdir -p "$isolated_dir"
+    
+    # Create a completely clean environment
+    cd "$isolated_dir"
+    
+    # Unset all potentially problematic environment variables
+    unset HOMEBREW_TOKEN
+    unset GITHUB_TOKEN
+    unset GH_TOKEN
+    unset GITHUB_ACTIONS
+    unset CI
+    unset CD
+    unset TRAVIS
+    unset JENKINS_URL
+    
+    # Create minimal required files
+    cat > "goprox" << 'EOF'
+#!/bin/zsh
+__version__='01.50.00'
+EOF
+    chmod +x goprox
+    
+    echo "$isolated_dir"
+}
+
+function cleanup_isolated_test_env() {
+    local isolated_dir="$1"
+    if [[ -n "$isolated_dir" && -d "$isolated_dir" ]]; then
+        rm -rf "$isolated_dir"
+    fi
+    cd - > /dev/null
+}
+
+function validate_clean_test_environment() {
+    local test_name="$1"
+    local issues=()
+    
+    # Check for problematic environment variables
+    if [[ -n "$HOMEBREW_TOKEN" ]]; then
+        issues+=("HOMEBREW_TOKEN is set")
+    fi
+    if [[ -n "$GITHUB_TOKEN" ]]; then
+        issues+=("GITHUB_TOKEN is set")
+    fi
+    if [[ -n "$GH_TOKEN" ]]; then
+        issues+=("GH_TOKEN is set")
+    fi
+    if [[ -n "$GITHUB_ACTIONS" ]]; then
+        issues+=("GITHUB_ACTIONS is set")
+    fi
+    
+    # Check for GitHub CLI authentication
+    if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+        issues+=("GitHub CLI is authenticated")
+    fi
+    
+    if [[ ${#issues[@]} -gt 0 ]]; then
+        echo "⚠️  WARNING: Test environment may not be clean for '$test_name':"
+        printf "   - %s\n" "${issues[@]}"
+        echo "   Consider using create_isolated_test_env() for guaranteed clean testing"
+        return 1
+    fi
+    
+    return 0
+}
+
+function test_repo_root_cleanliness() {
+    # Test to ensure no files are created in the repo root during testing
+    local repo_root="$(pwd)"
+    local test_files_before=$(find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
+    
+    # Run a simple test that would previously create files in repo root
+    local test_dir="$TEST_TEMP_DIR/repo-cleanliness-test"
+    mkdir -p "$test_dir"
+    
+    # Test the fixed functions
+    create_test_config "test-config.txt" "test content"
+    create_test_media_file "test-media.txt" "test content"
+    create_test_directory "test-dir"
+    
+    # Check if any files were created in repo root
+    local test_files_after=$(find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
+    
+    if [[ "$test_files_after" -gt "$test_files_before" ]]; then
+        echo "❌ Test files were created in repo root:"
+        find "$repo_root" -maxdepth 1 -type f -name "test-*" -o -name "*.log" 2>/dev/null
+        return 1
+    fi
+    
+    # Verify files were created in test temp directory instead
+    assert_file_exists "$TEST_TEMP_DIR/test-config.txt" "Config file should be created in test temp directory"
+    assert_file_exists "$TEST_TEMP_DIR/test-media.txt" "Media file should be created in test temp directory"
+    assert_directory_exists "$TEST_TEMP_DIR/test-dir" "Test directory should be created in test temp directory"
+    
+    echo "✅ No files created in repo root - all test files properly isolated"
+    
+    # Cleanup
+    rm -rf "$test_dir"
+    rm -f "$TEST_TEMP_DIR/test-config.txt" "$TEST_TEMP_DIR/test-media.txt"
+    rm -rf "$TEST_TEMP_DIR/test-dir"
 }
 
 # Main test runner
@@ -343,4 +495,6 @@ function run_all_tests() {
     print_test_summary
     
     return $TEST_FAILED
-} 
+}
+
+# NOTE: Interactive control (e.g., non-interactive, auto-confirm) must be set via command-line arguments, not environment variables. Only tokens and project-wide settings may use environment variables. 

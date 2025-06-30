@@ -54,7 +54,7 @@ scripts/maintenance/validate-gitattributes.zsh
 #### 2.1 Release Script Enhancement
 ```zsh
 # Update release script
-scripts/release/release.zsh
+scripts/release/trigger-workflow.zsh
 ```
 - Ensure firmware zip files are excluded
 - Validate package contents

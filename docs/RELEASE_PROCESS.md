@@ -86,9 +86,9 @@ The release automation system automatically:
 
 ### 2. Legacy Scripts (for reference only)
 
-The following scripts are now called internally by `full-release.zsh` and should not be run directly unless for advanced troubleshooting:
+The following scripts are now called internally by `gitflow-release.zsh` and should not be run directly unless for advanced troubleshooting:
 - `scripts/release/bump-version.zsh`
-- `scripts/release/release.zsh`
+- `scripts/release/trigger-workflow.zsh`
 - `scripts/release/monitor-release.zsh`
 
 ### 3. Monitoring Output

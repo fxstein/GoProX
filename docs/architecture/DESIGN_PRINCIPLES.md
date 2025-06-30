@@ -178,6 +178,66 @@ echo "✅ Operation completed successfully"
 - Pull requests missing logger integration will not be merged
 - Existing scripts must be updated before new features are added
 
+### 2.3 Minimal Environment Variable Usage
+
+**Principle:** Avoid environment variables except for tokens, credentials, and basic project-wide configuration settings.
+
+**Rationale:** Environment variables can persist across shell sessions, leak to subprocesses, and create unexpected behavior when left over from other scripts. They also make debugging more difficult and can pose security risks. Command-line arguments provide explicit, local control that is safer and more predictable.
+
+**Implementation Requirements:**
+- **Prefer Command-Line Arguments:** Use command-line arguments for all script behavior control, configuration, and feature flags
+- **Limit Environment Variables:** Only use environment variables for:
+  - **Tokens and Credentials:** API tokens, authentication credentials, access keys
+  - **Basic Project Settings:** Project root paths, basic configuration overrides
+  - **System Integration:** Integration with external systems that require environment variables
+- **No Interactive Control:** Never use environment variables for interactive mode control (use `--non-interactive`, `--auto-confirm`, etc.)
+- **Clear Documentation:** When environment variables are used, clearly document their purpose and scope
+- **Local Variables:** Use local script variables instead of environment variables for internal state
+
+**Allowed Environment Variables:**
+- `GITHUB_TOKEN` - GitHub API authentication
+- `HOMEBREW_TOKEN` - Homebrew API authentication
+- `GOPROX_ROOT` - Project root directory override
+- `GOPROX_CONFIG` - Configuration file path override
+- System integration variables (e.g., CI/CD platform variables)
+
+**Prohibited Uses:**
+- Interactive mode control (`AUTO_CONFIRM`, `NON_INTERACTIVE`, etc.)
+- Feature flags and behavior control
+- Script-specific configuration that can be passed as arguments
+- Temporary state or flags
+
+**Implementation Pattern:**
+```zsh
+# GOOD: Use command-line arguments for behavior control
+./script.zsh --non-interactive --auto-confirm --verbose
+
+# GOOD: Use environment variables only for tokens/credentials
+export GITHUB_TOKEN="ghp_..."
+./script.zsh
+
+# BAD: Don't use environment variables for behavior control
+export AUTO_CONFIRM=true
+./script.zsh
+```
+
+**Benefits:**
+- **Explicit Control:** Behavior is clear and local to each invocation
+- **No Persistence Issues:** Arguments don't persist across shell sessions
+- **Easier Debugging:** No hidden state from environment variables
+- **Better Security:** Sensitive data is limited to tokens and credentials
+- **Predictable Behavior:** Script behavior is determined by explicit arguments
+
+**Scripts That Must Follow This Pattern:**
+- All new scripts in the project
+- All scripts that currently use environment variables for behavior control
+- Any script that requires user interaction or configuration
+
+**Migration Requirements:**
+- Existing scripts using environment variables for behavior control must be updated to use command-line arguments
+- Environment variable usage must be documented and limited to allowed categories
+- New scripts must not introduce environment variables for behavior control
+
 ### 3. Human-Readable Configuration
 
 **Principle:** Configuration files should be easily readable and editable by humans without requiring knowledge of structured data formats.
@@ -397,6 +457,76 @@ mountoptions=(--archive --import --clean --firmware)
 - Avoid mixing package managers (e.g., npm, pip, apt) for core dependencies unless absolutely necessary
 - If a dependency is not available via Homebrew, document the alternative installation method and rationale
 - Ensure CI/CD and local environments use the same dependency installation approach for consistency
+
+### 11. Interactive Mode Graceful Fallback
+
+**Principle:** Any script that requires interactive mode must implement graceful fallback to non-interactive operation when running in automated environments.
+
+**Rationale:** Scripts that require user interaction (prompts, confirmations, etc.) will fail in CI/CD pipelines, automated testing, and other non-interactive environments. Graceful fallback ensures scripts can run successfully in all contexts while still providing interactive capabilities when appropriate.
+
+**Implementation Requirements:**
+- **Environment Detection:** Check for interactive terminal using `[[ -t 0 ]]` or `[[ -t 1 ]]`
+- **Non-Interactive Fallback:** Provide sensible defaults or error messages when not interactive
+- **Clear Communication:** Inform users when falling back to non-interactive mode
+- **Consistent Behavior:** Ensure the same logical flow works in both interactive and non-interactive modes
+- **Error Handling:** Provide clear error messages when interactive input is required but unavailable
+- **Parameter Control:** All scripts MUST support command-line arguments (e.g., `--non-interactive`, `--auto-confirm`, `--default-yes`) for controlling interactive behavior. Environment variables are NOT supported for interactive control to avoid persistence and scope issues.
+- **Parameter Parsing:** Scripts that require parameter parsing MUST use the canonical `zparseopts` pattern as described in the "Consistent Parameter Processing" principle above, and include the interactive control arguments in their option list.
+
+**Implementation Pattern:**
+```zsh
+# Parse options using zparseopts for strict parameter validation
+zparseopts -D -E -F -A opts - \
+    h -help \
+    ... \
+    -non-interactive \
+    -auto-confirm \
+    -default-yes \
+    || {
+        _error "Unknown option: $@"
+        exit 1
+    }
+
+# Set interactive control flags
+for key val in "${(kv@)opts}"; do
+  case $key in
+    --non-interactive)
+      NON_INTERACTIVE=true ;;
+    --auto-confirm)
+      AUTO_CONFIRM=true ;;
+    --default-yes)
+      DEFAULT_YES=true ;;
+    # ... other options ...
+  esac
+}
+```
+
+**Command-Line Arguments for Control:**
+- `--non-interactive`: Force non-interactive mode
+- `--auto-confirm`: Automatically confirm all prompts
+- `--default-yes`: Default to "yes" for all prompts
+
+**Scripts That Must Implement This Pattern:**
+- Release scripts that require user confirmation
+- Installation scripts with interactive prompts
+- Maintenance scripts that modify system state
+- Any script that prompts for user input or confirmation
+
+**Benefits:**
+- **CI/CD Compatibility:** Scripts work in automated pipelines
+- **Testing Support:** Non-interactive testing without manual intervention
+- **Automation Friendly:** Can be used in scripts and automation tools
+- **User Experience:** Still provides interactive prompts when appropriate
+- **Flexibility:** Supports both interactive and automated workflows
+- **No Persistence Issues:** Command-line arguments don't persist across shell sessions
+- **Explicit Control:** Behavior is clear and local to each script invocation
+
+**Examples in GoProX:**
+- Release scripts check for interactive mode before prompting for confirmation
+- Installation scripts provide non-interactive fallback for automated deployment
+- Maintenance scripts use command-line arguments to control behavior in CI/CD
+
+**Note:** This requirement is mandatory for all future scripts and features. All usage/help output must document the command-line argument controls for interactive mode. Environment variables are not supported for interactive control to avoid scope and persistence issues.
 
 ## Decision Recording Process
 

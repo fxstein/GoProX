@@ -1,9 +1,13 @@
 #!/bin/zsh
 
 # Load environment variables, using GitHub CLI for tokens when available
-# Usage: source load-env.zsh
+# Usage: source scripts/core/load-env.zsh (from repo root)
+#        source ../core/load-env.zsh (from scripts subdirectory)
 
 echo "🔐 Loading environment variables..."
+
+# Track if we have authentication
+local has_auth=false
 
 # Try to get HOMEBREW_TOKEN from GitHub CLI first
 if command -v gh &> /dev/null; then
@@ -18,6 +22,7 @@ if command -v gh &> /dev/null; then
         if gh_token=$(gh auth token 2>/dev/null); then
             export HOMEBREW_TOKEN="$gh_token"
             echo "✅ Loaded HOMEBREW_TOKEN from GitHub CLI"
+            has_auth=true
         else
             echo "⚠️  Could not get token from GitHub CLI"
         fi
@@ -52,4 +57,18 @@ else
     echo "ℹ️  No .env file found (optional for additional variables)"
 fi
 
-echo "🔐 Environment variables loaded successfully!" 
+# Check if we have HOMEBREW_TOKEN from any source
+if [[ -n "$HOMEBREW_TOKEN" ]]; then
+    has_auth=true
+fi
+
+echo "🔐 Environment variables loaded successfully!"
+
+# Exit with error if no authentication is available
+if [[ -z "$HOMEBREW_TOKEN" ]]; then
+    echo "❌ Error: No authentication available for Homebrew operations"
+    echo "Please either:"
+    echo "  1. Run 'gh auth login' to authenticate with GitHub CLI, or"
+    echo "  2. Set HOMEBREW_TOKEN environment variable with a Personal Access Token"
+    AUTH_FAILED=1
+fi 

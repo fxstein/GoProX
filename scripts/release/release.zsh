@@ -1,266 +1,632 @@
 #!/bin/zsh
+echo "Release script starting..." >&2
 #
-# release.zsh: Trigger the automated release process for GoProX
+# release.zsh: Simplified top-level release script for GoProX
 #
-# Copyright (c) 2021-2025 by Oliver Ratzesberger
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-# Usage: ./release.zsh [OPTIONS]
+# Set script and project root directories FIRST
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-set -e
+# Initialize logger variables before sourcing logger
+LOG_VERBOSE=false
+LOG_QUIET=false
+LOGFILE=""  # Disable file logging temporarily
+
+set -euo pipefail
+
+# Source project logger
+source "$SCRIPT_DIR/../core/logger.zsh"
+
+# Configuration
+GITFLOW_SCRIPT="$SCRIPT_DIR/gitflow-release.zsh"
+OUTPUT_DIR="$PROJECT_ROOT/output"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# Source safe prompt utilities
+source "$SCRIPT_DIR/../core/safe-prompt.zsh"
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# Ensure output directory exists
+mkdir -p "$OUTPUT_DIR"
 
 # Function to show usage
 show_usage() {
-    cat << EOF
-Usage: $0 [OPTIONS]
+    cat << 'EOF'
+Usage: ./release.zsh [OPTIONS] [RELEASE_TYPE]
 
-Options:
-    -v, --version VERSION    Specify version to release (e.g., 00.61.00)
-    -p, --prev VERSION       Specify previous version for changelog
-    -d, --dry-run           Run in dry-run mode (no actual release)
-    -h, --help              Show this help message
-    -f, --force             Skip manual confirmation
+Simplified GoProX Release Script
 
-Examples:
-    $0 --version 00.61.00 --prev 00.60.00
-    $0 --version 00.61.00 --prev 00.60.00 --dry-run
-    $0 -v 00.61.00 -p 00.60.00 -d
+RELEASE TYPES:
+    official     Official release (from main/develop)
+    beta         Beta release (from release branches)
+    dev          Development release (from feature branches)
+    dry-run      Test run without actual release
 
-If no version is specified, the script will:
-1. Read the current version from goprox file
-2. Try to determine the previous version from git tags
-3. Prompt for confirmation before proceeding
+OPTIONS:
+    --interactive    Interactive mode (default if no parameters)
+    --batch          Batch mode (requires all parameters)
+    --prev <version> Previous version for changelog
+    --version <ver>  Specific version to release
+    --major          Bump major version
+    --minor          Bump minor version (default)
+    --patch          Bump patch version
+    --force          Skip confirmations
+    --monitor        Monitor workflow completion
+    --help           Show this help
+
+INTERACTIVE BEHAVIOR OPTIONS:
+    --non-interactive  Force non-interactive mode
+    --auto-confirm     Automatically confirm all prompts
+    --default-yes      Default to 'yes' for all prompts
+
+INTERACTIVE MODE EXAMPLES:
+    ./release.zsh                    # Interactive mode
+    ./release.zsh --interactive      # Explicit interactive mode
+    ./release.zsh --non-interactive --auto-confirm  # Non-interactive with auto-confirm
+
+BATCH MODE EXAMPLES:
+    ./release.zsh --batch dry-run --prev 01.50.00
+    ./release.zsh --batch beta --prev 01.50.00 --version 01.51.00
+    ./release.zsh --batch official --prev 01.50.00 --minor --monitor
+
+RELEASE TYPE BEHAVIOR:
+    official: Creates official release with Homebrew updates
+    beta:     Creates beta release for testing
+    dev:      Creates development release for feature testing
+    dry-run:  Simulates release process without actual release
+
+BRANCH REQUIREMENTS:
+    - Official: main, develop, or release/* branches
+    - Beta: release/* branches
+    - Dev: feature/* or fix/* branches
+    - Dry-run: any branch (for testing)
 EOF
 }
 
-# Function to get current version from goprox file
+# Function to get current version
 get_current_version() {
     if [[ -f "goprox" ]]; then
         grep "__version__=" goprox | cut -d"'" -f2
     else
-        print_error "goprox file not found in current directory"
+        log_error "goprox file not found in current directory"
         exit 1
     fi
 }
 
-# Function to get the latest git tag
+# Function to get latest git tag
 get_latest_tag() {
     git describe --tags --abbrev=0 2>/dev/null || echo "none"
 }
 
-# Function to validate version format
-validate_version() {
-    local version=$1
-    if [[ ! "$version" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
-        print_error "Invalid version format: $version"
-        print_error "Version must be in format XX.XX.XX (e.g., 00.61.00)"
-        exit 1
-    fi
+# Function to get current branch
+get_current_branch() {
+    git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown"
 }
 
-# Function to check if gh CLI is available
-check_gh_cli() {
+# Function to validate version format
+validate_version() {
+    local version="$1"
+    if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_error "Invalid version format: $version. Expected format: XX.XX.XX"
+        return 1
+    fi
+    return 0
+}
+
+# Function to suggest next version
+suggest_next_version() {
+    local current_version="$1"
+    local bump_type="${2:-minor}"
+    
+    IFS='.' read -r major minor patch <<< "$current_version"
+    
+    case "$bump_type" in
+        major)
+            echo "$((major + 1)).00.00"
+            ;;
+        minor)
+            echo "$major.$((minor + 1)).00"
+            ;;
+        patch)
+            echo "$major.$minor.$((patch + 1))"
+            ;;
+        *)
+            log_error "Invalid bump type: $bump_type"
+            return 1
+            ;;
+    esac
+}
+
+# Function to safely call logger functions
+safe_log() {
+    local level="$1"
+    local message="$2"
+    
+    case "$level" in
+        info)
+            log_info "$message" || echo "INFO: $message" >&2
+            ;;
+        success)
+            log_success "$message" || echo "SUCCESS: $message" >&2
+            ;;
+        warning)
+            log_warning "$message" || echo "WARNING: $message" >&2
+            ;;
+        error)
+            log_error "$message" || echo "ERROR: $message" >&2
+            ;;
+        debug)
+            log_debug "$message" || echo "DEBUG: $message" >&2
+            ;;
+        *)
+            echo "UNKNOWN: $message" >&2
+            ;;
+    esac
+}
+
+# Function to check prerequisites
+check_prerequisites() {
+    safe_log info "Checking prerequisites..."
+    
+    # Check if we're in a git repository
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        safe_log error "Not in a git repository"
+        exit 1
+    fi
+    
+    # Check if gh CLI is available
     if ! command -v gh &> /dev/null; then
-        print_error "GitHub CLI (gh) is not installed or not in PATH"
-        print_error "Please install it from: https://cli.github.com/"
+        safe_log error "GitHub CLI (gh) is not installed. Please install it first: https://cli.github.com/"
         exit 1
     fi
     
     if ! gh auth status &> /dev/null; then
-        print_error "GitHub CLI is not authenticated"
-        print_error "Please run: gh auth login"
+        safe_log error "Not authenticated with GitHub CLI. Please run: gh auth login"
         exit 1
     fi
+    
+    # Check if required scripts exist
+    if [[ ! -f "$GITFLOW_SCRIPT" ]]; then
+        safe_log error "gitflow-release.zsh script not found: $GITFLOW_SCRIPT"
+        exit 1
+    fi
+    
+    safe_log success "All prerequisites met"
+    safe_log debug "Prerequisites check completed, proceeding to main logic"
 }
 
-# Function to trigger the workflow
-trigger_workflow() {
-    local version=$1
-    local prev_version=$2
-    local dry_run=$3
+# Function to display current status
+display_status() {
+    local current_version=$(get_current_version)
+    local latest_tag=$(get_latest_tag)
+    local current_branch=$(get_current_branch)
     
-    print_status "Triggering release automation workflow..."
-    print_status "Version: $version"
-    print_status "Previous version: $prev_version"
-    print_status "Dry run: $dry_run"
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│                   GoProX Release Status                        │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    echo ""
+    echo "📍 Current Version: $current_version"
+    echo "🏷️  Latest Tag: $latest_tag"
+    echo "🌿 Current Branch: $current_branch"
+    echo ""
+}
+
+# Function for interactive mode
+interactive_mode() {
+    local release_type="$1"
     
-    # Get current branch name
-    local current_branch=$(git branch --show-current)
-    print_status "Triggering workflow on branch: $current_branch"
+    echo "Interactive mode called with release_type: '$release_type'" >&2
+    safe_log debug "Starting interactive mode with release_type: '$release_type'"
     
-    gh workflow run release-automation.yml \
-        --ref "$current_branch" \
-        -f version="$version" \
-        -f prev_version="$prev_version" \
-        -f dry_run="$dry_run"
+    echo "About to call display_status..." >&2
+    display_status
+    echo "display_status completed" >&2
+    
+    # Determine release type if not specified
+    if [[ -z "$release_type" ]]; then
+        echo "No release type specified, prompting user..." >&2
+        safe_log debug "No release type specified, prompting user"
+        echo "Select release type:"
+        echo "1) Official Release (production)"
+        echo "2) Beta Release (testing)"
+        echo "3) Development Release (feature testing)"
+        echo "4) Dry Run (test without release)"
+        echo ""
+        local choice
+        echo "About to call safe_prompt for release type choice..." >&2
+        safe_log debug "About to call safe_prompt for release type choice"
+        choice=$(safe_prompt "Enter choice (1-4)" "1")
+        echo "safe_prompt returned: '$choice'" >&2
+        safe_log debug "safe_prompt returned: '$choice'"
+        
+        case "$choice" in
+            1) release_type="official" ;;
+            2) release_type="beta" ;;
+            3) release_type="dev" ;;
+            4) release_type="dry-run" ;;
+            *) safe_log error "Invalid choice: '$choice'"; exit 1 ;;
+        esac
+        echo "Selected release type: '$release_type'" >&2
+        safe_log debug "Selected release type: '$release_type'"
+    fi
+    
+    # Get previous version
+    local current_version=$(get_current_version)
+    local latest_tag=$(get_latest_tag)
+    local suggested_prev="$latest_tag"
+    
+    if [[ "$suggested_prev" == "none" ]]; then
+        suggested_prev="$current_version"
+    else
+        # Strip "v" prefix if present
+        suggested_prev="${suggested_prev#v}"
+    fi
+    
+    echo ""
+    safe_log debug "About to call safe_prompt for previous version"
+    prev_version=$(safe_prompt "Previous version for changelog" "$suggested_prev")
+    safe_log debug "safe_prompt returned prev_version: '$prev_version'"
+    
+    # Validate previous version
+    if ! validate_version "$prev_version"; then
+        exit 1
+    fi
+    
+    # Get version bump type
+    echo ""
+    echo "Version bump type:"
+    echo "1) Major (X.00.00)"
+    echo "2) Minor (X.X.00) [default]"
+    echo "3) Patch (X.X.X)"
+    echo ""
+    local bump_choice
+    safe_log debug "About to call safe_prompt for bump choice"
+    bump_choice=$(safe_prompt "Enter choice (1-3)" "2")
+    safe_log debug "safe_prompt returned bump_choice: '$bump_choice'"
+    
+    local bump_type="minor"
+    case "$bump_choice" in
+        1) bump_type="major" ;;
+        2|"") bump_type="minor" ;;
+        3) bump_type="patch" ;;
+        *) safe_log error "Invalid choice: '$bump_choice'"; exit 1 ;;
+    esac
+    safe_log debug "Selected bump type: '$bump_type'"
+    
+    # Suggest next version
+    local suggested_version=$(suggest_next_version "$current_version" "$bump_type")
+    
+    echo ""
+    safe_log debug "About to call safe_prompt for next version"
+    next_version=$(safe_prompt "Next version" "$suggested_version")
+    safe_log debug "safe_prompt returned next_version: '$next_version'"
+    
+    # Validate next version
+    if ! validate_version "$next_version"; then
+        exit 1
+    fi
+    
+    # Ask about monitoring
+    echo ""
+    local monitor_choice
+    safe_log debug "About to call safe_prompt for monitor choice"
+    monitor_choice=$(safe_prompt "Monitor workflow completion? (y/N)" "N")
+    safe_log debug "safe_prompt returned monitor_choice: '$monitor_choice'"
+    local monitor_flag=""
+    if [[ "${monitor_choice}" == "y" || "${monitor_choice}" == "Y" ]]; then
+        monitor_flag="--monitor"
+    fi
+    
+    # Confirm release
+    echo ""
+    echo "Release Summary:"
+    echo "  Type: $release_type"
+    echo "  Previous: $prev_version"
+    echo "  Next: $next_version"
+    echo "  Bump: $bump_type"
+    echo "  Monitor: ${monitor_choice:-N}"
+    echo ""
+    
+    safe_log debug "About to call safe_confirm for final confirmation"
+    if ! safe_confirm "Proceed with release? (y/N)"; then
+        safe_log info "Release cancelled"
+        exit 0
+    fi
+    safe_log debug "User confirmed release"
+    
+    # Execute release
+    execute_release "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
+}
+
+# Function for batch mode
+batch_mode() {
+    local release_type="$1"
+    local prev_version="$2"
+    local next_version="$3"
+    local bump_type="${4:-minor}"
+    local monitor_flag="${5:-}"
+    
+    # Validate required parameters
+    if [[ -z "$release_type" || -z "$prev_version" ]]; then
+        safe_log error "Batch mode requires release_type and prev_version"
+        show_usage
+        exit 1
+    fi
+    
+    # Validate versions
+    if ! validate_version "$prev_version"; then
+        exit 1
+    fi
+    
+    if [[ -n "$next_version" ]] && ! validate_version "$next_version"; then
+        exit 1
+    fi
+    
+    # Execute release
+    execute_release "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
+}
+
+# Function to execute the actual release
+execute_release() {
+    local release_type="$1"
+    local prev_version="$2"
+    local next_version="$3"
+    local bump_type="$4"
+    local monitor_flag="$5"
+    
+    safe_log info "Executing $release_type release..."
+    safe_log info "Previous version: $prev_version"
+    safe_log info "Next version: $next_version"
+    safe_log info "Bump type: $bump_type"
+    
+    # Build command based on release type
+    local cmd=""
+    
+    case "$release_type" in
+        "official"|"beta"|"dev"|"dry-run")
+            # Use gitflow release script for all operations
+            cmd="$GITFLOW_SCRIPT --prev $prev_version"
+            
+            if [[ "$release_type" == "dry-run" ]]; then
+                cmd="$cmd --dry-run"
+            elif [[ "$release_type" == "beta" ]]; then
+                # For beta releases, ensure we're on a release branch
+                cmd="$cmd"
+            elif [[ "$release_type" == "dev" ]]; then
+                # For dev releases, ensure we're on a feature/fix branch
+                cmd="$cmd"
+            fi
+            
+            if [[ -n "$next_version" ]]; then
+                cmd="$cmd --version $next_version"
+            fi
+            
+            case "$bump_type" in
+                major) cmd="$cmd --major" ;;
+                minor) cmd="$cmd --minor" ;;
+                patch) cmd="$cmd --patch" ;;
+            esac
+            
+            if [[ -n "$monitor_flag" ]]; then
+                cmd="$cmd --monitor"
+            fi
+            ;;
+        
+        *)
+            log_error "Invalid release type: $release_type"
+            exit 1
+            ;;
+    esac
+    
+    safe_log info "Executing: $cmd"
+    echo ""
+    
+    # Execute the command
+    eval "$cmd"
     
     if [[ $? -eq 0 ]]; then
-        print_success "Workflow triggered successfully!"
-        print_status "You can monitor the progress at: https://github.com/fxstein/GoProX/actions"
+        safe_log success "$release_type release completed successfully"
     else
-        print_error "Failed to trigger workflow"
+        safe_log error "$release_type release failed"
         exit 1
     fi
 }
 
 # Main script logic
 main() {
-    local version=""
-    local prev_version=""
-    local dry_run="false"
-    local force=false
+    echo "Main function called with arguments: $@" >&2
     
-    # Parse command line arguments
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -v|--version)
-                version="$2"
-                shift 2
-                ;;
-            -p|--prev)
-                prev_version="$2"
-                shift 2
-                ;;
-            -d|--dry-run)
-                dry_run="true"
-                shift
-                ;;
+    # Initialize variables
+    echo "Initializing variables..." >&2
+    local PREV_VERSION=""
+    local VERSION=""
+    local VERSION_TYPE="minor"
+    local INTERACTIVE=false
+    local NON_INTERACTIVE=false
+    local AUTO_CONFIRM=false
+    local DEFAULT_YES=false
+    local BATCH_MODE=false
+    local MONITOR=false
+    local DRY_RUN=false
+    local FORCE_CLEAN=false
+    local CONFIG_FILE=""
+    local VERBOSE=false
+    local QUIET=false
+    
+    echo "Variables initialized, starting option parsing" >&2
+    
+    # Parse options using zparseopts for strict parameter validation
+    echo "About to call zparseopts with arguments: $@" >&2
+    declare -A opts
+    zparseopts -D -E -F -A opts - \
+                h -help \
+                v -verbose \
+                q -quiet \
+                -interactive \
+                -non-interactive \
+                -auto-confirm \
+                -default-yes \
+                -batch \
+                -prev: \
+                -version: \
+                -minor \
+                -major \
+                -patch \
+                -monitor \
+                -dry-run \
+                -force-clean \
+                --config: \
+                || {
+        # Unknown option
+        echo "zparseopts failed" >&2
+        log_error "Unknown option: $@"
+        exit 1
+    }
+    echo "zparseopts completed successfully" >&2
+    
+    # Process parsed options
+    echo "Processing parsed options..." >&2
+    for key val in "${(kv@)opts}"; do
+        case $key in
             -h|--help)
                 show_usage
                 exit 0
                 ;;
-            -f|--force)
-                force=true
-                shift
+            -v|--verbose)
+                VERBOSE=true
                 ;;
-            *)
-                print_error "Unknown argument: $1"
-                show_usage
-                exit 1
+            -q|--quiet)
+                QUIET=true
+                ;;
+            --interactive)
+                INTERACTIVE=true
+                ;;
+            --non-interactive)
+                NON_INTERACTIVE=true
+                ;;
+            --auto-confirm)
+                AUTO_CONFIRM=true
+                ;;
+            --default-yes)
+                DEFAULT_YES=true
+                ;;
+            --batch)
+                BATCH_MODE=true
+                ;;
+            --prev)
+                PREV_VERSION="$val"
+                ;;
+            --version)
+                VERSION="$val"
+                ;;
+            --minor)
+                VERSION_TYPE="minor"
+                ;;
+            --major)
+                VERSION_TYPE="major"
+                ;;
+            --patch)
+                VERSION_TYPE="patch"
+                ;;
+            --monitor)
+                MONITOR=true
+                ;;
+            --dry-run)
+                DRY_RUN=true
+                ;;
+            --force-clean)
+                FORCE_CLEAN=true
+                ;;
+            --config)
+                CONFIG_FILE="$val"
                 ;;
         esac
     done
+    echo "Options processed" >&2
     
-    # Check if we're in a git repository
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then
-        print_error "Not in a git repository"
-        exit 1
+    # Parse command line arguments
+    echo "Parsing command line arguments..." >&2
+    local release_type=""
+    local prev_version="$PREV_VERSION"
+    local next_version="$VERSION"
+    local bump_type="${VERSION_TYPE:-minor}"
+    local monitor_flag=""
+    
+    # Set monitor flag if MONITOR is true
+    if [[ "${MONITOR:-false}" == "true" ]]; then
+        monitor_flag="--monitor"
     fi
     
-    # Check if gh CLI is available
-    check_gh_cli
-    
-    # If no version specified, get it from goprox file
-    if [[ -z "$version" ]]; then
-        version=$(get_current_version)
-        print_status "Using current version from goprox: $version"
-    fi
-    
-    # Validate version format
-    validate_version "$version"
-    
-    # If no previous version specified, try to get it from git tags
-    if [[ -z "$prev_version" ]]; then
-        local latest_tag=$(get_latest_tag)
-        if [[ "$latest_tag" != "none" ]]; then
-            # Remove 'v' prefix if present
-            prev_version=${latest_tag#v}
-            print_status "Using previous version from latest tag: $prev_version"
-        else
-            print_warning "No git tags found. You'll need to specify the previous version manually."
-            echo -n "Enter previous version (e.g., 00.60.00): "
-            read prev_version
-            if [[ -z "$prev_version" ]]; then
-                print_error "Previous version is required"
+    while [[ ${#@} -gt 0 ]]; do
+        case ${@[1]} in
+            official|beta|dev|dry-run)
+                release_type="${@[1]}"
+                shift
+                ;;
+            --major)
+                bump_type="major"
+                shift
+                ;;
+            --minor)
+                bump_type="minor"
+                shift
+                ;;
+            --patch)
+                bump_type="patch"
+                shift
+                ;;
+            --help|-h)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                log_error "Unknown option: ${@[1]}"
+                show_usage
                 exit 1
-            fi
-            validate_version "$prev_version"
-        fi
-    fi
+                ;;
+            *)
+                if [[ -z "$release_type" ]]; then
+                    release_type="${@[1]}"
+                else
+                    log_error "Unexpected argument: ${@[1]}"
+                    show_usage
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+    echo "Command line arguments parsed" >&2
     
-    # Validate previous version format
-    validate_version "$prev_version"
+    # Check prerequisites
+    echo "About to call check_prerequisites..." >&2
+    echo "Checking prerequisites..." >&2
+    check_prerequisites
+    echo "Prerequisites checked" >&2
+    echo "About to execute based on mode..." >&2
     
-    # Confirm the release
-    echo
-    print_status "Release Summary:"
-    echo "  Current version: $version"
-    echo "  Previous version: $prev_version"
-    echo "  Dry run: $dry_run"
-    echo
-    
-    if [[ "$dry_run" == "true" ]]; then
-        print_warning "This is a DRY RUN - no actual release will be created"
+    # Execute based on mode
+    echo "Executing based on mode..." >&2
+    if [[ "${BATCH_MODE:-false}" == "true" ]]; then
+        echo "Running batch mode" >&2
+        batch_mode "$release_type" "$prev_version" "$next_version" "$bump_type" "$monitor_flag"
     else
-        print_warning "This will create a REAL release on GitHub"
+        echo "Running interactive mode" >&2
+        interactive_mode "$release_type"
     fi
-    
-    # Confirmation prompt
-    if [[ "$force" != true ]]; then
-        echo
-        echo "Proceed with release? (y/N): "
-        read confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            print_status "Operation cancelled"
-        exit 0
-    fi
-    else
-        print_status "--force specified, proceeding without confirmation."
-    fi
-    
-    # Push version changes to GitHub before triggering release
-    print_status "Pushing version changes to GitHub..."
-    if ! git push origin main; then
-        print_error "Failed to push version changes to GitHub"
-        print_error "Please ensure you have write access and the remote is configured correctly"
-        exit 1
-    fi
-    print_success "Version changes pushed successfully"
-    
-    # Trigger the workflow
-    trigger_workflow "$version" "$prev_version" "$dry_run"
 }
 
-# Run main function with all arguments
-main "$@" 
+# Run main function
+echo "About to call main function" >&2
+echo "Arguments: $@" >&2
+echo "Function exists: $(type main 2>/dev/null || echo 'NO')" >&2
+main "$@"
+echo "Main function call completed" >&2 

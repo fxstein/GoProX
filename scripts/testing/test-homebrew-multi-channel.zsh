@@ -124,29 +124,37 @@ test_valid_channel_parameters() {
         local output
         output=$("$TEST_SCRIPT" "$channel" 2>&1) || true
         
-        # Should fail due to missing HOMEBREW_TOKEN, but channel validation should pass
+        # Should pass channel validation but fail on authentication
         assert_contains "$output" "Valid channel specified: $channel"
-        assert_contains "$output" "Error: HOMEBREW_TOKEN not set"
+        # The script now tries GitHub CLI first, so we expect authentication failure
+        # but not necessarily HOMEBREW_TOKEN error
+        assert_contains "$output" "Starting Homebrew channel update for channel: $channel"
     done
 }
 
 test_missing_homebrew_token() {
     local output
-    local exit_code
+    local exit_code=0
     
+    # Create completely isolated test environment
+    local isolated_dir
+    isolated_dir=$(create_isolated_test_env "missing_homebrew_token")
+    
+    # Capture both output and exit code in the isolated environment
     output=$("$TEST_SCRIPT" dev 2>&1) || exit_code=$?
     
-    assert_contains "$output" "Error: HOMEBREW_TOKEN not set"
-    assert_contains "$output" "Personal Access Token with 'repo' scope"
+    # The script should exit with code 1 when no authentication is available
+    assert_contains "$output" "Starting Homebrew channel update for channel: dev"
+    assert_contains "$output" "Error: No authentication available for Homebrew operations"
     assert_exit_code 1 "$exit_code"
+    
+    # Clean up isolated environment
+    cleanup_isolated_test_env "$isolated_dir"
 }
 
 test_missing_goprox_file() {
     local output
     local exit_code
-    
-    # Set token to avoid that error
-    export HOMEBREW_TOKEN="test-token"
     
     # Create a temporary directory for this test
     local temp_test_dir="$TEST_TEMP_DIR/missing-goprox-test"
@@ -161,8 +169,6 @@ test_missing_goprox_file() {
     
     # Return to original directory
     cd - > /dev/null
-    
-    unset HOMEBREW_TOKEN
 }
 
 test_version_parsing_from_goprox() {
@@ -220,9 +226,6 @@ test_official_channel_missing_tags() {
 __version__='01.50.00'
 EOF
     
-    # Set dummy HOMEBREW_TOKEN so the script checks for tags
-    export HOMEBREW_TOKEN="dummy-token"
-    
     # Create a temp git repo with no tags
     local temp_git_dir="$TEST_TEMP_DIR/no-tags-repo"
     mkdir -p "$temp_git_dir"
@@ -242,8 +245,6 @@ EOF
     
     assert_contains "$output" "Error: No tags found for official release"
     assert_exit_code 1 "$exit_code"
-    
-    unset HOMEBREW_TOKEN
 }
 
 test_formula_class_name_generation() {

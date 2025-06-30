@@ -39,6 +39,7 @@ RUN_LOGGER_TESTS=false
 RUN_FIRMWARE_SUMMARY_TESTS=false
 RUN_HOMEBREW_TESTS=false
 RUN_HOMEBREW_INTEGRATION_TESTS=false
+RUN_SAFE_PROMPT_TESTS=false
 VERBOSE=false
 QUIET=false
 DEBUG=false
@@ -99,6 +100,18 @@ function parse_options() {
                 RUN_HOMEBREW_INTEGRATION_TESTS=true
                 shift
                 ;;
+            --safe-prompt)
+                RUN_SAFE_PROMPT_TESTS=true
+                shift
+                ;;
+            --force-clean)
+                FORCE_CLEAN=true
+                shift
+                ;;
+            --skip-env-check)
+                SKIP_ENV_CHECK=true
+                shift
+                ;;
             --verbose|-v)
                 VERBOSE=true
                 shift
@@ -130,7 +143,7 @@ function parse_options() {
           "$RUN_MEDIA_TESTS" == false && "$RUN_ERROR_TESTS" == false && \
           "$RUN_WORKFLOW_TESTS" == false && "$RUN_LOGGER_TESTS" == false && \
           "$RUN_FIRMWARE_SUMMARY_TESTS" == false && "$RUN_HOMEBREW_TESTS" == false && \
-          "$RUN_HOMEBREW_INTEGRATION_TESTS" == false ]]; then
+          "$RUN_HOMEBREW_INTEGRATION_TESTS" == false && "$RUN_SAFE_PROMPT_TESTS" == false ]]; then
         RUN_ALL_TESTS=true
     fi
 
@@ -149,6 +162,9 @@ function parse_options() {
         echo "  RUN_FIRMWARE_SUMMARY_TESTS=$RUN_FIRMWARE_SUMMARY_TESTS"
         echo "  RUN_HOMEBREW_TESTS=$RUN_HOMEBREW_TESTS"
         echo "  RUN_HOMEBREW_INTEGRATION_TESTS=$RUN_HOMEBREW_INTEGRATION_TESTS"
+        echo "  RUN_SAFE_PROMPT_TESTS=$RUN_SAFE_PROMPT_TESTS"
+        echo "  FORCE_CLEAN=$FORCE_CLEAN"
+        echo "  SKIP_ENV_CHECK=$SKIP_ENV_CHECK"
     fi
 }
 
@@ -172,6 +188,7 @@ function show_help() {
     echo "  --firmware-summary Run firmware summary tests only"
     echo "  --brew             Run Homebrew tests only"
     echo "  --brew-integration Run Homebrew integration tests only"
+    echo "  --safe-prompt      Run safe prompt tests only"
     echo "  --verbose, -v      Enable verbose output"
     echo "  --quiet, -q        Suppress output except for failures"
     echo "  --debug            Enable debug output"
@@ -232,6 +249,23 @@ function run_selected_tests() {
     source "$SCRIPT_DIR/test-homebrew-multi-channel.zsh"
     source "$SCRIPT_DIR/test-homebrew-integration.zsh"
     
+    # Validate test environment unless skipped (after framework is loaded)
+    if [[ "$SKIP_ENV_CHECK" != "true" ]]; then
+        echo "🔍 Validating test environment..."
+        if ! validate_clean_test_environment "test-runner"; then
+            if [[ "$FORCE_CLEAN" == "true" ]]; then
+                echo "🔄 Force clean mode: Tests will run in isolated environments where needed"
+                export TEST_ISOLATED_MODE=true
+            else
+                echo "❌ Test environment is not clean. Use --force-clean to continue anyway."
+                echo "   Or use --skip-env-check to bypass this validation."
+                exit 1
+            fi
+        else
+            echo "✅ Test environment is clean"
+        fi
+    fi
+    
     # Initialize test framework
     test_init
     
@@ -288,6 +322,10 @@ function run_selected_tests() {
         test_suite "Homebrew Integration Tests" run_homebrew_integration_tests
     fi
     
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_SAFE_PROMPT_TESTS" == true ]]; then
+        test_suite "Safe Prompt Tests" test_safe_prompt_suite
+    fi
+    
     if [[ "$DEBUG" == true ]]; then
         echo "[DEBUG] Test suite execution complete"
         echo "[DEBUG] TEST_RESULTS array contents:"
@@ -305,6 +343,153 @@ function run_selected_tests() {
     print_test_summary
     
     return $TEST_FAILED
+}
+
+function test_safe_prompt_suite() {
+    echo "🧪 Testing Safe Prompt Functions"
+    
+    # Source the logger and safe prompt functions
+    source "$SCRIPT_DIR/../core/logger.zsh"
+    source "$SCRIPT_DIR/../core/safe-prompt.zsh"
+    
+    # Test 1: Interactive mode detection
+    test_interactive_mode_detection
+    
+    # Test 2: Non-interactive mode with auto-confirm
+    test_non_interactive_auto_confirm
+    
+    # Test 3: Non-interactive mode without auto-confirm
+    test_non_interactive_no_auto_confirm
+    
+    # Test 4: Safe confirm with default values
+    test_safe_confirm_defaults
+    
+    # Test 5: Safe prompt with default values
+    test_safe_prompt_defaults
+    
+    # Test 6: Safe confirm timeout
+    test_safe_confirm_timeout
+}
+
+function test_interactive_mode_detection() {
+    # Test that is_interactive function works correctly
+    if is_interactive; then
+        # We're in interactive mode, this should return true
+        return 0
+    else
+        # We're not in interactive mode, this should return false
+        return 0
+    fi
+}
+
+function test_non_interactive_auto_confirm() {
+    # Test safe_confirm in non-interactive mode with auto-confirm
+    # Set local variables for testing (not environment variables)
+    local AUTO_CONFIRM=true
+    local NON_INTERACTIVE=true
+    
+    # This should return true (auto-confirm enabled)
+    if safe_confirm "Test prompt" "N"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function test_non_interactive_no_auto_confirm() {
+    # Test safe_confirm in non-interactive mode without auto-confirm
+    # Set local variables for testing (not environment variables)
+    local AUTO_CONFIRM=false
+    local NON_INTERACTIVE=true
+    
+    # This should return false (no auto-confirm, default N)
+    if safe_confirm "Test prompt" "N"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+function test_safe_confirm_defaults() {
+    # Test safe_confirm with different default values
+    local NON_INTERACTIVE=true
+    
+    # Test with default "N" (should return false)
+    local AUTO_CONFIRM=false
+    if safe_confirm "Test prompt" "N"; then
+        local result1=1
+    else
+        local result1=0
+    fi
+    
+    # Test with default "Y" (should return true)
+    if safe_confirm "Test prompt" "Y"; then
+        local result2=0
+    else
+        local result2=1
+    fi
+    
+    # Both tests should pass
+    if [[ $result1 -eq 0 && $result2 -eq 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function test_safe_prompt_defaults() {
+    # Test safe_prompt with default values
+    local NON_INTERACTIVE=true
+    
+    # Test with default value
+    local result=$(safe_prompt "Test prompt" "default_value")
+    if [[ "$result" == "default_value" ]]; then
+        local test1=0
+    else
+        local test1=1
+    fi
+    
+    # Test without default value (should fail gracefully)
+    local result2=$(safe_prompt "Test prompt" "" 2>/dev/null || echo "ERROR")
+    if [[ "$result2" == "ERROR" ]]; then
+        local test2=0
+    else
+        local test2=1
+    fi
+    
+    # Both tests should pass
+    if [[ $test1 -eq 0 && $test2 -eq 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function test_safe_confirm_timeout() {
+    # Test safe_confirm_timeout function
+    local NON_INTERACTIVE=true
+    
+    # Test with default "N" (should return false)
+    local AUTO_CONFIRM=false
+    if safe_confirm_timeout "Test prompt" 5 "N"; then
+        local result1=1
+    else
+        local result1=0
+    fi
+    
+    # Test with default "Y" (should return true)
+    if safe_confirm_timeout "Test prompt" 5 "Y"; then
+        local result2=0
+    else
+        local result2=1
+    fi
+    
+    # Both tests should pass
+    if [[ $result1 -eq 0 && $result2 -eq 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 function main() {

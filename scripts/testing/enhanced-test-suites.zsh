@@ -158,21 +158,23 @@ function test_clean_basic() {
 }
 
 function test_firmware_check() {
-    # Create test firmware structure
-    mkdir -p "test-firmware/MISC"
-    echo '{"camera type": "HERO10 Black", "firmware version": "H21.01.01.10.00"}' > "test-firmware/MISC/version.txt"
+    # Create test firmware structure in test temp directory
+    local test_dir="$TEST_TEMP_DIR/test-firmware"
+    mkdir -p "$test_dir/MISC"
+    echo '{"camera type": "HERO10 Black", "firmware version": "H21.01.01.10.00"}' > "$test_dir/MISC/version.txt"
     
     # Test firmware detection
-    assert_file_exists "test-firmware/MISC/version.txt" "Firmware version file should exist"
-    assert_contains "$(cat test-firmware/MISC/version.txt)" "HERO10 Black" "Should contain camera type"
-    assert_contains "$(cat test-firmware/MISC/version.txt)" "H21.01.01.10.00" "Should contain firmware version"
+    assert_file_exists "$test_dir/MISC/version.txt" "Firmware version file should exist"
+    assert_contains "$(cat "$test_dir/MISC/version.txt")" "HERO10 Black" "Should contain camera type"
+    assert_contains "$(cat "$test_dir/MISC/version.txt")" "H21.01.01.10.00" "Should contain firmware version"
     
     # Test firmware cache directory
-    mkdir -p "test-firmware-cache"
-    assert_directory_exists "test-firmware-cache" "Firmware cache directory should exist"
+    local cache_dir="$TEST_TEMP_DIR/test-firmware-cache"
+    mkdir -p "$cache_dir"
+    assert_directory_exists "$cache_dir" "Firmware cache directory should exist"
     
-    cleanup_test_files "test-firmware"
-    cleanup_test_files "test-firmware-cache"
+    cleanup_test_files "$test_dir"
+    cleanup_test_files "$cache_dir"
 }
 
 function test_geonames_basic() {

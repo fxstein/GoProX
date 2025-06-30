@@ -2,6 +2,8 @@
 
 > **Reference:** This document is part of [GitHub Issue #73: Enhanced Default Behavior: Intelligent Media Management Assistant](https://github.com/fxstein/GoProX/issues/73). All default behavior enhancements and related work should be tracked and discussed in this issue.
 
+> **Note:** Project-wide or context environment variables (e.g., TRAVEL_MODE, OFFICE_MODE) are allowed, but interactive control (e.g., non-interactive, auto-confirm) must be set via command-line arguments, not environment variables.
+
 ## Core Principles (Project Standards Alignment)
 
 - **No Automatic Destructive Actions**: GoProX must never modify user data or media files automatically. All destructive or modifying actions (including re-processing) require explicit user consent and a dedicated option. (See AI_INSTRUCTIONS.md)
