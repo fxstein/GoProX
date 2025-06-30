@@ -348,23 +348,27 @@ function run_selected_tests() {
 function test_safe_prompt_suite() {
     echo "🧪 Testing Safe Prompt Functions"
     
+    # Source the logger and safe prompt functions
+    source "$SCRIPT_DIR/../core/logger.zsh"
+    source "$SCRIPT_DIR/../core/safe-prompt.zsh"
+    
     # Test 1: Interactive mode detection
-    test_case "Interactive mode detection" test_interactive_mode_detection
+    test_interactive_mode_detection
     
     # Test 2: Non-interactive mode with auto-confirm
-    test_case "Non-interactive mode with auto-confirm" test_non_interactive_auto_confirm
+    test_non_interactive_auto_confirm
     
     # Test 3: Non-interactive mode without auto-confirm
-    test_case "Non-interactive mode without auto-confirm" test_non_interactive_no_auto_confirm
+    test_non_interactive_no_auto_confirm
     
     # Test 4: Safe confirm with default values
-    test_case "Safe confirm with default values" test_safe_confirm_defaults
+    test_safe_confirm_defaults
     
     # Test 5: Safe prompt with default values
-    test_case "Safe prompt with default values" test_safe_prompt_defaults
+    test_safe_prompt_defaults
     
     # Test 6: Safe confirm timeout
-    test_case "Safe confirm timeout" test_safe_confirm_timeout
+    test_safe_confirm_timeout
 }
 
 function test_interactive_mode_detection() {
@@ -380,57 +384,38 @@ function test_interactive_mode_detection() {
 
 function test_non_interactive_auto_confirm() {
     # Test safe_confirm in non-interactive mode with auto-confirm
-    local original_auto_confirm="$AUTO_CONFIRM"
-    local original_non_interactive="$NON_INTERACTIVE"
-    
-    export AUTO_CONFIRM=true
-    export NON_INTERACTIVE=true
+    # Set local variables for testing (not environment variables)
+    local AUTO_CONFIRM=true
+    local NON_INTERACTIVE=true
     
     # This should return true (auto-confirm enabled)
     if safe_confirm "Test prompt" "N"; then
-        local result=0
+        return 0
     else
-        local result=1
+        return 1
     fi
-    
-    # Restore original values
-    export AUTO_CONFIRM="$original_auto_confirm"
-    export NON_INTERACTIVE="$original_non_interactive"
-    
-    return $result
 }
 
 function test_non_interactive_no_auto_confirm() {
     # Test safe_confirm in non-interactive mode without auto-confirm
-    local original_auto_confirm="$AUTO_CONFIRM"
-    local original_non_interactive="$NON_INTERACTIVE"
-    
-    export AUTO_CONFIRM=false
-    export NON_INTERACTIVE=true
+    # Set local variables for testing (not environment variables)
+    local AUTO_CONFIRM=false
+    local NON_INTERACTIVE=true
     
     # This should return false (no auto-confirm, default N)
     if safe_confirm "Test prompt" "N"; then
-        local result=1
+        return 1
     else
-        local result=0
+        return 0
     fi
-    
-    # Restore original values
-    export AUTO_CONFIRM="$original_auto_confirm"
-    export NON_INTERACTIVE="$original_non_interactive"
-    
-    return $result
 }
 
 function test_safe_confirm_defaults() {
     # Test safe_confirm with different default values
-    local original_auto_confirm="$AUTO_CONFIRM"
-    local original_non_interactive="$NON_INTERACTIVE"
-    
-    export NON_INTERACTIVE=true
+    local NON_INTERACTIVE=true
     
     # Test with default "N" (should return false)
-    export AUTO_CONFIRM=false
+    local AUTO_CONFIRM=false
     if safe_confirm "Test prompt" "N"; then
         local result1=1
     else
@@ -444,10 +429,6 @@ function test_safe_confirm_defaults() {
         local result2=1
     fi
     
-    # Restore original values
-    export AUTO_CONFIRM="$original_auto_confirm"
-    export NON_INTERACTIVE="$original_non_interactive"
-    
     # Both tests should pass
     if [[ $result1 -eq 0 && $result2 -eq 0 ]]; then
         return 0
@@ -458,10 +439,7 @@ function test_safe_confirm_defaults() {
 
 function test_safe_prompt_defaults() {
     # Test safe_prompt with default values
-    local original_auto_confirm="$AUTO_CONFIRM"
-    local original_non_interactive="$NON_INTERACTIVE"
-    
-    export NON_INTERACTIVE=true
+    local NON_INTERACTIVE=true
     
     # Test with default value
     local result=$(safe_prompt "Test prompt" "default_value")
@@ -479,10 +457,6 @@ function test_safe_prompt_defaults() {
         local test2=1
     fi
     
-    # Restore original values
-    export AUTO_CONFIRM="$original_auto_confirm"
-    export NON_INTERACTIVE="$original_non_interactive"
-    
     # Both tests should pass
     if [[ $test1 -eq 0 && $test2 -eq 0 ]]; then
         return 0
@@ -493,13 +467,10 @@ function test_safe_prompt_defaults() {
 
 function test_safe_confirm_timeout() {
     # Test safe_confirm_timeout function
-    local original_auto_confirm="$AUTO_CONFIRM"
-    local original_non_interactive="$NON_INTERACTIVE"
-    
-    export NON_INTERACTIVE=true
+    local NON_INTERACTIVE=true
     
     # Test with default "N" (should return false)
-    export AUTO_CONFIRM=false
+    local AUTO_CONFIRM=false
     if safe_confirm_timeout "Test prompt" 5 "N"; then
         local result1=1
     else
@@ -512,10 +483,6 @@ function test_safe_confirm_timeout() {
     else
         local result2=1
     fi
-    
-    # Restore original values
-    export AUTO_CONFIRM="$original_auto_confirm"
-    export NON_INTERACTIVE="$original_non_interactive"
     
     # Both tests should pass
     if [[ $result1 -eq 0 && $result2 -eq 0 ]]; then
