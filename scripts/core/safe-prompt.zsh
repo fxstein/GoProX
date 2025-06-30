@@ -205,12 +205,6 @@ safe_confirm_timeout() {
     fi
 }
 
-# Export functions for use in other scripts
-export -f is_interactive
-export -f safe_confirm
-export -f safe_prompt
-export -f safe_confirm_timeout
-
 # Function to show safe prompt usage
 show_safe_prompt_usage() {
     echo "Safe Prompt Usage:"
