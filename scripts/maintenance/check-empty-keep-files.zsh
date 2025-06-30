@@ -16,7 +16,9 @@ if (( ${#non_empty} > 0 )); then
   log_error "Non-empty .keep files detected: ${(j:, :)non_empty}"
   echo "\e[31mERROR: The following .keep files are not empty:\e[0m"
   for f in $non_empty; do
-    echo "  $f (size: $(stat -f %z "$f") bytes)"
+    local file_size
+    file_size=$(stat -f %z "$f" 2>/dev/null || stat -c %s "$f" 2>/dev/null || echo "0")
+    echo "  $f (size: $file_size bytes)"
   done
   echo "\e[33mPlease ensure all .keep files in the firmware tree are empty before committing.\e[0m"
   exit 1
