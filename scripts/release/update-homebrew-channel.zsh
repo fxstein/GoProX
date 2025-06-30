@@ -79,13 +79,26 @@ case $channel in
         log_info "Dev build channel - version: $version"
         ;;
     beta)
-        version="$(git describe --tags --abbrev=0)-beta.$(date +%Y%m%d)"
+        # Handle case where no tags exist
+        local latest_tag=""
+        if git describe --tags --abbrev=0 2>/dev/null; then
+            latest_tag="$(git describe --tags --abbrev=0)"
+        else
+            latest_tag="01.00.00"  # Fallback version if no tags exist
+            log_warn "No tags found, using fallback version: $latest_tag"
+        fi
+        version="${latest_tag}-beta.$(date +%Y%m%d)"
         url="https://github.com/fxstein/GoProX/archive/$(git rev-parse HEAD).tar.gz"
         formula_name="goprox@beta"
         formula_file="Formula/goprox@beta.rb"
         log_info "Beta channel - version: $version"
         ;;
     official)
+        # Handle case where no tags exist
+        if ! git describe --tags --abbrev=0 2>/dev/null; then
+            log_error "Error: No tags found for official release"
+            exit 1
+        fi
         version="$(git describe --tags --abbrev=0)"
         url="https://github.com/fxstein/GoProX/archive/v${version}.tar.gz"
         formula_name="goprox"

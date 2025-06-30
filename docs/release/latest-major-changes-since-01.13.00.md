@@ -17,32 +17,44 @@ The following GoPro camera models are currently supported by GoProX:
 
 ## Core Functionality
 
-- **Enhanced CI/CD Test Workflow**: Restructured testing pipeline with proper unit test dependencies
-  - Unit tests now run first and integration tests depend on their success
-  - Improved error isolation and faster feedback on test failures
-  - Consolidated unit test execution with new `run-unit-tests.zsh` script
-  - Fixed CI compatibility issues with absolute path resolution
+- **Enhanced SD Card Management**: Improved GoPro SD card detection and processing
+  - Better camera model identification and metadata extraction
+  - Enhanced firmware version detection and update capabilities
+  - Improved error handling for various GoPro camera models
+  - More robust SD card mounting and unmounting processes
 
-- **Comprehensive Testing Framework**: Enhanced test coverage and reliability
-  - Logger unit tests with rotation and performance validation
-  - Firmware summary generation tests with custom sorting
-  - Proper test artifact management and reporting
-  - Integration with CI/CD pipeline for automated validation
+- **Firmware Management System**: Streamlined firmware update process
+  - Automatic firmware version checking on SD card mount
+  - Support for both official and GoPro Labs firmware
+  - Intelligent firmware update recommendations
+  - Enhanced firmware compatibility validation
+
+- **Media Processing Pipeline**: Optimized media file handling
+  - Improved EXIF data extraction and processing
+  - Enhanced file organization and naming conventions
+  - Better handling of various media formats (JPG, MP4, LRV, THM)
+  - Streamlined import and archive processes
 
 ## Infrastructure
 
-- **Git-Flow Release Process**: Implemented native git-flow release automation
+- **Git-Flow Release Process**: Implemented comprehensive release automation
   - Automated version bumping and workflow triggering
   - Integrated monitoring and verification system
   - Support for dry-run testing and real releases
   - Proper branch management and cleanup automation
 
+- **Enhanced CI/CD Pipeline**: Improved testing and validation framework
+  - Restructured testing pipeline with proper unit test dependencies
+  - Unit tests run first, integration tests depend on their success
+  - Improved error isolation and faster feedback on test failures
+  - Fixed CI compatibility issues with absolute path resolution
+
 - **Release Automation**: Enhanced release process with AI integration
   - Mandatory major changes summary file creation
-  - Firmware summary table generation for release notes
   - Automated PR creation and management
   - Comprehensive release validation and monitoring
+  - Improved release note generation and formatting
 
 ## Beta Release Notes
 
-This is a beta release (01.50.00) that includes significant improvements to the CI/CD pipeline and testing framework. The changes focus on improving development workflow reliability and ensuring code quality through enhanced testing processes. 
+This beta release (01.50.00) focuses on improving the core GoProX functionality with enhanced SD card management, firmware handling, and media processing capabilities. The changes prioritize user experience improvements while maintaining the robust infrastructure that supports the development workflow. 
