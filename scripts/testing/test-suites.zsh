@@ -674,7 +674,7 @@ function test_release_script_gitflow_path() {
     # Check that the script starts properly and reaches prerequisites check
     assert_contains "$output" "Release script starting" "Should start without export errors"
     assert_contains "$output" "Checking prerequisites" "Should reach prerequisites check"
-    # The script may fail later due to uncommitted changes, but that's not what we're testing
+    # The script may fail later due to GitHub CLI auth or other issues, but that's not what we're testing
 }
 
 # Add to the appropriate suite

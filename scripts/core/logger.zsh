@@ -22,7 +22,7 @@ mkdir -p "$(dirname "$LOGFILE")"
 
 # --- Internal Helpers ---
 function _log_rotate_if_needed() {
-  if [[ -f "$LOGFILE" && $(stat -f%z "$LOGFILE") -ge $LOG_MAX_SIZE ]]; then
+  if [[ -f "$LOGFILE" && $(stat -f %z "$LOGFILE") -ge $LOG_MAX_SIZE ]]; then
     mv "$LOGFILE" "$LOGFILE_OLD"
     : > "$LOGFILE"
   fi
