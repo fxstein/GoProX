@@ -26,11 +26,14 @@
 # Description: Provides safe interactive prompts with graceful fallback for non-interactive environments
 # Usage: source "./scripts/core/safe-prompt.zsh"
 
+# Source the logger
+source "$(dirname "$0")/logger.zsh"
+
 # Function to check if running in interactive mode
 is_interactive() {
     local t0=0
     if [[ -t 0 ]]; then t0=1; fi
-    echo "[DEBUG] is_interactive: -t 0: $t0" >&2
+    log_debug "is_interactive: -t 0: $t0"
     [[ $t0 -eq 1 ]]
 }
 
@@ -40,54 +43,40 @@ is_interactive() {
 safe_confirm() {
     local prompt="$1"
     local default_answer="${2:-N}"
-    local auto_confirm="${AUTO_CONFIRM:-false}"
-    local non_interactive="${NON_INTERACTIVE:-false}"
     
-    echo "[DEBUG] safe_confirm called with prompt: '$prompt', default: '$default_answer'" >&2
-    echo "[DEBUG] auto_confirm: '$auto_confirm', non_interactive: '$non_interactive'" >&2
-    
-    # Check if we should force non-interactive mode
-    if [[ "$non_interactive" == "true" ]]; then
-        echo "[DEBUG] Forced non-interactive mode" >&2
-        log_warning "Forced non-interactive mode, using default answer: $default_answer"
-        if [[ "$default_answer" =~ ^[Yy]$ ]]; then
-            return 0
-        else
-            return 1
-        fi
+    # Check if we should auto-confirm
+    if [[ "${AUTO_CONFIRM:-false}" == "true" ]]; then
+        log_debug "Auto-confirm enabled, returning true"
+        return 0
     fi
     
-    # Check if running in interactive mode
-    if is_interactive; then
-        echo "[DEBUG] Running in interactive mode" >&2
-        # Interactive mode - prompt user
-        local reply
-        read -q "reply?$prompt "
-        echo
-        echo "[DEBUG] User input: '$reply'" >&2
+    # Check if we should force non-interactive mode
+    if [[ "${NON_INTERACTIVE:-false}" == "true" ]]; then
+        log_debug "Forced non-interactive mode"
+        return 1
+    fi
+    
+    # Check if we're in an interactive environment
+    local t0
+    t0=$(test -t 0 && echo "1" || echo "0")
+    log_debug "is_interactive: -t 0: $t0"
+    
+    if [[ "$t0" == "1" ]]; then
+        log_debug "Running in interactive mode"
+        echo -n "$prompt " >&2
+        read -r reply
+        log_debug "User input: '$reply'"
         
-        if [[ $reply =~ ^[Yy]$ ]]; then
-            log_info "User confirmed: $prompt"
-            return 0
-        else
-            log_info "User cancelled: $prompt"
-            return 1
+        # Handle empty input (use default)
+        if [[ -z "$reply" ]]; then
+            reply="$default_answer"
         fi
+        
+        # Return true for yes, false for no
+        [[ "$reply" =~ ^[Yy]$ ]]
     else
-        echo "[DEBUG] Running in non-interactive mode" >&2
-        # Non-interactive mode - use default or environment variable
-        log_warning "Running in non-interactive mode, using default behavior"
-        
-        if [[ "$auto_confirm" == "true" ]]; then
-            log_info "Auto-confirm enabled, proceeding with operation"
-            return 0
-        elif [[ "$default_answer" =~ ^[Yy]$ ]]; then
-            log_info "Default answer is yes, proceeding"
-            return 0
-        else
-            log_error "Interactive input required but not available. Use --auto-confirm to proceed automatically."
-            return 1
-        fi
+        log_debug "Running in non-interactive mode"
+        return 1
     fi
 }
 
@@ -95,63 +84,51 @@ safe_confirm() {
 # Usage: safe_prompt "prompt message" [default_value] [variable_name]
 # Returns: The user input or default value
 safe_prompt() {
-    local prompt="${1:-}"
+    local prompt="$1"
     local default_value="${2:-}"
     local variable_name="${3:-}"
-    local auto_confirm="${AUTO_CONFIRM:-false}"
-    local non_interactive="${NON_INTERACTIVE:-false}"
     
-    echo "[DEBUG] safe_prompt called with prompt: '$prompt', default: '$default_value'" >&2
-    echo "[DEBUG] auto_confirm: '$auto_confirm', non_interactive: '$non_interactive'" >&2
-    
-    # Check if we should force non-interactive mode
-    if [[ "$non_interactive" == "true" ]]; then
-        echo "[DEBUG] Forced non-interactive mode" >&2
-        log_warning "Forced non-interactive mode, using default value: $default_value"
-        if [[ -n "$variable_name" ]]; then
-            eval "$variable_name=\"$default_value\""
-        fi
+    # Check if we should auto-confirm
+    if [[ "${AUTO_CONFIRM:-false}" == "true" ]]; then
+        log_debug "Auto-confirm enabled, returning default: '$default_value'"
         echo "$default_value"
         return 0
     fi
     
-    # Check if running in interactive mode
-    if is_interactive; then
-        echo "[DEBUG] Running in interactive mode" >&2
-        # Interactive mode - prompt user
-        local reply
-        if [[ -n "$default_value" ]]; then
-            read "reply?$prompt [$default_value]: "
-            if [[ -z "$reply" ]]; then
-                reply="$default_value"
-            fi
-        else
-            read "reply?$prompt: "
-        fi
-        
-        echo "[DEBUG] User input: '$reply'" >&2
-        log_info "User input: $reply"
-        if [[ -n "$variable_name" ]]; then
-            eval "$variable_name=\"$reply\""
-        fi
-        echo "$reply"
+    # Check if we should force non-interactive mode
+    if [[ "${NON_INTERACTIVE:-false}" == "true" ]]; then
+        log_debug "Forced non-interactive mode"
+        echo "$default_value"
         return 0
-    else
-        echo "[DEBUG] Running in non-interactive mode" >&2
-        # Non-interactive mode - use default or fail
-        log_warning "Running in non-interactive mode, using default value"
+    fi
+    
+    # Check if we're in an interactive environment
+    local t0
+    t0=$(test -t 0 && echo "1" || echo "0")
+    log_debug "is_interactive: -t 0: $t0"
+    
+    if [[ "$t0" == "1" ]]; then
+        log_debug "Running in interactive mode"
         
+        # Build the prompt with default value if provided
+        local full_prompt="$prompt"
         if [[ -n "$default_value" ]]; then
-            log_info "Using default value: $default_value"
-            if [[ -n "$variable_name" ]]; then
-                eval "$variable_name=\"$default_value\""
-            fi
-            echo "$default_value"
-            return 0
-        else
-            log_error "Interactive input required but not available. Use --auto-confirm or provide a default value."
-            return 1
+            full_prompt="$prompt [$default_value]"
         fi
+        
+        echo -n "$full_prompt: " >&2
+        read -r reply
+        log_debug "User input: '$reply'"
+        
+        # Return user input or default if empty
+        if [[ -z "$reply" ]]; then
+            echo "$default_value"
+        else
+            echo "$reply"
+        fi
+    else
+        log_debug "Running in non-interactive mode"
+        echo "$default_value"
     fi
 }
 
