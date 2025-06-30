@@ -35,8 +35,8 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR" && pwd)"
-GITFLOW_SCRIPT="$PROJECT_ROOT/scripts/release/gitflow-release.zsh"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+GITFLOW_SCRIPT="$SCRIPT_DIR/gitflow-release.zsh"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
 # Ensure output directory exists
