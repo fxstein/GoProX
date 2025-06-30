@@ -484,8 +484,8 @@ Automated update from GoProX release process."
         
         # Additional checks for official channel
         if [[ "$channel" == "official" ]]; then
-            assert_contains "$commit_msg" "Default formula: goprox (latest)"
-            assert_contains "$commit_msg" "Versioned formula: goprox@1.50 (specific version)"
+            echo "$commit_msg" | grep -qF "Default formula: goprox (latest)" || { echo "Actual commit message:"; echo "$commit_msg"; return 1; }
+            echo "$commit_msg" | grep -qF "Versioned formula: goprox@1.50 (specific version)" || { echo "Actual commit message:"; echo "$commit_msg"; return 1; }
         fi
     done
 }
