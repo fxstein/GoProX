@@ -330,7 +330,7 @@ jobs:
           name: GoProX v${{ inputs.version }}
           body_path: release_notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(inputs.version, 'beta') || contains(github.ref, 'release/') }}
           files: goprox-v${{ inputs.version }}.tar.gz
 
   update-homebrew:

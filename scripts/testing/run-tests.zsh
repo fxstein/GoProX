@@ -37,6 +37,8 @@ RUN_ERROR_TESTS=false
 RUN_WORKFLOW_TESTS=false
 RUN_LOGGER_TESTS=false
 RUN_FIRMWARE_SUMMARY_TESTS=false
+RUN_HOMEBREW_TESTS=false
+RUN_HOMEBREW_INTEGRATION_TESTS=false
 VERBOSE=false
 QUIET=false
 DEBUG=false
@@ -89,6 +91,14 @@ function parse_options() {
                 RUN_FIRMWARE_SUMMARY_TESTS=true
                 shift
                 ;;
+            --brew)
+                RUN_HOMEBREW_TESTS=true
+                shift
+                ;;
+            --brew-integration)
+                RUN_HOMEBREW_INTEGRATION_TESTS=true
+                shift
+                ;;
             --verbose|-v)
                 VERBOSE=true
                 shift
@@ -119,7 +129,8 @@ function parse_options() {
           "$RUN_INTEGRATION_TESTS" == false && "$RUN_ENHANCED_TESTS" == false && \
           "$RUN_MEDIA_TESTS" == false && "$RUN_ERROR_TESTS" == false && \
           "$RUN_WORKFLOW_TESTS" == false && "$RUN_LOGGER_TESTS" == false && \
-          "$RUN_FIRMWARE_SUMMARY_TESTS" == false ]]; then
+          "$RUN_FIRMWARE_SUMMARY_TESTS" == false && "$RUN_HOMEBREW_TESTS" == false && \
+          "$RUN_HOMEBREW_INTEGRATION_TESTS" == false ]]; then
         RUN_ALL_TESTS=true
     fi
 
@@ -136,6 +147,8 @@ function parse_options() {
         echo "  RUN_WORKFLOW_TESTS=$RUN_WORKFLOW_TESTS"
         echo "  RUN_LOGGER_TESTS=$RUN_LOGGER_TESTS"
         echo "  RUN_FIRMWARE_SUMMARY_TESTS=$RUN_FIRMWARE_SUMMARY_TESTS"
+        echo "  RUN_HOMEBREW_TESTS=$RUN_HOMEBREW_TESTS"
+        echo "  RUN_HOMEBREW_INTEGRATION_TESTS=$RUN_HOMEBREW_INTEGRATION_TESTS"
     fi
 }
 
@@ -157,6 +170,8 @@ function show_help() {
     echo "  --workflow         Run workflow tests only"
     echo "  --logger           Run logger tests only"
     echo "  --firmware-summary Run firmware summary tests only"
+    echo "  --brew             Run Homebrew tests only"
+    echo "  --brew-integration Run Homebrew integration tests only"
     echo "  --verbose, -v      Enable verbose output"
     echo "  --quiet, -q        Suppress output except for failures"
     echo "  --debug            Enable debug output"
@@ -214,6 +229,8 @@ function run_selected_tests() {
     source "$SCRIPT_DIR/test-framework.zsh"
     source "$SCRIPT_DIR/test-suites.zsh"
     source "$SCRIPT_DIR/enhanced-test-suites.zsh"
+    source "$SCRIPT_DIR/test-homebrew-multi-channel.zsh"
+    source "$SCRIPT_DIR/test-homebrew-integration.zsh"
     
     # Initialize test framework
     test_init
@@ -261,6 +278,14 @@ function run_selected_tests() {
     
     if [[ "$RUN_ALL_TESTS" == true || "$RUN_FIRMWARE_SUMMARY_TESTS" == true ]]; then
         test_suite "Firmware Summary Tests" test_firmware_summary_suite
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_HOMEBREW_TESTS" == true ]]; then
+        test_suite "Homebrew Multi-Channel Tests" run_homebrew_multi_channel_tests
+    fi
+    
+    if [[ "$RUN_ALL_TESTS" == true || "$RUN_HOMEBREW_INTEGRATION_TESTS" == true ]]; then
+        test_suite "Homebrew Integration Tests" run_homebrew_integration_tests
     fi
     
     if [[ "$DEBUG" == true ]]; then

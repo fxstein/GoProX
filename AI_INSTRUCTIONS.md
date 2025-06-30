@@ -663,6 +663,19 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
   ./scripts/maintenance/create-branch.zsh "update documentation" --type cleanup
   ```
 
+## Git Flow Branch Model (MANDATORY)
+- **ALL pull requests MUST target the `develop` branch**, NOT the `main` branch
+- The project follows the gitflow model where:
+  - `main` branch contains only production releases
+  - `develop` branch is the primary development branch
+  - Feature/fix branches are created from and merged into `develop`
+  - Only release branches and hotfixes merge into `main`
+- **When creating PRs, ALWAYS specify `--base develop`** or ensure the PR targets `develop`
+- **NEVER create PRs against `main`** unless it's a hotfix or release branch
+- **Default branch for development work is `develop`**
+
+**RATIONALE**: This maintains the established gitflow workflow and ensures all development work goes through the proper review and integration process before reaching production.
+
 ## Branch Safety and Fix Management (MANDATORY)
 
 ### **Prominent Branch Display**
@@ -753,3 +766,37 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 - **Type identification**: Prefix makes it easy to identify branch purpose at a glance
 
 **RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach with meaningful type prefixes for easy identification.
+
+## Critical Rules
+
+1. **NEVER hardcode paths to system utilities** (rm, mkdir, cat, echo, etc.) - always use the command name and let the shell find it in PATH
+2. **NEVER create mock versions of system utilities** - this breaks the shell's ability to find the real commands
+3. All scripts that generate output files (including AI summaries, release notes, etc.) for the GoProX project MUST place their output in the output/ directory, not the project root, to keep the source tree clean
+4. Always read and follow AI_INSTRUCTIONS.md at the project root for all work, suggestions, and communication in the GoProX repository. Treat it as the canonical source for project-specific standards and instructions
+5. Never automatically run git commands. Only run scripts or commands that the user explicitly requests. All git operations must be user-initiated
+6. After each attempt to fix a problem in the GoProX firmware tracker script, always automatically run the script to validate the fix. This should be the default workflow for all future script fixes and iterations
+7. The version of generate_firmware_wiki_table.zsh that uses zsh arrays for model presence, deduplication with the (@u) modifier, and process substitution for the while loop is confirmed to work correctly. This version avoids subshell and string-splitting issues, and only adds a red-flagged row for models with no firmware entries in each section. Retain this as the reference working version for future rollbacks or comparisons
+8. For all new GitHub issues created for the GoProX project, always use properly formatted Markdown with clear section headers (e.g., Summary, Requirements, Motivation, Acceptance Criteria, Reference) and multi-line input for readability. This formatting should be consistently applied to all future issues
+9. For the GoProX project, assign new GitHub issues to fxstein by default, not oratzes
+10. For the GoProX project, always use ```zsh code blocks in documentation and wiki pages to reflect that the project is a zsh script. Do not use sh, python, or ruby for code blocks unless specifically required for those languages
+11. After any fix or change is successfully validated, always run ./uninstall_fromsource followed by ./install_fromsource to ensure /opt/homebrew/bin/goprox is updated with the latest version. This should be done for all future tasks
+
+## Project Context
+
+This is the GoProX project - a comprehensive GoPro media management tool written in zsh. The project includes firmware management, media processing, and Homebrew integration for macOS package management.
+
+## File Organization
+
+- All output files go in the `output/` directory
+- Scripts are organized in `scripts/` with subdirectories for different functions
+- Documentation is in `docs/` with feature planning and architecture documents
+- Tests are in `scripts/testing/` with comprehensive test suites
+
+## Development Standards
+
+- Use zsh for all scripting
+- Follow the existing code style and patterns
+- Write comprehensive tests for new features
+- Document all changes and new features
+- Use semantic versioning for releases
+- Maintain backward compatibility where possible

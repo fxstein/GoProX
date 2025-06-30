@@ -22,29 +22,67 @@ developed and tested with GoPro Hero8, Hero9, Hero10, Hero11 and GoPro Max.
 
 ## Installation
 
-The most common way to install `goprox` is via home-brew.
+The most common way to install `goprox` is via Homebrew.
 
-To install `goprox` simply type
+### Official Release (Recommended)
+
+To install the latest stable release of `goprox`:
 
 ```zsh
 brew install fxstein/fxstein/goprox
 ```
 
-Alternatively, you can add the fxstein tap manually before installing goprox
+Alternatively, you can add the fxstein tap manually before installing goprox:
 
 ```zsh
 brew tap fxstein/fxstein
 brew install goprox
 ```
 
-Once installed, you can upgrade `goprox` by simply running
+### Beta Releases
+
+To install the latest beta release for testing new features:
+
+```zsh
+brew install fxstein/fxstein/goprox@beta
+```
+
+### Specific Versions
+
+To install a specific version of `goprox`:
+
+```zsh
+brew install fxstein/fxstein/goprox@1.50
+```
+
+This allows you to install older versions if needed for compatibility.
+
+### Development Builds
+
+For developers and early adopters, you can install the latest development build:
+
+```zsh
+brew install fxstein/fxstein/goprox@latest
+```
+
+### Upgrading
+
+To upgrade `goprox` to the latest version in your chosen channel:
 
 ```zsh
 brew upgrade goprox
 ```
 
-Alternatively, you can also uninstall and reinstall goprox in case of issues with the
-upgrade
+Or for specific channels:
+
+```zsh
+brew upgrade goprox@beta
+brew upgrade goprox@1.50
+```
+
+### Troubleshooting
+
+If you encounter issues with the upgrade, you can uninstall and reinstall:
 
 ```zsh
 brew uninstall goprox

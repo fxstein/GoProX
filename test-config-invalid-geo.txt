@@ -1,0 +1,5 @@
+source="."
+library="~/test-goprox"
+copyright="Test User"
+geonamesacct="user with spaces"
+mountoptions=(--archive --import --clean --firmware)
