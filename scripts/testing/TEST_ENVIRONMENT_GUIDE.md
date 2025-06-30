@@ -197,4 +197,6 @@ unset HOMEBREW_TOKEN GITHUB_TOKEN GH_TOKEN
 - **Test both success and failure paths**
 - **Use appropriate flags** for different scenarios
 
-Following these practices will eliminate environment-related debugging sessions and ensure reliable, predictable test results. 
+Following these practices will eliminate environment-related debugging sessions and ensure reliable, predictable test results.
+
+**Note:** Only tokens and project-wide settings should use environment variables. Interactive control (e.g., non-interactive, auto-confirm) must be set via command-line arguments, not environment variables. 

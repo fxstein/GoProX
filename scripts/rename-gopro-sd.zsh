@@ -34,6 +34,7 @@ set -e
 export LOGFILE="output/rename-gopro-sd.log"
 mkdir -p "$(dirname "$LOGFILE")"
 source "$(dirname $0)/core/logger.zsh"
+source "$(dirname $0)/core/safe-prompt.zsh"
 
 log_time_start
 
@@ -111,10 +112,7 @@ rename_gopro_sd() {
     
     # Confirm rename operation
     echo
-    read -q "REPLY?Do you want to rename '$volume_name' to '$new_volume_name'? (y/N) "
-    echo
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if safe_confirm "Do you want to rename '$volume_name' to '$new_volume_name'? (y/N)"; then
         print_status $BLUE "Renaming volume..."
         log_info "User confirmed rename: '$volume_name' -> '$new_volume_name'"
         
@@ -174,23 +172,59 @@ scan_all_volumes() {
     fi
 }
 
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [volume_name] [options]"
+    echo ""
+    echo "Description: Automatically rename GoPro SD card volumes based on camera type and serial number"
+    echo ""
+    echo "Arguments:"
+    echo "  volume_name    Specific volume name to rename (optional)"
+    echo "                 If not provided, will scan all mounted volumes for GoPro SD cards"
+    echo ""
+    echo "Options:"
+    echo "  --non-interactive  Force non-interactive mode"
+    echo "  --auto-confirm     Automatically confirm all prompts"
+    echo "  --default-yes      Default to 'yes' for all prompts"
+    echo "  --help, -h         Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  $0                    # Scan all volumes interactively"
+    echo "  $0 GoproCard         # Rename specific volume interactively"
+    echo "  $0 --non-interactive --auto-confirm  # Non-interactive mode"
+    echo "  $0 --default-yes     # Default to yes for all prompts"
+    echo ""
+    echo "Note: Environment variables are not supported for interactive control."
+    echo "Use command-line arguments for explicit, local control."
+}
+
 # Main script logic
 main() {
+    # Parse safe prompt arguments first
+    local remaining_args
+    remaining_args=($(parse_safe_prompt_args "$@"))
+    
     print_status $BLUE "GoPro SD Card Volume Renamer"
     print_status $BLUE "============================="
     log_info "Starting GoPro SD Card Volume Renamer"
-    echo
+    echo ""
     
-    if [[ $# -eq 0 ]]; then
+    if [[ ${#remaining_args[@]} -eq 0 ]]; then
         # No arguments provided, scan all volumes
         log_info "No volume specified, scanning all volumes"
         scan_all_volumes
-    elif [[ $# -eq 1 ]]; then
+    elif [[ ${#remaining_args[@]} -eq 1 ]]; then
+        # Check if it's a help option
+        if [[ "${remaining_args[0]}" == "--help" || "${remaining_args[0]}" == "-h" ]]; then
+            show_usage
+            exit 0
+        fi
+        
         # Specific volume name provided
-        log_info "Processing specified volume: $1"
-        rename_gopro_sd "$1"
+        log_info "Processing specified volume: ${remaining_args[0]}"
+        rename_gopro_sd "${remaining_args[0]}"
     else
-        print_status $RED "Usage: $0 [volume_name]"
+        print_status $RED "Usage: $0 [volume_name] [options]"
         print_status $RED "If no volume name is provided, will scan all mounted volumes"
         log_error "Invalid usage: too many arguments"
         exit 1

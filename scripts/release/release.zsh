@@ -39,6 +39,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GITFLOW_SCRIPT="$SCRIPT_DIR/gitflow-release.zsh"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
+# Source safe prompt utilities
+source "$SCRIPT_DIR/../core/safe-prompt.zsh"
+
 # Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
@@ -97,9 +100,15 @@ OPTIONS:
     --monitor        Monitor workflow completion
     --help           Show this help
 
+INTERACTIVE BEHAVIOR OPTIONS:
+    --non-interactive  Force non-interactive mode
+    --auto-confirm     Automatically confirm all prompts
+    --default-yes      Default to 'yes' for all prompts
+
 INTERACTIVE MODE EXAMPLES:
     ./release.zsh                    # Interactive mode
     ./release.zsh --interactive      # Explicit interactive mode
+    ./release.zsh --non-interactive --auto-confirm  # Non-interactive with auto-confirm
 
 BATCH MODE EXAMPLES:
     ./release.zsh --batch dry-run --prev 01.50.00
@@ -235,7 +244,8 @@ interactive_mode() {
         echo "3) Development Release (feature testing)"
         echo "4) Dry Run (test without release)"
         echo ""
-        read -p "Enter choice (1-4): " choice
+        local choice
+        choice=$(safe_prompt "Enter choice (1-4)" "1")
         
         case "$choice" in
             1) release_type="official" ;;
@@ -256,8 +266,7 @@ interactive_mode() {
     fi
     
     echo ""
-    read -p "Previous version for changelog [$suggested_prev]: " prev_version
-    prev_version="${prev_version:-$suggested_prev}"
+    prev_version=$(safe_prompt "Previous version for changelog" "$suggested_prev")
     
     # Validate previous version
     if ! validate_version "$prev_version"; then
@@ -271,7 +280,8 @@ interactive_mode() {
     echo "2) Minor (X.X.00) [default]"
     echo "3) Patch (X.X.X)"
     echo ""
-    read -p "Enter choice (1-3) [2]: " bump_choice
+    local bump_choice
+    bump_choice=$(safe_prompt "Enter choice (1-3)" "2")
     
     local bump_type="minor"
     case "$bump_choice" in
@@ -285,8 +295,7 @@ interactive_mode() {
     local suggested_version=$(suggest_next_version "$current_version" "$bump_type")
     
     echo ""
-    read -p "Next version [$suggested_version]: " next_version
-    next_version="${next_version:-$suggested_version}"
+    next_version=$(safe_prompt "Next version" "$suggested_version")
     
     # Validate next version
     if ! validate_version "$next_version"; then
@@ -295,7 +304,8 @@ interactive_mode() {
     
     # Ask about monitoring
     echo ""
-    read -p "Monitor workflow completion? (y/N): " monitor_choice
+    local monitor_choice
+    monitor_choice=$(safe_prompt "Monitor workflow completion? (y/N)" "N")
     local monitor_flag=""
     if [[ "${monitor_choice,,}" == "y" ]]; then
         monitor_flag="--monitor"
@@ -311,8 +321,7 @@ interactive_mode() {
     echo "  Monitor: ${monitor_choice:-N}"
     echo ""
     
-    read -p "Proceed with release? (y/N): " confirm
-    if [[ "${confirm,,}" != "y" ]]; then
+    if ! safe_confirm "Proceed with release? (y/N)"; then
         log_info "Release cancelled"
         exit 0
     fi
@@ -417,6 +426,10 @@ execute_release() {
 
 # Main script logic
 main() {
+    # Parse safe prompt arguments first
+    local remaining_args
+    remaining_args=($(parse_safe_prompt_args "$@"))
+    
     # Parse command line arguments
     local mode="interactive"
     local release_type=""
@@ -425,58 +438,58 @@ main() {
     local bump_type="minor"
     local monitor_flag=""
     
-    while [[ $# -gt 0 ]]; do
-        case $1 in
+    while [[ ${#remaining_args[@]} -gt 0 ]]; do
+        case ${remaining_args[0]} in
             --interactive)
                 mode="interactive"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --batch)
                 mode="batch"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --prev)
-                prev_version="$2"
-                shift 2
+                prev_version="${remaining_args[1]}"
+                remaining_args=("${remaining_args[@]:2}")
                 ;;
             --version)
-                next_version="$2"
-                shift 2
+                next_version="${remaining_args[1]}"
+                remaining_args=("${remaining_args[@]:2}")
                 ;;
             --major)
                 bump_type="major"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --minor)
                 bump_type="minor"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --patch)
                 bump_type="patch"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --monitor)
                 monitor_flag="--monitor"
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
             --help|-h)
                 show_usage
                 exit 0
                 ;;
             -*)
-                log_error "Unknown option: $1"
+                log_error "Unknown option: ${remaining_args[0]}"
                 show_usage
                 exit 1
                 ;;
             *)
                 if [[ -z "$release_type" ]]; then
-                    release_type="$1"
+                    release_type="${remaining_args[0]}"
                 else
-                    log_error "Unexpected argument: $1"
+                    log_error "Unexpected argument: ${remaining_args[0]}"
                     show_usage
                     exit 1
                 fi
-                shift
+                remaining_args=("${remaining_args[@]:1}")
                 ;;
         esac
     done

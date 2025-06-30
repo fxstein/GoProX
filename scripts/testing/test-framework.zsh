@@ -495,4 +495,6 @@ function run_all_tests() {
     print_test_summary
     
     return $TEST_FAILED
-} 
+}
+
+# NOTE: Interactive control (e.g., non-interactive, auto-confirm) must be set via command-line arguments, not environment variables. Only tokens and project-wide settings may use environment variables. 

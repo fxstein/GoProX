@@ -245,6 +245,12 @@ function _help()
   echo $HELP_TEXT
 }
 
+# Source safe prompt utilities for interactive mode graceful fallback
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/scripts/core/safe-prompt.zsh" ]]; then
+  source "$SCRIPT_DIR/scripts/core/safe-prompt.zsh"
+fi
+
 function _validate_dependencies()
 {
   # only works if the exiftool is installed
@@ -1356,10 +1362,7 @@ function _detect_and_rename_gopro_sd()
               
               # Offer to update firmware
               echo
-              read -q "REPLY?Do you want to update to $latestversion? (y/N) "
-              echo
-              
-              if [[ $REPLY =~ ^[Yy]$ ]]; then
+              if safe_confirm "Do you want to update to $latestversion? (y/N)"; then
                 _info "Updating firmware..."
                 
                 # Fetch and cache the firmware zip
@@ -1399,10 +1402,7 @@ function _detect_and_rename_gopro_sd()
           
           # Confirm rename operation
           echo
-          read -q "REPLY?Do you want to rename '$volume_name' to '$new_volume_name'? (y/N) "
-          echo
-          
-          if [[ $REPLY =~ ^[Yy]$ ]]; then
+          if safe_confirm "Do you want to rename '$volume_name' to '$new_volume_name'? (y/N)"; then
             _info "Renaming volume..."
             
             # Get the device identifier for the volume
@@ -1488,6 +1488,9 @@ zparseopts -D -E -F -A opts - \
             -time:: \
             -version \
             -clear-firmware-cache \
+            -non-interactive \
+            -auto-confirm \
+            -default-yes \
 	          || {
     # Unknown option
     _error "Unknown option: $@"
@@ -1641,7 +1644,16 @@ for key val in "${(kv@)opts}"; do
     --clear-firmware-cache)
       _clear_firmware_cache
       exit 0
-    ;;
+      ;;
+    --non-interactive)
+      NON_INTERACTIVE=true
+      ;;
+    --auto-confirm)
+      AUTO_CONFIRM=true
+      ;;
+    --default-yes)
+      DEFAULT_YES=true
+      ;;
   esac
 done
 
@@ -1882,7 +1894,7 @@ if [ "$mount" = true ]; then
 
       if test -t 0 ; then
         # running interactively - offer to unmount the card - timeout after 30 sec
-        if read -t30 -s -q "ANSWER?Do you want to unmount $mountpoint? (sudo required) [y/N] "; then
+        if safe_confirm_timeout "Do you want to unmount $mountpoint? (sudo required) [y/N]" 30; then
           echo "Yes"
           _echo "Unmounting ${mountpoint}"
           sudo umount $mountpoint
