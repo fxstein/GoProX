@@ -7,6 +7,7 @@ Welcome to the GoProX documentation! This directory contains comprehensive docum
 ### **Core Documentation**
 - **[NEXT_STEPS.md](NEXT_STEPS.md)** - Current priorities, progress tracking, and next steps
 - **[RELEASE_PROCESS.md](RELEASE_PROCESS.md)** - Release workflow and automation procedures
+- **[HOMEBREW_MULTI_CHANNEL.md](HOMEBREW_MULTI_CHANNEL.md)** - Homebrew multi-channel system and installation options
 - **[GITHUB_RESTORE_INFO.md](GITHUB_RESTORE_INFO.md)** - GitHub repository restoration information
 - **[SD_CARD_DETECTION.md](SD_CARD_DETECTION.md)** - SD card detection and GoPro identification
 
@@ -45,9 +46,10 @@ Welcome to the GoProX documentation! This directory contains comprehensive docum
 3. Review [TESTING_FRAMEWORK.md](testing/TESTING_FRAMEWORK.md) for testing standards
 
 ### **For Users**
-1. Check [SD_CARD_DETECTION.md](SD_CARD_DETECTION.md) for SD card setup
-2. Review [RELEASE_PROCESS.md](RELEASE_PROCESS.md) for release information
-3. Explore [gopro/](gopro/) for GoPro-specific technical details
+1. Check [HOMEBREW_MULTI_CHANNEL.md](HOMEBREW_MULTI_CHANNEL.md) for installation options and channel selection
+2. Check [SD_CARD_DETECTION.md](SD_CARD_DETECTION.md) for SD card setup
+3. Review [RELEASE_PROCESS.md](RELEASE_PROCESS.md) for release information
+4. Explore [gopro/](gopro/) for GoPro-specific technical details
 
 ### **For Developers**
 1. Read [FEATURE_ANALYSIS.md](feature-planning/FEATURE_ANALYSIS.md) for feature overview

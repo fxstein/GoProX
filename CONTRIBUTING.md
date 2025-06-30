@@ -129,28 +129,54 @@ git commit -m "fix: critical bug fix (refs #XX)"
 
 ### Multi-Channel Release Support
 
-GoProX supports three release channels for Homebrew packages:
+GoProX supports a sophisticated multi-channel Homebrew system that provides different installation options for various user needs:
 
-**1. Latest Build Channel (develop branch):**
+**1. Official Channel (main branch):**
 ```zsh
-brew install fxstein/tap/goprox@latest
+brew install fxstein/tap/goprox
 ```
-- Development builds, updated on every develop push
-- For developers and early adopters
+- **Formula**: `goprox.rb` with class `Goprox`
+- **Purpose**: Latest stable release for general users
+- **Updates**: On official releases from main branch
 
 **2. Beta Channel (release branches):**
 ```zsh
 brew install fxstein/tap/goprox@beta
 ```
-- Pre-release testing, updated on release branch changes
-- For beta testers and advanced users
+- **Formula**: `goprox@beta.rb` with class `GoproxBeta`
+- **Purpose**: Pre-release testing for beta testers
+- **Updates**: On beta releases from release branches
 
-**3. Official Channel (main branch):**
+**3. Versioned Channels (specific versions):**
 ```zsh
-brew install fxstein/tap/goprox
+brew install fxstein/tap/goprox@1.50
 ```
-- Stable production releases, updated on official releases
-- For general users and production environments
+- **Formula**: `goprox@1.50.rb` with class `GoproxAT150`
+- **Purpose**: Specific version installation for compatibility
+- **Updates**: Created for each official release, maintained indefinitely
+
+**4. Development Channel (develop branch):**
+```zsh
+brew install fxstein/tap/goprox@latest
+```
+- **Formula**: `goprox@latest.rb` with class `GoproxLatest`
+- **Purpose**: Latest development builds for developers
+- **Updates**: On every develop branch push
+
+### Formula Naming Conventions
+
+The system follows Homebrew's official naming conventions:
+- **Default formula**: `goprox.rb` → class `Goprox`
+- **Beta formula**: `goprox@beta.rb` → class `GoproxBeta`
+- **Versioned formulae**: `goprox@1.50.rb` → class `GoproxAT150` (using `AT` for `@`)
+- **Development formula**: `goprox@latest.rb` → class `GoproxLatest`
+
+### Release Process Integration
+
+The release automation system automatically:
+1. **Official Releases**: Updates both `goprox` (default) and `goprox@X.XX` (versioned) formulae
+2. **Beta Releases**: Updates only `goprox@beta` formula when triggered from release branches
+3. **Development Builds**: Updates `goprox@latest` formula on develop branch pushes
 
 ### Pull Request Process
 

@@ -20,6 +20,51 @@ _This matches the robust argument handling of the main `goprox` tool._
 
 The release process is now performed using the `full-release.zsh` script, which handles version bumping, workflow triggering, and monitoring in one automated step.
 
+## Multi-Channel Homebrew System
+
+GoProX supports a sophisticated multi-channel Homebrew system that provides different installation options for various user needs:
+
+### Channel Types
+
+**1. Official Channel (`goprox`)**
+- **Formula**: `goprox.rb` with class `Goprox`
+- **Install**: `brew install fxstein/fxstein/goprox`
+- **Purpose**: Latest stable release for general users
+- **Updates**: On official releases from main branch
+
+**2. Beta Channel (`goprox@beta`)**
+- **Formula**: `goprox@beta.rb` with class `GoproxBeta`
+- **Install**: `brew install fxstein/fxstein/goprox@beta`
+- **Purpose**: Pre-release testing for beta testers
+- **Updates**: On beta releases from release branches
+
+**3. Versioned Channels (`goprox@X.XX`)**
+- **Formula**: `goprox@1.50.rb` with class `GoproxAT150`
+- **Install**: `brew install fxstein/fxstein/goprox@1.50`
+- **Purpose**: Specific version installation for compatibility
+- **Updates**: Created for each official release, maintained indefinitely
+
+**4. Development Channel (`goprox@latest`)**
+- **Formula**: `goprox@latest.rb` with class `GoproxLatest`
+- **Install**: `brew install fxstein/fxstein/goprox@latest`
+- **Purpose**: Latest development builds for developers
+- **Updates**: On every develop branch push
+
+### Release Process Integration
+
+The release automation system automatically:
+
+1. **Official Releases**: Updates both `goprox` (default) and `goprox@X.XX` (versioned) formulae
+2. **Beta Releases**: Updates only `goprox@beta` formula when triggered from release branches
+3. **Development Builds**: Updates `goprox@latest` formula on develop branch pushes
+
+### Formula Naming Conventions
+
+- **Default formula**: `goprox.rb` → class `Goprox`
+- **Beta formula**: `goprox@beta.rb` → class `GoproxBeta`
+- **Versioned formulae**: `goprox@1.50.rb` → class `GoproxAT150`
+- **Development formula**: `goprox@latest.rb` → class `GoproxLatest`
+
 ### 1. Full Release Script (`scripts/release/full-release.zsh`)
 
 **Standard Usage:**
