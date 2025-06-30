@@ -647,4 +647,32 @@ function cleanup_test_firmware_structure_with_varying_lengths() {
     cleanup_test_firmware_structure
     rm -rf "firmware/official/Very Long Model Name That Exceeds Normal Length"
     rm -rf "firmware/official/Short"
-} 
+}
+
+# Test for correct gitflow-release.zsh path in release.zsh
+function test_release_script_gitflow_path() {
+    local release_script="scripts/release/release.zsh"
+    local gitflow_script="scripts/release/gitflow-release.zsh"
+    
+    # Backup and temporarily move gitflow-release.zsh
+    if [[ -f "$gitflow_script" ]]; then
+        mv "$gitflow_script" "$gitflow_script.bak"
+    fi
+    
+    # Should fail with error about missing script
+    local output
+    output=$(ZSH_DISABLE_COMPFIX=true zsh "$release_script" --batch dry-run 2>&1 || true)
+    assert_contains "$output" "gitflow-release.zsh script not found" "Should error if gitflow-release.zsh is missing"
+    
+    # Restore script
+    if [[ -f "$gitflow_script.bak" ]]; then
+        mv "$gitflow_script.bak" "$gitflow_script"
+    fi
+    
+    # Should pass prerequisites check
+    output=$(ZSH_DISABLE_COMPFIX=true zsh "$release_script" --batch dry-run 2>&1 || true)
+    assert_contains "$output" "[SUCCESS] All prerequisites met" "Should pass prerequisites if gitflow-release.zsh is present"
+}
+
+# Add to the appropriate suite
+run_test "release_script_gitflow_path" test_release_script_gitflow_path "Test release.zsh detects gitflow-release.zsh path correctly" 
