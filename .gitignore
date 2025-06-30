@@ -19,3 +19,4 @@ output/
 
 # GitHub backup files
 *.tar.gz
+.env
