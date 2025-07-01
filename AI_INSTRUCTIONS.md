@@ -111,6 +111,19 @@ This document establishes the foundational architectural decisions and design pa
 - Use zsh-specific features like `typeset -a` for arrays when appropriate.
 - If debugging is needed, test with bash temporarily but always fix the root cause in zsh.
 
+## Logging and Debug Output Requirements
+
+- **MANDATORY**: Always use the structured logger module (`scripts/core/logger.zsh`) for all output, including debug information.
+- **NEVER use random echo statements** for debug output, status messages, or any user-facing information.
+- **Use appropriate logger functions**:
+  - `log_debug` for debug information and troubleshooting
+  - `log_info` for general information and status updates
+  - `log_warn` for warnings and non-critical issues
+  - `log_error` for errors and critical issues
+- **Debug output must be structured** and use the logger's debug level for consistency across all scripts.
+- **Remove any existing echo statements** used for debugging and replace them with appropriate logger calls.
+- **Exception**: Only use echo for actual user prompts or when the logger is not available (very rare cases).
+
 ## GitHub Issue Awareness (AI Assistant)
 
 - Periodically run the `scripts/maintenance/generate-issues-markdown.zsh` script and read the output in `output/github_issues.md`.
