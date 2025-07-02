@@ -33,6 +33,8 @@
 # - Be robust to zsh quirks and macOS/BSD sort
 # - Retain debug output for troubleshooting
 
+# NOTE: Whenever you add, remove, or update firmware, update firmware/README.md to keep the summary current.
+
 set -uo pipefail
 
 # Parse --debug option
