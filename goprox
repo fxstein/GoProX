@@ -65,6 +65,8 @@ Commands:
                         this is also leveraged by the goprox launch agent
   --enhanced            run enhanced default behavior (intelligent media management)
                         automatically detects GoPro SD cards and recommends optimal workflows
+  --rename-cards        rename detected GoPro SD cards to standard format
+                        automatically detects and renames all GoPro SD cards
   --dry-run             simulate all actions without making any changes (safe testing mode)
   --show-config         display current GoProX configuration settings
   --test-naming         test SD card naming format with sample data
@@ -165,6 +167,7 @@ firmware=false
 version=false
 mount=false
 enhanced=false
+rename_cards=false
 dry_run=false
 show_config=false
 test_naming=false
@@ -1493,6 +1496,7 @@ zparseopts -D -E -F -A opts - \
             -modified-before: \
             -mount:: \
             -enhanced \
+            -rename-cards \
             -dry-run \
             -show-config \
             -test-naming \
@@ -1628,6 +1632,10 @@ for key val in "${(kv@)opts}"; do
     --enhanced)
       # Perform enhanced default behavior (intelligent media management)
       enhanced=true
+    ;;
+    --rename-cards)
+      # Rename detected GoPro SD cards to standard format
+      rename_cards=true
     ;;
     --dry-run)
       dry_run=true
@@ -1902,6 +1910,119 @@ if [ "$enhanced" = true ]; then
     run_enhanced_default_behavior
   else
     _error "Enhanced default behavior module not found: $SCRIPT_DIR/scripts/core/enhanced-default-behavior.zsh"
+    exit 1
+  fi
+  
+  exit 0
+fi
+
+if [ "$rename_cards" = true ]; then
+  _echo "SD Card Renaming Mode"
+  
+  # Export dry_run flag for subscripts
+  export dry_run
+  # Source the required modules
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [[ -f "$SCRIPT_DIR/scripts/core/config.zsh" ]] && [[ -f "$SCRIPT_DIR/scripts/core/sd-renaming.zsh" ]]; then
+    source "$SCRIPT_DIR/scripts/core/config.zsh"
+    source "$SCRIPT_DIR/scripts/core/sd-renaming.zsh"
+    load_goprox_config
+    
+    # Detect GoPro SD cards
+    _echo "Detecting GoPro SD cards..."
+    local detected_cards="[]"
+    local found_gopro=false
+    
+    for volume in /Volumes/*; do
+      if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+        local volume_name=$(basename "$volume")
+        
+        # Skip system volumes
+        if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+          continue
+        fi
+        
+        local version_file="$volume/MISC/version.txt"
+        if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+          found_gopro=true
+          _info "Found GoPro SD card: $volume_name"
+          
+          # Extract card info
+          local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+          local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+          local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+          local firmware_type="official"
+          if [[ "$firmware_version" =~ \.7[0-9]$ ]]; then
+            firmware_type="labs"
+          fi
+          
+          local card_info=$(cat <<EOF
+{
+  "volume_name": "$volume_name",
+  "volume_path": "$volume",
+  "camera_type": "$camera_type",
+  "serial_number": "$serial_number",
+  "firmware_version": "$firmware_version",
+  "firmware_type": "$firmware_type"
+}
+EOF
+)
+          
+          if [[ "$detected_cards" == "[]" ]]; then
+            detected_cards="[$card_info]"
+          else
+            detected_cards=$(echo "$detected_cards" | jq ". + [$card_info]")
+          fi
+        fi
+      fi
+    done
+    
+    if [[ -z "$detected_cards" ]] || [[ "$detected_cards" == "[]" ]]; then
+      _echo "No GoPro SD cards detected"
+      exit 0
+    fi
+    
+    # Show naming analysis
+    show_sd_naming_info "$detected_cards"
+    
+    # Analyze naming requirements
+    local naming_actions=$(analyze_sd_naming_requirements "$detected_cards" "$dry_run")
+    
+    if [[ -z "$naming_actions" ]] || [[ "$naming_actions" == "[]" ]]; then
+      _echo "No renaming actions required"
+      exit 0
+    fi
+    
+    # Show preview
+    echo
+    _echo "📝 SD Card Renaming Preview:"
+    _echo "============================"
+    local action_count=$(echo "$naming_actions" | jq length)
+    for i in $(seq 0 $((action_count - 1))); do
+      local action=$(echo "$naming_actions" | jq ".[$i]")
+      local volume_name=$(echo "$action" | jq -r '.volume_name')
+      local expected_name=$(echo "$action" | jq -r '.expected_name')
+      local camera_type=$(echo "$action" | jq -r '.camera_type')
+      local serial_number=$(echo "$action" | jq -r '.serial_number')
+      
+      echo "  $volume_name -> $expected_name"
+      echo "    Camera: $camera_type (Serial: $serial_number)"
+    done
+    
+    # Execute renaming
+    if [[ "$dry_run" == "true" ]]; then
+      _echo "🚦 DRY RUN MODE - No changes will be made"
+    else
+      echo
+      if safe_confirm "Proceed with renaming? [Y/n]"; then
+        execute_sd_renaming "$naming_actions" "$dry_run"
+      else
+        _echo "Renaming cancelled"
+      fi
+    fi
+    
+  else
+    _error "Required modules not found"
     exit 1
   fi
   
