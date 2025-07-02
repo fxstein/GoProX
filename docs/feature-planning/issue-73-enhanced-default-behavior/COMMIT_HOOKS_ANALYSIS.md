@@ -68,6 +68,24 @@ This document analyzes the current Git commit hooks against the AI Instructions 
 - **Current Implementation:** ✅ Warns about files >10MB
 - **Status:** **CONFORMS** (good practice, not explicitly required)
 
+#### 7. File Header Standards
+- **AI Instructions:** "Ensure all files have proper copyright notices and license headers"
+- **Current Implementation:** ❌ No validation for file headers
+- **Required Standards:**
+  - Copyright notices in source files
+  - License headers in appropriate files
+  - Usage patterns and documentation headers
+- **Status:** **MISSING** - Needs implementation
+
+#### 8. JSON Linting
+- **AI Instructions:** "Always ensure YAML and shell scripts pass linting before suggesting commits"
+- **Current Implementation:** ❌ No JSON linting validation
+- **Required Standards:**
+  - JSON syntax validation
+  - JSON formatting consistency
+  - JSON schema validation where applicable
+- **Status:** **MISSING** - Needs implementation
+
 ## ⚠️ CONFLICTS AND INCONSISTENCIES
 
 ### Critical Issues
@@ -119,6 +137,16 @@ if [[ "$file" != *"/core/"* ]]; then
 
 **Impact:** Unclear which setup method should be used
 
+#### 6. Missing File Header Validation
+**Current State:** No validation for copyright notices, license headers, or usage patterns
+
+**Impact:** Files may be committed without proper attribution and documentation
+
+#### 7. Missing JSON Linting
+**Current State:** No JSON validation despite AI Instructions requiring linting for all file types
+
+**Impact:** JSON files may contain syntax errors or formatting inconsistencies
+
 ## Detailed Hook Analysis
 
 ### Pre-commit Hook (`.githooks/pre-commit`)
@@ -134,6 +162,8 @@ if [[ "$file" != *"/core/"* ]]; then
 2. ❌ Script shebang validation (`#!/bin/zsh`)
 3. ❌ Environment variable usage detection
 4. ❌ Output directory compliance
+5. ❌ File header validation (copyright, license, usage patterns)
+6. ❌ JSON linting and validation
 
 ### Post-commit Hook (`.githooks/post-commit`)
 
@@ -190,9 +220,61 @@ if [[ "$file" =~ \.zsh$ ]] && [[ "$file" != *"/core/"* ]]; then
 fi
 ```
 
+#### 4. Add File Header Validation
+**Action:** Validate copyright notices, license headers, and usage patterns
+**Implementation:**
+```zsh
+# Check for copyright notices in source files
+if [[ "$file" =~ \.(zsh|md|yaml|yml|json)$ ]]; then
+    if ! head -10 "$file" | grep -q "Copyright\|copyright"; then
+        echo "⚠️  Warning: $file missing copyright notice"
+    fi
+fi
+
+# Check for license headers in appropriate files
+if [[ "$file" =~ \.(zsh|md)$ ]]; then
+    if ! head -10 "$file" | grep -q "License\|license"; then
+        echo "⚠️  Warning: $file missing license header"
+    fi
+fi
+
+# Check for usage patterns in documentation
+if [[ "$file" =~ \.md$ ]] && [[ "$file" != README.md ]]; then
+    if ! head -10 "$file" | grep -q "Usage\|usage"; then
+        echo "⚠️  Warning: $file missing usage documentation"
+    fi
+fi
+```
+
+#### 5. Add JSON Linting
+**Action:** Validate JSON syntax and formatting
+**Implementation:**
+```zsh
+# JSON Linting (if jsonlint is available)
+if command -v jsonlint &> /dev/null; then
+    json_files=$(git diff --cached --name-only | grep -E '\.json$' || true)
+    
+    if [[ -n "$json_files" ]]; then
+        for file in $json_files; do
+            if [[ -f "$file" ]]; then
+                if ! jsonlint "$file" >/dev/null 2>&1; then
+                    echo "❌ JSON linting failed for $file"
+                    echo "   Run: jsonlint $file to see errors"
+                    exit 1
+                fi
+            fi
+        done
+        echo "✅ JSON linting passed"
+    fi
+else
+    echo "ℹ️  jsonlint not available - skipping JSON linting"
+    echo "   Install with: npm install -g jsonlint"
+fi
+```
+
 ### Medium Priority
 
-#### 4. Add Script Shebang Validation
+#### 6. Add Script Shebang Validation
 **Action:** Ensure all scripts have proper shebang
 **Implementation:**
 ```zsh
@@ -205,7 +287,7 @@ if [[ "$file" =~ \.zsh$ ]]; then
 fi
 ```
 
-#### 5. Environment Variable Usage Detection
+#### 7. Environment Variable Usage Detection
 **Action:** Warn about excessive environment variable usage
 **Implementation:**
 ```zsh
@@ -218,7 +300,7 @@ fi
 
 ### Low Priority
 
-#### 6. Output Directory Compliance
+#### 8. Output Directory Compliance
 **Action:** Check for output files in wrong locations
 **Implementation:**
 ```zsh
@@ -238,12 +320,15 @@ fi
 ### Phase 2: Enhancement (High Priority)
 1. **Enhance Logger Validation:** Include core scripts
 2. **Add Parameter Processing Validation:** Check for `zparseopts` usage
-3. **Add Shebang Validation:** Ensure proper script headers
+3. **Add File Header Validation:** Check copyright, license, and usage patterns
+4. **Add JSON Linting:** Validate JSON syntax and formatting
+5. **Add Shebang Validation:** Ensure proper script headers
 
 ### Phase 3: Advanced Validation (Medium Priority)
 1. **Environment Variable Detection:** Warn about excessive usage
 2. **Output Directory Compliance:** Check file placement
 3. **Enhanced Error Messages:** Provide more specific guidance
+4. **JSON Schema Validation:** Validate JSON against schemas where applicable
 
 ### Phase 4: Documentation (Low Priority)
 1. **Update Hook Documentation:** Clear setup instructions

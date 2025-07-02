@@ -61,5 +61,64 @@ if [[ -n "$zsh_files" ]]; then
     done
 fi
 
+# JSON Linting (if jsonlint is available)
+if command -v jsonlint &> /dev/null; then
+    echo "🔍 Running JSON linting..."
+    
+    # Get staged JSON files
+    json_files=$(git diff --cached --name-only | grep -E '\.json$' || true)
+    
+    if [[ -n "$json_files" ]]; then
+        for file in $json_files; do
+            if [[ -f "$file" ]]; then
+                if ! jsonlint "$file" >/dev/null 2>&1; then
+                    echo "❌ JSON linting failed for $file"
+                    echo "   Run: jsonlint $file to see errors"
+                    exit 1
+                fi
+            fi
+        done
+        echo "✅ JSON linting passed"
+    else
+        echo "ℹ️  No JSON files staged for linting"
+    fi
+else
+    echo "ℹ️  jsonlint not available - skipping JSON linting"
+    echo "   Install with: npm install -g jsonlint"
+fi
+
+# Check for file headers (copyright, license, usage patterns)
+echo "🔍 Checking file headers..."
+staged_files=$(git diff --cached --name-only || true)
+if [[ -n "$staged_files" ]]; then
+    for file in $staged_files; do
+        if [[ -f "$file" ]]; then
+            # Check for copyright notices in source files
+            if [[ "$file" =~ \.(zsh|md|yaml|yml|json)$ ]]; then
+                if ! head -10 "$file" | grep -q "Copyright\|copyright"; then
+                    echo "⚠️  Warning: $file missing copyright notice"
+                    echo "   Consider adding copyright header to file"
+                fi
+            fi
+            
+            # Check for license headers in appropriate files
+            if [[ "$file" =~ \.(zsh|md)$ ]]; then
+                if ! head -10 "$file" | grep -q "License\|license"; then
+                    echo "⚠️  Warning: $file missing license header"
+                    echo "   Consider adding license information to file"
+                fi
+            fi
+            
+            # Check for usage patterns in documentation
+            if [[ "$file" =~ \.md$ ]] && [[ "$file" != README.md ]] && [[ "$file" != CONTRIBUTING.md ]]; then
+                if ! head -10 "$file" | grep -q "Usage\|usage"; then
+                    echo "⚠️  Warning: $file missing usage documentation"
+                    echo "   Consider adding usage examples to documentation"
+                fi
+            fi
+        fi
+    done
+fi
+
 echo "✅ Pre-commit checks completed"
 exit 0
