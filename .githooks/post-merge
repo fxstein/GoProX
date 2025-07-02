@@ -14,6 +14,12 @@ if [[ "$current_hooks_path" != ".githooks" ]]; then
     echo "✅ Git hooks configured automatically!"
     echo "   Commit messages will now require GitHub issue references (refs #123)"
     echo "   Pre-commit checks will run before each commit"
+    echo "   YAML files will be linted (if yamllint is installed)"
+    echo "   Logger usage will be validated in zsh scripts"
+    echo ""
+    echo "💡 Optional: Install yamllint for YAML linting:"
+    echo "   brew install yamllint"
+    echo "   or: pip3 install yamllint"
 else
     echo "✅ Git hooks already configured"
 fi 
