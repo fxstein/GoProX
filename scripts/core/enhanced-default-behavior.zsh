@@ -8,6 +8,8 @@ SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/logger.zsh"
 source "$SCRIPT_DIR/smart-detection.zsh"
 source "$SCRIPT_DIR/decision-matrix.zsh"
+source "$SCRIPT_DIR/config.zsh"
+source "$SCRIPT_DIR/sd-renaming.zsh"
 
 # Function to run enhanced default behavior (main entry point)
 run_enhanced_default_behavior() {
@@ -26,6 +28,9 @@ EOF
     # Display welcome message
     display_welcome_message
     
+    # Load configuration
+    load_goprox_config
+    
     # Detect GoPro SD cards
     log_info "Detecting GoPro SD cards..."
     local detected_cards=$(detect_gopro_cards)
@@ -34,6 +39,40 @@ EOF
         log_info "No GoPro SD cards detected"
         display_no_cards_message
         return 0
+    fi
+    
+    # Analyze SD card naming requirements
+    log_info "Analyzing SD card naming requirements..."
+    local naming_actions=$(analyze_sd_naming_requirements "$detected_cards" "$dry_run")
+    
+    # Show SD card naming information
+    if [[ "$dry_run" == "true" ]]; then
+        show_sd_naming_info "$detected_cards"
+        echo
+    fi
+    
+    # Execute SD card renaming if needed
+    if [[ -n "$naming_actions" ]] && [[ "$naming_actions" != "[]" ]]; then
+        log_info "SD card renaming actions detected"
+        if [[ "$dry_run" == "true" ]]; then
+            echo "📝 SD Card Renaming Preview:"
+            echo "============================"
+            local action_count=$(echo "$naming_actions" | jq length)
+            for i in $(seq 0 $((action_count - 1))); do
+                local action=$(echo "$naming_actions" | jq ".[$i]")
+                local volume_name=$(echo "$action" | jq -r '.volume_name')
+                local expected_name=$(echo "$action" | jq -r '.expected_name')
+                local camera_type=$(echo "$action" | jq -r '.camera_type')
+                local serial_number=$(echo "$action" | jq -r '.serial_number')
+                echo "  $volume_name -> $expected_name"
+                echo "    Camera: $camera_type (Serial: $serial_number)"
+            done
+            echo
+        else
+            echo "📝 Renaming GoPro SD cards..."
+            execute_sd_renaming "$naming_actions" "$dry_run"
+            echo
+        fi
     fi
     
     # Analyze workflow requirements
@@ -120,6 +159,13 @@ get_user_confirmation() {
     local estimated_duration=$(echo "$workflow_plan" | jq -r '.estimated_duration')
     
     echo "Estimated duration: $estimated_duration"
+    
+    # Auto-confirm in dry-run mode
+    if [[ "$dry_run" == "true" ]]; then
+        echo "Proceed with workflow execution? [Y/n]: Y (auto-confirmed in dry-run mode)"
+        return 0
+    fi
+    
     echo -n "Proceed with workflow execution? [Y/n]: "
     read -r response
     
