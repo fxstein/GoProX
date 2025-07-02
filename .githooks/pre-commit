@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # GoProX Pre-commit Hook
-# Runs basic checks before allowing commits
+# Runs comprehensive checks before allowing commits
 
 echo "🔍 Running pre-commit checks..."
 
@@ -16,6 +16,49 @@ large_files=$(git diff --cached --name-only | xargs ls -la 2>/dev/null | awk '$5
 if [[ -n "$large_files" ]]; then
     echo "⚠️  Warning: Found files larger than 10MB"
     echo "   Consider using Git LFS for large files"
+fi
+
+# YAML Linting (if yamllint is available)
+if command -v yamllint &> /dev/null; then
+    echo "🔍 Running YAML linting..."
+    
+    # Get staged YAML files
+    yaml_files=$(git diff --cached --name-only | grep -E '\.(yml|yaml)$' || true)
+    
+    if [[ -n "$yaml_files" ]]; then
+        for file in $yaml_files; do
+            if [[ -f "$file" ]]; then
+                if ! yamllint -c .yamllint "$file" 2>/dev/null; then
+                    echo "❌ YAML linting failed for $file"
+                    echo "   Run: ./scripts/maintenance/fix-yaml-formatting.zsh to auto-fix"
+                    exit 1
+                fi
+            fi
+        done
+        echo "✅ YAML linting passed"
+    else
+        echo "ℹ️  No YAML files staged for linting"
+    fi
+else
+    echo "ℹ️  yamllint not available - skipping YAML linting"
+    echo "   Install with: brew install yamllint or pip3 install yamllint"
+fi
+
+# Check for logger usage in zsh scripts (per design principles)
+echo "🔍 Checking logger usage in zsh scripts..."
+zsh_files=$(git diff --cached --name-only | grep -E '\.zsh$' || true)
+if [[ -n "$zsh_files" ]]; then
+    for file in $zsh_files; do
+        if [[ -f "$file" ]]; then
+            # Skip if it's a core module (they define the logger)
+            if [[ "$file" != *"/core/"* ]]; then
+                if ! grep -q "log_" "$file"; then
+                    echo "⚠️  Warning: $file doesn't use logger functions"
+                    echo "   Consider using log_info, log_error, etc. for consistent logging"
+                fi
+            fi
+        fi
+    done
 fi
 
 echo "✅ Pre-commit checks completed"
