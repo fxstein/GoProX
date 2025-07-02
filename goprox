@@ -63,6 +63,9 @@ Commands:
   --mount               trigger mountpoint processing
                         will search for GoPro media card mountpoints and kick of processing
                         this is also leveraged by the goprox launch agent
+  --enhanced            run enhanced default behavior (intelligent media management)
+                        automatically detects GoPro SD cards and recommends optimal workflows
+  --dry-run             simulate all actions without making any changes (safe testing mode)
   --setup               run program setup
   --test                run program tests
                         this option is reserved for developers who clone the GitHub project
@@ -159,6 +162,8 @@ clean=false
 firmware=false
 version=false
 mount=false
+enhanced=false
+dry_run=false
 
 sourceopt=""
 libraryopt=""
@@ -1483,6 +1488,8 @@ zparseopts -D -E -F -A opts - \
             -modified-after: \
             -modified-before: \
             -mount:: \
+            -enhanced \
+            -dry-run \
             -setup \
             -test \
             -time:: \
@@ -1611,6 +1618,13 @@ for key val in "${(kv@)opts}"; do
     --mount)
       mount=true
       mountopt=$val
+    ;;
+    --enhanced)
+      # Perform enhanced default behavior (intelligent media management)
+      enhanced=true
+    ;;
+    --dry-run)
+      dry_run=true
     ;;
     --setup)
       # Perform setup tasks
@@ -1828,6 +1842,24 @@ fi
 # are not mounted, links to them still exist but are none operational.
 # Depending on processing options, various steps might become impossible.
 _validate_storage
+
+if [ "$enhanced" = true ]; then
+  _echo "Enhanced default behavior mode - intelligent media management"
+  
+  # Export dry_run flag for subscripts
+  export dry_run
+  # Source the enhanced default behavior module
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [[ -f "$SCRIPT_DIR/scripts/core/enhanced-default-behavior.zsh" ]]; then
+    source "$SCRIPT_DIR/scripts/core/enhanced-default-behavior.zsh"
+    run_enhanced_default_behavior
+  else
+    _error "Enhanced default behavior module not found: $SCRIPT_DIR/scripts/core/enhanced-default-behavior.zsh"
+    exit 1
+  fi
+  
+  exit 0
+fi
 
 if [ "$mount" = true ]; then
   _echo "Mount event received. Option: ${mountopt}"

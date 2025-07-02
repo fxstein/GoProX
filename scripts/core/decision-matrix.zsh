@@ -20,7 +20,13 @@ analyze_workflow_requirements() {
     fi
     
     # Parse detected cards (assuming JSON array format)
-    local card_count=$(echo "$detected_cards" | jq length 2>/dev/null || echo "0")
+            local card_count=$(echo "$detected_cards" | jq length 2>/dev/null || echo "0")
+        # Ensure card_count is a valid number
+        if ! [[ "$card_count" =~ ^[0-9]+$ ]]; then
+            log_error "Invalid card count: $card_count"
+            echo "none"
+            return 0
+        fi
     
     if [[ "$card_count" -eq 0 ]]; then
         log_info "No valid cards found"
