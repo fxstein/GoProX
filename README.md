@@ -24,6 +24,18 @@ developed and tested with GoPro Hero8, Hero9, Hero10, Hero11 and GoPro Max.
 
 The most common way to install `goprox` is via Homebrew.
 
+### For Developers
+
+If you're cloning this repository for development:
+
+```zsh
+git clone https://github.com/fxstein/GoProX.git
+cd GoProX
+./scripts/maintenance/setup-hooks.zsh  # Sets up Git hooks automatically
+```
+
+**Note:** The setup script will automatically configure Git hooks to enforce commit message standards and run pre-commit checks.
+
 ### Official Release (Recommended)
 
 To install the latest stable release of `goprox`:

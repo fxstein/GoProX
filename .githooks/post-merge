@@ -1,0 +1,19 @@
+#!/bin/zsh
+
+# GoProX Post-Merge Hook
+# Automatically configures Git hooks after pulling or merging
+
+echo "🔧 Checking GoProX Git hooks configuration..."
+
+# Check if hooks are configured
+current_hooks_path=$(git config --local core.hooksPath 2>/dev/null || echo "")
+
+if [[ "$current_hooks_path" != ".githooks" ]]; then
+    echo "📝 Configuring Git hooks..."
+    git config --local core.hooksPath .githooks
+    echo "✅ Git hooks configured automatically!"
+    echo "   Commit messages will now require GitHub issue references (refs #123)"
+    echo "   Pre-commit checks will run before each commit"
+else
+    echo "✅ Git hooks already configured"
+fi 

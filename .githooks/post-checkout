@@ -1,0 +1,16 @@
+#!/bin/zsh
+
+# GoProX Post-Checkout Hook
+# Automatically configures Git hooks after cloning or checking out
+
+# Only run on initial clone (when previous HEAD is empty)
+if [[ -z "$2" ]]; then
+    echo "🔧 Setting up GoProX Git hooks..."
+    
+    # Configure Git to use .githooks directory
+    git config core.hooksPath .githooks
+    
+    echo "✅ Git hooks configured automatically!"
+    echo "   Commit messages will now require GitHub issue references (refs #123)"
+    echo "   Pre-commit checks will run before each commit"
+fi 
