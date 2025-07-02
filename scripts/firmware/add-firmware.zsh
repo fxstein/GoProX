@@ -24,8 +24,6 @@
 #
 # Usage: ./add-firmware.zsh --url <firmware_url>
 
-# NOTE: Whenever you add, remove, or update firmware, update firmware/README.md to keep the summary current.
-
 set -uo pipefail
 
 # Setup logging
