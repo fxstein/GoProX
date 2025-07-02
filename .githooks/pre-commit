@@ -1,0 +1,22 @@
+#!/bin/zsh
+
+# GoProX Pre-commit Hook
+# Runs basic checks before allowing commits
+
+echo "🔍 Running pre-commit checks..."
+
+# Check for TODO/FIXME comments in staged files
+if git diff --cached --name-only | xargs grep -l "TODO\|FIXME" 2>/dev/null; then
+    echo "⚠️  Warning: Found TODO/FIXME comments in staged files"
+    echo "   Consider addressing these before committing"
+fi
+
+# Check for large files (>10MB)
+large_files=$(git diff --cached --name-only | xargs ls -la 2>/dev/null | awk '$5 > 10485760 {print $9}')
+if [[ -n "$large_files" ]]; then
+    echo "⚠️  Warning: Found files larger than 10MB"
+    echo "   Consider using Git LFS for large files"
+fi
+
+echo "✅ Pre-commit checks completed"
+exit 0

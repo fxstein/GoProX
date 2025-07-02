@@ -1,0 +1,39 @@
+#!/bin/zsh
+
+# GoProX Pre-commit Hook
+# Ensures all commits reference GitHub issues
+
+# Get the commit message from the commit-msg file
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# Check if this is a merge commit or revert (allow without issue reference)
+if [[ "$commit_msg" =~ ^(Merge|Revert|Reverted) ]]; then
+    echo "Merge/revert commit detected, skipping issue reference check"
+    exit 0
+fi
+
+# Check if commit message contains GitHub issue reference
+# Pattern: (refs #n) or (refs #n #n ...) where n is a number
+if [[ "$commit_msg" =~ \(refs\ #[0-9]+(\ #[0-9]+)*\) ]]; then
+    echo "✅ Commit message contains GitHub issue reference"
+    exit 0
+else
+    echo "❌ ERROR: Commit message must reference a GitHub issue"
+    echo ""
+    echo "Please include a GitHub issue reference in your commit message:"
+    echo "  (refs #123) for a single issue"
+    echo "  (refs #123 #456) for multiple issues"
+    echo ""
+    echo "Examples:"
+    echo "  feat: add new configuration option (refs #70)"
+    echo "  fix: resolve parameter parsing issue (refs #45 #67)"
+    echo ""
+    echo "Current commit message:"
+    echo "---"
+    echo "$commit_msg"
+    echo "---"
+    echo ""
+    echo "Please amend your commit with a proper issue reference."
+    exit 1
+fi
