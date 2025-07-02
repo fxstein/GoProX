@@ -68,8 +68,6 @@ Commands:
   --rename-cards        rename detected GoPro SD cards to standard format
                         automatically detects and renames all GoPro SD cards
   --dry-run             simulate all actions without making any changes (safe testing mode)
-  --show-config         display current GoProX configuration settings
-  --test-naming         test SD card naming format with sample data
   --setup               run program setup
   --test                run program tests
                         this option is reserved for developers who clone the GitHub project
@@ -169,8 +167,6 @@ mount=false
 enhanced=false
 rename_cards=false
 dry_run=false
-show_config=false
-test_naming=false
 
 sourceopt=""
 libraryopt=""
@@ -1498,8 +1494,6 @@ zparseopts -D -E -F -A opts - \
             -enhanced \
             -rename-cards \
             -dry-run \
-            -show-config \
-            -test-naming \
             -setup \
             -test \
             -time:: \
@@ -1639,12 +1633,6 @@ for key val in "${(kv@)opts}"; do
     ;;
     --dry-run)
       dry_run=true
-    ;;
-    --show-config)
-      show_config=true
-    ;;
-    --test-naming)
-      test_naming=true
     ;;
     --setup)
       # Perform setup tasks
@@ -1862,41 +1850,6 @@ fi
 # are not mounted, links to them still exist but are none operational.
 # Depending on processing options, various steps might become impossible.
 _validate_storage
-
-if [ "$show_config" = true ]; then
-  _echo "Displaying GoProX configuration..."
-  
-  # Source the configuration module
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  if [[ -f "$SCRIPT_DIR/scripts/core/config.zsh" ]]; then
-    source "$SCRIPT_DIR/scripts/core/config.zsh"
-    load_goprox_config
-    show_config
-  else
-    _error "Configuration module not found: $SCRIPT_DIR/scripts/core/config.zsh"
-    exit 1
-  fi
-  
-  exit 0
-fi
-
-if [ "$test_naming" = true ]; then
-  _echo "Testing SD card naming format..."
-  
-  # Source the required modules
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  if [[ -f "$SCRIPT_DIR/scripts/core/config.zsh" ]] && [[ -f "$SCRIPT_DIR/scripts/core/sd-renaming.zsh" ]]; then
-    source "$SCRIPT_DIR/scripts/core/config.zsh"
-    source "$SCRIPT_DIR/scripts/core/sd-renaming.zsh"
-    load_goprox_config
-    test_naming_format
-  else
-    _error "Required modules not found"
-    exit 1
-  fi
-  
-  exit 0
-fi
 
 if [ "$enhanced" = true ]; then
   _echo "Enhanced default behavior mode - intelligent media management"

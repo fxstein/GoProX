@@ -43,19 +43,7 @@ detect_gopro_cards() {
     fi
     
     # Return detected cards as JSON array
-    local json_array="["
-    local first=true
-    for card in "${detected_cards[@]}"; do
-        if [[ "$first" == true ]]; then
-            first=false
-        else
-            json_array+=","
-        fi
-        json_array+="$card"
-    done
-    json_array+="]"
-    
-    echo "$json_array"
+    echo "${detected_cards[@]}"
     return 0
 }
 
