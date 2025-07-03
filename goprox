@@ -65,6 +65,8 @@ Commands:
                         this is also leveraged by the goprox launch agent
   --enhanced            run enhanced default behavior (intelligent media management)
                         automatically detects GoPro SD cards and recommends optimal workflows
+  --firmware-focused    run firmware-focused workflow (rename cards, check firmware, install labs)
+                        streamlined workflow for firmware management with labs preference
   --rename-cards        rename detected GoPro SD cards to standard format
                         automatically detects and renames all GoPro SD cards
   --dry-run             simulate all actions without making any changes (safe testing mode)
@@ -129,9 +131,8 @@ readonly DEFAULT_EXIFTOOL_LOGLEVEL1="-v1 -progress"
 readonly DEFAULT_EXIFTOOL_LOGLEVEL2="-q -q -progress"
 readonly DEFAULT_EXIFTOOL_LOGLEVEL3="-q -q -q"
 
-readonly GOPROX=$(which $0)
-readonly REALGOPROX=$(readlink -f $GOPROX)
-readonly GOPROX_HOME=$(dirname $REALGOPROX)
+# Get the directory where this script is located
+readonly GOPROX_HOME="$(cd "$(dirname "$0")" && pwd)"
 
 readonly DEFAULT_LOCKFILE=".goprox.lock"
 readonly DEFAULT_ARCHIVED_MARKER=".goprox.archived"
@@ -167,6 +168,7 @@ firmware=false
 version=false
 mount=false
 enhanced=false
+firmware_focused=false
 rename_cards=false
 dry_run=false
 show_config=false
@@ -1496,6 +1498,7 @@ zparseopts -D -E -F -A opts - \
             -modified-before: \
             -mount:: \
             -enhanced \
+            -firmware-focused \
             -rename-cards \
             -dry-run \
             -show-config \
@@ -1632,6 +1635,10 @@ for key val in "${(kv@)opts}"; do
     --enhanced)
       # Perform enhanced default behavior (intelligent media management)
       enhanced=true
+    ;;
+    --firmware-focused)
+      # Perform firmware-focused workflow (rename, check firmware, install labs)
+      firmware_focused=true
     ;;
     --rename-cards)
       # Rename detected GoPro SD cards to standard format
@@ -1910,6 +1917,24 @@ if [ "$enhanced" = true ]; then
     run_enhanced_default_behavior
   else
     _error "Enhanced default behavior module not found: $SCRIPT_DIR/scripts/core/enhanced-default-behavior.zsh"
+    exit 1
+  fi
+  
+  exit 0
+fi
+
+if [ "$firmware_focused" = true ]; then
+  _echo "Firmware-focused workflow mode - rename cards, check firmware, install labs"
+  
+  # Export dry_run flag for subscripts
+  export dry_run
+  # Source the firmware-focused workflow module
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [[ -f "$SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh" ]]; then
+    source "$SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh"
+    run_firmware_focused_workflow
+  else
+    _error "Firmware-focused workflow module not found: $SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh"
     exit 1
   fi
   
