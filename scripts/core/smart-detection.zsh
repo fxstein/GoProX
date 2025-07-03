@@ -78,6 +78,19 @@ extract_card_info() {
         firmware_type="labs"
     fi
     
+    # Extract volume UUID using diskutil
+    local volume_uuid=""
+    if command -v diskutil >/dev/null 2>&1; then
+        volume_uuid=$(diskutil info "$volume_path" | grep "Volume UUID" | awk '{print $3}')
+        if [[ -n "$volume_uuid" ]]; then
+            log_info "Found SD card: $volume_name (UUID: $volume_uuid)"
+        else
+            log_warning "Could not determine UUID for volume: $volume_name"
+        fi
+    else
+        log_warning "diskutil not available, cannot determine UUID for volume: $volume_name"
+    fi
+    
     # Analyze media content
     local content_analysis=$(analyze_media_content "$volume_path")
     
@@ -89,6 +102,7 @@ extract_card_info() {
 {
   "volume_name": "$volume_name",
   "volume_path": "$volume_path",
+  "volume_uuid": "$volume_uuid",
   "camera_type": "$camera_type",
   "serial_number": "$serial_number",
   "firmware_version": "$firmware_version",
@@ -241,6 +255,7 @@ format_card_display() {
     local card_info="$1"
     
     local volume_name=$(echo "$card_info" | jq -r '.volume_name')
+    local volume_uuid=$(echo "$card_info" | jq -r '.volume_uuid')
     local camera_type=$(echo "$card_info" | jq -r '.camera_type')
     local serial_number=$(echo "$card_info" | jq -r '.serial_number')
     local firmware_version=$(echo "$card_info" | jq -r '.firmware_version')
@@ -250,6 +265,7 @@ format_card_display() {
     
     cat <<EOF
 Found GoPro SD card: $volume_name
+  Volume UUID: $volume_uuid
   Camera type: $camera_type
   Serial number: $serial_number
   Firmware version: $firmware_version

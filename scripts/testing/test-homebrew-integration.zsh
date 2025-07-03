@@ -137,20 +137,19 @@ test_dev_channel_complete_workflow() {
     local output
     local exit_code
     
-    # Create a subshell with modified PATH for this test only
+    # Create a subshell for this test only
     (
-        # Mock external commands in a subshell to avoid affecting the test framework
-        export PATH="$TEST_TEMP_DIR/mock-bin:$PATH"
+        # Create mock commands in a temporary directory
         mkdir -p "$TEST_TEMP_DIR/mock-bin"
         
-        # Create mock curl
+        # Create mock curl (application-specific command)
         cat > "$TEST_TEMP_DIR/mock-bin/curl" << 'EOF'
 #!/bin/zsh
 echo "mock-tarball-content-for-dev"
 EOF
         chmod +x "$TEST_TEMP_DIR/mock-bin/curl"
         
-        # Create mock git
+        # Create mock git (application-specific command)
         cat > "$TEST_TEMP_DIR/mock-bin/git" << 'EOF'
 #!/bin/zsh
 echo "Mocked git: $*"
@@ -177,8 +176,18 @@ esac
 EOF
         chmod +x "$TEST_TEMP_DIR/mock-bin/git"
         
-        # Note: sha256sum is a system command and should not be mocked
-        # The real sha256sum command will be used from the system PATH
+        # Use function-based mocking instead of PATH modification
+        # This avoids corrupting the shell environment
+        curl() {
+            "$TEST_TEMP_DIR/mock-bin/curl" "$@"
+        }
+        
+        git() {
+            "$TEST_TEMP_DIR/mock-bin/git" "$@"
+        }
+        
+        # Export the functions for the script to use
+        export -f curl git
         
         # Run the script
         output=$("$TEST_SCRIPT" dev 2>&1) || exit_code=$?
@@ -194,18 +203,25 @@ test_beta_channel_complete_workflow() {
     local output
     local exit_code
     
-    # Create a subshell with modified PATH for this test only
+    # Create a subshell for this test only
     (
-        # Mock external commands in a subshell to avoid affecting the test framework
-        export PATH="$TEST_TEMP_DIR/mock-bin:$PATH"
+        # Create mock commands in a temporary directory
         mkdir -p "$TEST_TEMP_DIR/mock-bin"
         
-        # Create mock curl
+        # Create mock curl (application-specific command)
         cat > "$TEST_TEMP_DIR/mock-bin/curl" << 'EOF'
 #!/bin/zsh
 echo "mock-tarball-content-for-beta"
 EOF
         chmod +x "$TEST_TEMP_DIR/mock-bin/curl"
+        
+        # Use function-based mocking instead of PATH modification
+        curl() {
+            "$TEST_TEMP_DIR/mock-bin/curl" "$@"
+        }
+        
+        # Export the function for the script to use
+        export -f curl
         
         # Run the script
         output=$("$TEST_SCRIPT" beta 2>&1) || exit_code=$?
@@ -221,18 +237,25 @@ test_official_channel_complete_workflow() {
     local output
     local exit_code
     
-    # Create a subshell with modified PATH for this test only
+    # Create a subshell for this test only
     (
-        # Mock external commands in a subshell to avoid affecting the test framework
-        export PATH="$TEST_TEMP_DIR/mock-bin:$PATH"
+        # Create mock commands in a temporary directory
         mkdir -p "$TEST_TEMP_DIR/mock-bin"
         
-        # Create mock curl
+        # Create mock curl (application-specific command)
         cat > "$TEST_TEMP_DIR/mock-bin/curl" << 'EOF'
 #!/bin/zsh
 echo "mock-tarball-content-for-official"
 EOF
         chmod +x "$TEST_TEMP_DIR/mock-bin/curl"
+        
+        # Use function-based mocking instead of PATH modification
+        curl() {
+            "$TEST_TEMP_DIR/mock-bin/curl" "$@"
+        }
+        
+        # Export the function for the script to use
+        export -f curl
         
         # Run the script
         output=$("$TEST_SCRIPT" official 2>&1) || exit_code=$?

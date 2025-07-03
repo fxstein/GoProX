@@ -1311,13 +1311,22 @@ function _detect_and_rename_gopro_sd()
       local version_file="$volume/MISC/version.txt"
       if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
         found_gopro=true
-        _echo "Found GoPro SD card: $volume_name"
         
         # Extract camera information
         local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
         local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
         local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
         
+        # Extract volume UUID using diskutil
+        local volume_uuid=""
+        if command -v diskutil >/dev/null 2>&1; then
+            volume_uuid=$(diskutil info "$volume" | grep "Volume UUID" | awk '{print $3}')
+        fi
+        
+        _echo "Found GoPro SD card: $volume_name"
+        if [[ -n "$volume_uuid" ]]; then
+            _echo "  Volume UUID: $volume_uuid"
+        fi
         _echo "  Camera type: $camera_type"
         _echo "  Serial number: $serial_number"
         _echo "  Firmware version: $firmware_version"
