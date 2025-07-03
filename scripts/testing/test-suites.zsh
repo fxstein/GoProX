@@ -90,14 +90,15 @@ function test_logger_rotation() {
     local log_file_old="$log_dir/goprox.log.old"
     rm -f "$log_file" "$log_file_old"
     mkdir -p "$log_dir"
-    export LOG_MAX_SIZE=16384
+    export LOG_MAX_SIZE=8192  # 8KB for rotation test
     export LOGFILE="$log_file"
     export LOGFILE_OLD="$log_file_old"
     source scripts/core/logger.zsh
     if [[ "$DEBUG" == true ]]; then
         echo "[DEBUG] test_logger_rotation: logger sourced, writing log entries"
     fi
-    for i in {1..600}; do
+    # Write enough entries to exceed 8KB (approximately 120-150 lines)
+    for i in {1..150}; do
         log_info "Logger rotation test entry $i"
     done
     if [[ "$DEBUG" == true ]]; then

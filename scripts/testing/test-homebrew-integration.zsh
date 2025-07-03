@@ -86,10 +86,8 @@ mock_git() {
     esac
 }
 
-mock_sha256sum() {
-    local input="$1"
-    echo "$input" | sha256sum
-}
+# Note: sha256sum is a system command and should not be mocked
+# Use the real sha256sum command from the system PATH
 
 # Test helper functions
 setup_integration_test_environment() {
@@ -179,12 +177,8 @@ esac
 EOF
         chmod +x "$TEST_TEMP_DIR/mock-bin/git"
         
-        # Create mock sha256sum
-        cat > "$TEST_TEMP_DIR/mock-bin/sha256sum" << 'EOF'
-#!/bin/zsh
-echo "mock-sha256-hash  -"
-EOF
-        chmod +x "$TEST_TEMP_DIR/mock-bin/sha256sum"
+        # Note: sha256sum is a system command and should not be mocked
+        # The real sha256sum command will be used from the system PATH
         
         # Run the script
         output=$("$TEST_SCRIPT" dev 2>&1) || exit_code=$?

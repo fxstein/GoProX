@@ -814,7 +814,17 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 
 1. **NEVER hardcode paths to system utilities** (rm, mkdir, cat, echo, etc.) - always use the command name and let the shell find it in PATH
 2. **NEVER create mock versions of system utilities** - this breaks the shell's ability to find the real commands
-3. All scripts that generate output files (including AI summaries, release notes, etc.) for the GoProX project MUST place their output in the output/ directory, not the project root, to keep the source tree clean
+3. **NEVER mock zsh, Linux, or macOS system commands** (dirname, mkdir, touch, date, sha1sum, ls, cat, echo, etc.) - this corrupts the shell environment and breaks fundamental shell functionality
+4. **NEVER modify PATH to include mock system commands** - this prevents the shell from finding real system utilities
+
+### **Proper Mocking Guidelines**
+- **ONLY mock application-specific commands** (curl, git, exiftool, jq, etc.) - never system utilities
+- **Use function mocking** instead of PATH modification when possible
+- **Test in clean environments** with real system commands available
+- **If system commands are missing, fix the environment** rather than mocking them
+- **System commands are fundamental** - mocking them breaks shell functionality and corrupts the environment
+
+5. All scripts that generate output files (including AI summaries, release notes, etc.) for the GoProX project MUST place their output in the output/ directory, not the project root, to keep the source tree clean
 4. Always read and follow AI_INSTRUCTIONS.md at the project root for all work, suggestions, and communication in the GoProX repository. Treat it as the canonical source for project-specific standards and instructions
 5. Never automatically run git commands. Only run scripts or commands that the user explicitly requests. All git operations must be user-initiated
 6. After each attempt to fix a problem in the GoProX firmware tracker script, always automatically run the script to validate the fix. This should be the default workflow for all future script fixes and iterations
