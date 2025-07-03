@@ -57,6 +57,16 @@ EOF
     # Step 1: Analyze and execute SD card renaming
     execute_card_renaming "$detected_cards"
     
+    # Re-detect cards after renaming to get updated paths
+    log_info "Re-detecting GoPro SD cards after renaming..."
+    detected_cards=$(detect_gopro_cards)
+    
+    if [[ $? -ne 0 ]]; then
+        log_info "No GoPro SD cards detected after renaming"
+        display_no_cards_message
+        return 0
+    fi
+    
     # Step 2: Check for firmware updates
     execute_firmware_check "$detected_cards"
     
