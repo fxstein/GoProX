@@ -3,6 +3,26 @@
 # GoProX Post-Checkout Hook
 # Automatically configures Git hooks after cloning or checking out
 
+# Run setup-hooks.zsh to ensure hooks are configured
+if [[ -f scripts/maintenance/setup-hooks.zsh ]]; then
+  echo "[GoProX] Running setup-hooks.zsh to configure git hooks..."
+  ./scripts/maintenance/setup-hooks.zsh
+else
+  echo "[GoProX] setup-hooks.zsh not found, skipping hook setup."
+fi
+
+# Run setup-brew.zsh to install Homebrew dependencies (if Homebrew is available)
+if command -v brew &> /dev/null; then
+  if [[ -f scripts/maintenance/setup-brew.zsh ]]; then
+    echo "[GoProX] Running setup-brew.zsh to install Homebrew dependencies..."
+    ./scripts/maintenance/setup-brew.zsh
+  else
+    echo "[GoProX] setup-brew.zsh not found, skipping Homebrew dependency setup."
+  fi
+else
+  echo "[GoProX] Homebrew not found, skipping Homebrew dependency setup."
+fi
+
 # Only run on initial clone (when previous HEAD is empty)
 if [[ -z "$2" ]]; then
     echo "🔧 Setting up GoProX Git hooks..."
