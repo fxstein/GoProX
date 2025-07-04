@@ -464,6 +464,33 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can clean and optimize GPS tracks (remove noise, smooth paths)
 - [ ] Can store trip metadata and associate with tracks and media
 
+### **Use Case 27: Apple Photos Integration and Geo Location Markers**
+**Description**: Import media files from Apple Photos library with iPhone tracking and detect geo location markers from QR codes and hashtags.
+
+**Requirements**:
+- Import media files from Apple Photos library with full metadata preservation
+- Track iPhones as devices in metadata system similar to GoPro cameras
+- Extract and utilize geo location data from imported media files
+- Detect geo location markers (QR codes and hashtags) in photos and media files
+- Parse QR codes and hashtags to extract geo location coordinates
+- Store geo location markers as special waypoints in the metadata system
+- Enable search and retrieval of all geo location markers across processed media
+- Associate geo location markers with specific trips, locations, and time periods
+- Support both automatic and manual marker detection and validation
+- Export geo location markers in standard formats (GPX waypoints, KML placemarks)
+
+**Validation Criteria**:
+- [ ] Can import media files from Apple Photos library with metadata intact
+- [ ] Can track iPhones as devices with serial numbers and metadata
+- [ ] Can extract and utilize geo location data from imported media files
+- [ ] Can detect QR codes and hashtags containing geo location information
+- [ ] Can parse and validate geo location coordinates from markers
+- [ ] Can store geo location markers as special waypoints in metadata
+- [ ] Can search and retrieve all geo location markers across all processed media
+- [ ] Can associate markers with trips, locations, and time periods
+- [ ] Can export geo location markers in standard formats
+- [ ] Can distinguish between regular media files and special geo location markers
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -495,12 +522,13 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-26)**
+### **System and Maintenance (22-27)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
 - Comprehensive logging and traceability
 - GPS track import and export
+- Apple Photos integration and geo location markers
 
 ## Implementation Priority
 
@@ -516,13 +544,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 ### **Lower Priority (Phase 3)**
 - Use Cases 19-24: Advanced features, performance monitoring, compatibility, edge cases
 - Use Case 26: GPS track import and export
+- Use Case 27: Apple Photos integration and geo location markers
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-26
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-27
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
