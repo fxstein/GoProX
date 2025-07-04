@@ -586,6 +586,39 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can export copyright metadata for legal and attribution purposes
 - [ ] Can warn about copyright conflicts or missing attribution
 
+### **Use Case 31: Multi-Manufacturer Media Integration**
+**Description**: Integrate media files from other action camera and drone manufacturers like Insta360 and DJI alongside GoPro cameras.
+
+**Requirements**:
+- Import and process media files from Insta360 cameras with metadata preservation
+- Import and process media files from DJI drones and cameras with metadata preservation
+- Track different camera manufacturers and models in the metadata system
+- Handle manufacturer-specific file formats, metadata structures, and naming conventions
+- Support manufacturer-specific firmware version tracking and compatibility
+- Maintain device-specific settings and configuration for each manufacturer
+- Handle different media file types and codecs from various manufacturers
+- Support manufacturer-specific GPS and telemetry data formats
+- Track device serial numbers and identifiers across different manufacturers
+- Maintain separate but unified metadata for multi-manufacturer workflows
+- Support manufacturer-specific import and processing workflows
+- Enable cross-manufacturer media association and organization
+- Support future expansion to additional camera and drone manufacturers
+
+**Validation Criteria**:
+- [ ] Can import and process Insta360 media files with full metadata
+- [ ] Can import and process DJI media files with full metadata
+- [ ] Can track different camera manufacturers and models consistently
+- [ ] Can handle manufacturer-specific file formats and metadata structures
+- [ ] Can support manufacturer-specific firmware version tracking
+- [ ] Can maintain device-specific settings for each manufacturer
+- [ ] Can handle different media file types and codecs from various manufacturers
+- [ ] Can support manufacturer-specific GPS and telemetry data formats
+- [ ] Can track device serial numbers across different manufacturers
+- [ ] Can maintain unified metadata for multi-manufacturer workflows
+- [ ] Can support manufacturer-specific import and processing workflows
+- [ ] Can enable cross-manufacturer media association and organization
+- [ ] Can support future expansion to additional manufacturers
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -617,7 +650,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-30)**
+### **System and Maintenance (22-31)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
@@ -627,6 +660,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Trip reports and content generation
 - Video production provenance tracking
 - Copyright tracking and management
+- Multi-manufacturer media integration
 
 ## Implementation Priority
 
@@ -646,13 +680,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Use Case 28: Trip reports and content generation
 - Use Case 29: Video production provenance tracking
 - Use Case 30: Copyright tracking and management
+- Use Case 31: Multi-manufacturer media integration
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-30
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-31
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
