@@ -1289,6 +1289,221 @@ function _firmware()
   _echo "Finished firmware check."
 }
 
+function _archive_all_gopro_cards()
+{
+  _echo "Scanning for GoPro SD cards to archive..."
+  
+  local found_gopro=false
+  local archived_count=0
+  local already_archived_count=0
+  local skipped_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        found_gopro=true
+        
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+        
+        _echo "Found GoPro SD card: $volume_name"
+        _echo "  Camera type: $camera_type"
+        _echo "  Serial number: $serial_number"
+        _echo "  Firmware version: $firmware_version"
+        
+        # Check if already archived
+        if [[ -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
+          _echo "  Already archived, skipping"
+          ((already_archived_count++))
+          continue
+        fi
+        
+        # Check if there's media to archive
+        if [[ ! -d "$volume/DCIM" ]] || [[ -z "$(find "$volume/DCIM" -type f 2>/dev/null | head -1)" ]]; then
+          _echo "  No media files found, skipping"
+          ((skipped_count++))
+          continue
+        fi
+        
+        # Archive this card
+        echo
+        if safe_confirm "Archive media from $volume_name? (y/N)"; then
+          _info "Archiving $volume_name..."
+          
+          # Set source to this volume temporarily
+          local original_source="$source"
+          source="$volume"
+          
+          # Call the existing archive function
+          _archive_media
+          
+          # Restore original source
+          source="$original_source"
+          
+          ((archived_count++))
+        else
+          _info "Archive cancelled for $volume_name"
+        fi
+        
+        echo
+      fi
+    fi
+  done
+  
+  if [[ "$found_gopro" == false ]]; then
+    _info "No GoPro SD cards found"
+  else
+    _echo "Archive Summary:"
+    if [[ $already_archived_count -gt 0 ]]; then
+      _echo "  - $already_archived_count already archived"
+    fi
+    if [[ $skipped_count -gt 0 ]]; then
+      _echo "  - $skipped_count skipped (no media)"
+    fi
+    if [[ $archived_count -gt 0 ]]; then
+      _echo "  - $archived_count newly archived"
+    fi
+  fi
+  
+  _echo "Archive scanning finished."
+}
+
+function _firmware_all_gopro_cards()
+{
+  _echo "Scanning for GoPro SD cards to update firmware..."
+  
+  local found_gopro=false
+  local updated_count=0
+  local already_updated_count=0
+  local up_to_date_count=0
+  local no_firmware_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        found_gopro=true
+        
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+        
+        _echo "Found GoPro SD card: $volume_name"
+        _echo "  Camera type: $camera_type"
+        _echo "  Serial number: $serial_number"
+        _echo "  Firmware version: $firmware_version"
+        
+        # Check if firmware update already prepared
+        if [[ -d "$volume/UPDATE" ]] && [[ -f "$volume/UPDATE/DATA.bin" ]]; then
+          _echo "  Firmware update already prepared, skipping"
+          ((already_updated_count++))
+          continue
+        fi
+        
+        # Detect firmware type and check for updates
+        local firmware_type="official"
+        local firmware_suffix=${firmware_version: -2}
+        if [[ "$firmware_suffix" =~ ^7[0-9]$ ]]; then
+          firmware_type="labs"
+        fi
+        _echo "  Firmware type: $firmware_type"
+        
+        # Check for newer firmware
+        local firmwarebase=""
+        local cache_type=""
+        if [[ "$firmware_type" == "labs" ]]; then
+          firmwarebase="${GOPROX_HOME}/firmware/labs/${camera_type}"
+          cache_type="labs"
+        else
+          firmwarebase="${GOPROX_HOME}/firmware/official/${camera_type}"
+          cache_type="official"
+        fi
+        
+        local latestfirmware=""
+        if [[ -d "$firmwarebase" ]]; then
+          latestfirmware=$(ls -1d "$firmwarebase"/*/ 2>/dev/null | sort | tail -n 1)
+          latestfirmware="${latestfirmware%/}"
+        fi
+        
+        if [[ -n "$latestfirmware" ]]; then
+          local latestversion="${latestfirmware##*/}"
+          if [[ "$latestversion" != "$firmware_version" ]]; then
+            _echo "  Newer $firmware_type firmware available: $firmware_version → $latestversion"
+            
+            # Offer to update firmware
+            echo
+            if safe_confirm "Update firmware on $volume_name to $latestversion? (y/N)"; then
+              _info "Updating firmware on $volume_name..."
+              
+              # Set source to this volume temporarily
+              local original_source="$source"
+              source="$volume"
+              
+              # Call the existing firmware function
+              _firmware
+              
+              # Restore original source
+              source="$original_source"
+              
+              ((updated_count++))
+            else
+              _info "Firmware update cancelled for $volume_name"
+            fi
+          else
+            _echo "  Firmware is up to date ($firmware_type)"
+            ((up_to_date_count++))
+          fi
+        else
+          _echo "  No $firmware_type firmware found for $camera_type"
+          ((no_firmware_count++))
+        fi
+        
+        echo
+      fi
+    fi
+  done
+  
+  if [[ "$found_gopro" == false ]]; then
+    _info "No GoPro SD cards found"
+  else
+    _echo "Firmware Summary:"
+    if [[ $already_updated_count -gt 0 ]]; then
+      _echo "  - $already_updated_count already have firmware updates prepared"
+    fi
+    if [[ $up_to_date_count -gt 0 ]]; then
+      _echo "  - $up_to_date_count already up to date"
+    fi
+    if [[ $no_firmware_count -gt 0 ]]; then
+      _echo "  - $no_firmware_count no firmware available"
+    fi
+    if [[ $updated_count -gt 0 ]]; then
+      _echo "  - $updated_count firmware updates prepared"
+    fi
+  fi
+  
+  _echo "Firmware scanning finished."
+}
+
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
@@ -2152,7 +2367,13 @@ fi
 
 # Execute in order: archive, import, clean, geonames, process, firmware
 if [ "$archive" = true ]; then
-  _archive_media
+  # If source is the default (current directory) and no specific source was provided,
+  # scan for all GoPro SD cards and archive them
+  if [[ "$source" == "." && -z "$sourceopt" ]]; then
+    _archive_all_gopro_cards
+  else
+    _archive_media
+  fi
 fi
 if [ "$import" = true ]; then
   _import_media
@@ -2170,7 +2391,13 @@ if [ "$process" = true ]; then
   _process_media
 fi
 if [ "$firmware" = true ]; then
-  _firmware
+  # If source is the default (current directory) and no specific source was provided,
+  # scan for all GoPro SD cards and update their firmware
+  if [[ "$source" == "." && -z "$sourceopt" ]]; then
+    _firmware_all_gopro_cards
+  else
+    _firmware
+  fi
 fi
 
 if (( $exiftoolstatus )) then
