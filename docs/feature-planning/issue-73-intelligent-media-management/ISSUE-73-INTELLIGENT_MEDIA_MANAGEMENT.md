@@ -434,6 +434,27 @@ This section documents all use cases and requirements for the Intelligent Media 
 - [ ] Can track feature availability and bug fixes by version
 - [ ] Can show version upgrade recommendations for existing files
 
+### **Use Case 25: Comprehensive Logging and Traceability**
+**Description**: Provide comprehensive logging with unique identifiers for bidirectional traceability between logs and metadata, enabling complete audit trails and debugging capabilities.
+
+**Requirements**:
+- Configure logging location and level (file, syslog, cloud, etc.)
+- Use unique identifiers for all entities (storage devices, computers, cameras, media files)
+- Enable bidirectional traceability: logs ↔ metadata
+- Support structured logging with JSON format for machine readability
+- Include contextual information (location, timezone, environment)
+- Provide log rotation and retention policies
+- Enable log search and filtering by identifiers
+- Support correlation of related log entries across operations
+
+**Validation Criteria**:
+- [ ] Can configure logging location and level per operation
+- [ ] Can trace any media file back to its processing logs using unique identifiers
+- [ ] Can find all log entries for a specific storage device, computer, or camera
+- [ ] Can correlate log entries across multiple operations for a single workflow
+- [ ] Can search logs by unique identifiers and time ranges
+- [ ] Can export log data for external analysis and debugging
+
 ## Implementation Strategy
 
 ### Phase 1: Intelligent Detection and Setup
@@ -486,6 +507,384 @@ Add intelligent context awareness:
 - Workflow optimization suggestions
 
 ## Technical Design
+
+### Comprehensive Logging and Traceability System
+
+**Rationale**: Comprehensive logging with unique identifiers provides complete audit trails, enables debugging, and supports bidirectional traceability between logs and metadata. This is essential for troubleshooting, compliance, and understanding processing workflows.
+
+#### Logging Configuration and Structure
+
+**Log Configuration Options:**
+```zsh
+# Logging configuration in ~/.goprox/logging.yaml
+logging:
+  # Output destinations
+  destinations:
+    - type: "file"
+      path: "~/.goprox/logs/goprox.log"
+      level: "INFO"
+      rotation:
+        max_size: "100MB"
+        max_files: 10
+        retention_days: 30
+    
+    - type: "syslog"
+      facility: "local0"
+      level: "WARN"
+    
+    - type: "cloud"
+      provider: "cloudwatch"  # or "gcp_logging", "azure_monitor"
+      level: "ERROR"
+      region: "us-west-2"
+  
+  # Structured logging format
+  format: "json"
+  include_timestamp: true
+  include_location: true
+  include_environment: true
+  
+  # Unique identifier generation
+  identifiers:
+    storage_devices: "volume_uuid"
+    computers: "hostname_mac"
+    cameras: "serial_number"
+    media_files: "hash_path"
+    operations: "timestamp_uuid"
+```
+
+**Unique Identifier Strategy:**
+```zsh
+# Generate unique identifiers for traceability
+generate_storage_id() {
+    local volume_uuid="$1"
+    echo "storage_${volume_uuid}"
+}
+
+generate_computer_id() {
+    local hostname="$1"
+    local mac_address="$2"
+    echo "computer_${hostname}_${mac_address}"
+}
+
+generate_camera_id() {
+    local serial_number="$1"
+    echo "camera_${serial_number}"
+}
+
+generate_media_file_id() {
+    local file_path="$1"
+    local file_hash="$2"
+    echo "media_${file_hash}_${file_path//\//_}"
+}
+
+generate_operation_id() {
+    local timestamp="$1"
+    local uuid="$2"
+    echo "op_${timestamp}_${uuid}"
+}
+```
+
+#### Structured Logging Format
+
+**Log Entry Structure:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:45.123Z",
+  "level": "INFO",
+  "operation_id": "op_20240115_103045_a1b2c3d4",
+  "goprox_version": "01.10.00",
+  "computer_id": "computer_macbook-pro_00:11:22:33:44:55",
+  "location": {
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "timezone": "America/Los_Angeles"
+  },
+  "environment": "travel",
+  "operation": {
+    "type": "import",
+    "subtype": "media_import",
+    "status": "started"
+  },
+  "entities": {
+    "storage_device_id": "storage_B18F461B-A942-3CA5-A096-CBD7D6F7A5AD",
+    "camera_id": "camera_GP12345678",
+    "media_files": [
+      "media_a1b2c3d4_Volumes_GOPRO_photos_GOPR1234.JPG",
+      "media_e5f6g7h8_Volumes_GOPRO_photos_GOPR1235.MP4"
+    ]
+  },
+  "metadata": {
+    "source_path": "/Volumes/GOPRO",
+    "destination_path": "~/goprox/imported",
+    "file_count": 2,
+    "total_size_bytes": 52428800
+  },
+  "context": {
+    "workflow_id": "workflow_20240115_103045",
+    "session_id": "session_a1b2c3d4",
+    "user_id": "user_oratzes"
+  },
+  "message": "Starting media import operation",
+  "details": {
+    "processing_options": {
+      "archive_first": true,
+      "extract_metadata": true,
+      "apply_copyright": false
+    }
+  }
+}
+```
+
+#### Logging Functions and Integration
+
+**Enhanced Logger Implementation:**
+```zsh
+# Enhanced logger with unique identifiers and traceability
+log_with_traceability() {
+    local level="$1"
+    local message="$2"
+    local operation_type="$3"
+    local entities="$4"
+    local metadata="$5"
+    
+    # Generate operation ID
+    local operation_id=$(generate_operation_id "$(date -u +%Y%m%d_%H%M%S)" "$(uuidgen)")
+    
+    # Get current context
+    local computer_id=$(generate_computer_id "$(hostname)" "$(get_mac_address)")
+    local location=$(get_current_location)
+    local environment=$(detect_environment)
+    
+    # Create structured log entry
+    local log_entry=$(cat <<EOF
+{
+  "timestamp": "$(date -u -Iseconds)",
+  "level": "$level",
+  "operation_id": "$operation_id",
+  "goprox_version": "$(get_goprox_version)",
+  "computer_id": "$computer_id",
+  "location": $location,
+  "environment": "$environment",
+  "operation": {
+    "type": "$operation_type",
+    "status": "in_progress"
+  },
+  "entities": $entities,
+  "metadata": $metadata,
+  "context": {
+    "workflow_id": "$WORKFLOW_ID",
+    "session_id": "$SESSION_ID",
+    "user_id": "$(whoami)"
+  },
+  "message": "$message"
+}
+EOF
+)
+    
+    # Write to configured destinations
+    write_log_entry "$log_entry" "$level"
+    
+    # Return operation ID for correlation
+    echo "$operation_id"
+}
+
+# Log media file processing with full traceability
+log_media_processing() {
+    local operation_type="$1"
+    local media_file_path="$2"
+    local storage_device_uuid="$3"
+    local camera_serial="$4"
+    local message="$5"
+    
+    # Generate entity identifiers
+    local media_file_id=$(generate_media_file_id "$media_file_path" "$(get_file_hash "$media_file_path")")
+    local storage_device_id=$(generate_storage_id "$storage_device_uuid")
+    local camera_id=$(generate_camera_id "$camera_serial")
+    
+    # Create entities object
+    local entities=$(cat <<EOF
+{
+  "storage_device_id": "$storage_device_id",
+  "camera_id": "$camera_id",
+  "media_files": ["$media_file_id"]
+}
+EOF
+)
+    
+    # Create metadata object
+    local metadata=$(cat <<EOF
+{
+  "file_path": "$media_file_path",
+  "file_size": $(get_file_size "$media_file_path"),
+  "file_type": "$(get_file_type "$media_file_path")",
+  "processing_options": {
+    "extract_metadata": true,
+    "apply_copyright": true,
+    "geonames_lookup": false
+  }
+}
+EOF
+)
+    
+    # Log with traceability
+    local operation_id=$(log_with_traceability "INFO" "$message" "$operation_type" "$entities" "$metadata")
+    
+    # Return operation ID for correlation
+    echo "$operation_id"
+}
+```
+
+#### Bidirectional Traceability Queries
+
+**Log-to-Metadata Queries:**
+```sql
+-- Find all log entries for a specific media file
+SELECT l.timestamp, l.level, l.operation_id, l.message, l.details
+FROM logs l
+WHERE l.entities LIKE '%media_a1b2c3d4_Volumes_GOPRO_photos_GOPR1234.JPG%'
+ORDER BY l.timestamp;
+
+-- Find all operations for a specific storage device
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message
+FROM logs l
+WHERE l.entities LIKE '%storage_B18F461B-A942-3CA5-A096-CBD7D6F7A5AD%'
+ORDER BY l.timestamp;
+
+-- Find all processing operations for a specific camera
+SELECT l.timestamp, l.operation_id, l.entities, l.metadata
+FROM logs l
+WHERE l.entities LIKE '%camera_GP12345678%'
+AND l.operation_type = 'process'
+ORDER BY l.timestamp;
+
+-- Correlate workflow operations
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message
+FROM logs l
+WHERE l.context_workflow_id = 'workflow_20240115_103045'
+ORDER BY l.timestamp;
+```
+
+**Metadata-to-Log Queries:**
+```sql
+-- Find processing logs for a specific media file
+SELECT l.timestamp, l.operation_id, l.message, l.details
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+WHERE m.filename = 'GOPR1234.JPG'
+ORDER BY l.timestamp;
+
+-- Find all operations for files from a specific SD card
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+JOIN storage_devices sd ON m.source_sd_card_id = sd.id
+WHERE sd.volume_uuid = 'B18F461B-A942-3CA5-A096-CBD7D6F7A5AD'
+ORDER BY l.timestamp;
+
+-- Find processing history for a specific camera
+SELECT l.timestamp, l.operation_id, l.entities, l.metadata
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+JOIN cameras c ON m.camera_id = c.id
+WHERE c.serial_number = 'GP12345678'
+ORDER BY l.timestamp;
+```
+
+#### Log Search and Analysis Functions
+
+**Log Search Implementation:**
+```zsh
+# Search logs by unique identifier
+search_logs_by_identifier() {
+    local identifier="$1"
+    local time_range="$2"  # e.g., "1h", "24h", "7d"
+    
+    local log_file="$HOME/.goprox/logs/goprox.log"
+    local time_filter=""
+    
+    if [[ -n "$time_range" ]]; then
+        local start_time=$(date -d "$time_range ago" -u -Iseconds)
+        time_filter="| jq 'select(.timestamp >= \"$start_time\")'"
+    fi
+    
+    cat "$log_file" | jq -r "select(.entities | contains(\"$identifier\") or .computer_id == \"$identifier\" or .operation_id == \"$identifier\") $time_filter"
+}
+
+# Find all log entries for a media file
+find_media_file_logs() {
+    local media_file_path="$1"
+    local media_file_id=$(generate_media_file_id "$media_file_path" "$(get_file_hash "$media_file_path")")
+    
+    search_logs_by_identifier "$media_file_id"
+}
+
+# Find all operations for a storage device
+find_storage_device_logs() {
+    local volume_uuid="$1"
+    local storage_device_id=$(generate_storage_id "$volume_uuid")
+    
+    search_logs_by_identifier "$storage_device_id"
+}
+
+# Correlate workflow operations
+correlate_workflow_logs() {
+    local workflow_id="$1"
+    
+    cat "$HOME/.goprox/logs/goprox.log" | jq -r "select(.context.workflow_id == \"$workflow_id\") | {timestamp, operation_id, operation_type, message}"
+}
+
+# Export logs for external analysis
+export_logs_for_analysis() {
+    local start_date="$1"
+    local end_date="$2"
+    local output_file="$3"
+    
+    cat "$HOME/.goprox/logs/goprox.log" | jq -r "select(.timestamp >= \"$start_date\" and .timestamp <= \"$end_date\")" > "$output_file"
+}
+```
+
+#### Log Rotation and Retention
+
+**Log Management:**
+```zsh
+# Configure log rotation
+setup_log_rotation() {
+    local log_dir="$HOME/.goprox/logs"
+    local max_size="100MB"
+    local max_files=10
+    local retention_days=30
+    
+    # Create logrotate configuration
+    cat > /tmp/goprox-logrotate << EOF
+$log_dir/goprox.log {
+    daily
+    rotate $max_files
+    size $max_size
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 $(whoami) $(id -g)
+    postrotate
+        # Reopen log files after rotation
+        kill -HUP \$(cat /var/run/rsyslogd.pid 2>/dev/null) 2>/dev/null || true
+    endscript
+}
+EOF
+    
+    # Install logrotate configuration
+    sudo cp /tmp/goprox-logrotate /etc/logrotate.d/goprox
+}
+
+# Clean old log files
+cleanup_old_logs() {
+    local log_dir="$HOME/.goprox/logs"
+    local retention_days=30
+    
+    find "$log_dir" -name "*.log.*" -mtime +$retention_days -delete
+    find "$log_dir" -name "*.gz" -mtime +$retention_days -delete
+}
+```
 
 ### Metadata Storage System (SQLite Database)
 
@@ -751,6 +1150,32 @@ CREATE TABLE goprox_version_features (
     affects_archive BOOLEAN DEFAULT FALSE, -- Whether this affects archive operations
     release_date TEXT,
     notes TEXT
+);
+
+-- Logs table (stores structured log entries for traceability)
+CREATE TABLE logs (
+    id INTEGER PRIMARY KEY,
+    timestamp TEXT NOT NULL,
+    level TEXT NOT NULL, -- 'DEBUG', 'INFO', 'WARN', 'ERROR'
+    operation_id TEXT UNIQUE NOT NULL,
+    goprox_version TEXT NOT NULL,
+    computer_id TEXT NOT NULL,
+    location_lat REAL,
+    location_lon REAL,
+    location_timezone TEXT,
+    environment TEXT,
+    operation_type TEXT NOT NULL,
+    operation_subtype TEXT,
+    operation_status TEXT NOT NULL, -- 'started', 'in_progress', 'completed', 'failed'
+    entities TEXT, -- JSON object with entity identifiers
+    metadata TEXT, -- JSON object with operation metadata
+    context_workflow_id TEXT,
+    context_session_id TEXT,
+    context_user_id TEXT,
+    message TEXT NOT NULL,
+    details TEXT, -- JSON object with additional details
+    log_file_path TEXT, -- Path to the actual log file entry
+    FOREIGN KEY (computer_id) REFERENCES computers(hostname)
 );
 ```
 
@@ -1076,6 +1501,69 @@ JOIN goprox_version_features gvf ON gvf.version > m.last_processed_version
 WHERE gvf.affects_processing = TRUE
 AND m.processing_status = 'processed'
 ORDER BY gvf.version DESC;
+
+-- Logging and Traceability Queries
+
+-- Find all log entries for a specific media file (using unique identifier)
+SELECT l.timestamp, l.level, l.operation_id, l.operation_type, l.message
+FROM logs l
+WHERE l.entities LIKE '%media_a1b2c3d4_Volumes_GOPRO_photos_GOPR1234.JPG%'
+ORDER BY l.timestamp;
+
+-- Find all operations for a specific storage device
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message, l.operation_status
+FROM logs l
+WHERE l.entities LIKE '%storage_B18F461B-A942-3CA5-A096-CBD7D6F7A5AD%'
+ORDER BY l.timestamp;
+
+-- Find processing workflow for a specific camera
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message, l.operation_status
+FROM logs l
+WHERE l.entities LIKE '%camera_GP12345678%'
+AND l.operation_type IN ('import', 'process', 'archive')
+ORDER BY l.timestamp;
+
+-- Correlate complete workflow operations
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message, l.operation_status
+FROM logs l
+WHERE l.context_workflow_id = 'workflow_20240115_103045'
+ORDER BY l.timestamp;
+
+-- Find all processing logs for a specific media file (metadata to logs)
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message, l.details
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+WHERE m.filename = 'GOPR1234.JPG'
+ORDER BY l.timestamp;
+
+-- Find all operations for files from a specific SD card
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+JOIN storage_devices sd ON m.source_sd_card_id = sd.id
+WHERE sd.volume_uuid = 'B18F461B-A942-3CA5-A096-CBD7D6F7A5AD'
+ORDER BY l.timestamp;
+
+-- Find processing history for a specific camera
+SELECT l.timestamp, l.operation_id, l.entities, l.metadata
+FROM logs l
+JOIN media_files m ON l.entities LIKE '%' || m.filename || '%'
+JOIN cameras c ON m.camera_id = c.id
+WHERE c.serial_number = 'GP12345678'
+ORDER BY l.timestamp;
+
+-- Find failed operations for debugging
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message, l.details
+FROM logs l
+WHERE l.operation_status = 'failed'
+ORDER BY l.timestamp DESC;
+
+-- Find operations by time range and computer
+SELECT l.timestamp, l.operation_id, l.operation_type, l.message
+FROM logs l
+WHERE l.timestamp BETWEEN '2024-01-15T00:00:00Z' AND '2024-01-15T23:59:59Z'
+AND l.computer_id = 'computer_macbook-pro_00:11:22:33:44:55'
+ORDER BY l.timestamp;
 ```
 
 #### Potential Gaps and Considerations
