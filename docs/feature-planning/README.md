@@ -7,6 +7,10 @@ This directory is organized by GitHub issue, with each issue having its own dire
 - `issue-XX-title/` — All files related to Issue XX (e.g., documentation, plans, implementation details)
 - `README.md` — This overview and navigation guide
 
+## Use Cases Reference
+
+A comprehensive set of use cases for GoProX is maintained in the central [USE_CASES.md](./USE_CASES.md) document. This file defines all supported and planned use cases, grouped by category, and serves as the single source of truth for requirements and validation criteria across all features. Individual feature documents reference this file to avoid duplication and ensure consistency.
+
 ## How to Navigate
 
 1. **Find the Issue:**
