@@ -553,6 +553,39 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can store production notes, credits, and collaboration information
 - [ ] Can export production metadata for external tools and workflows
 
+### **Use Case 30: Copyright Tracking and Management**
+**Description**: Track copyright information by GoPro camera and SD card, with support for shared content from colleagues and friends.
+
+**Requirements**:
+- Assign copyright ownership when first encountering a new SD card
+- Track copyright information by GoPro camera and SD card combination
+- Support multiple copyright owners (own content, colleagues, friends, shared content)
+- Link copyright metadata with media files and complete provenance chain
+- Prompt for copyright assignment when new SD cards are detected
+- Verify and update copyright metadata when shared cards are re-encountered
+- Store copyright owner information (name, contact, license terms, usage rights)
+- Support different copyright licenses and usage permissions
+- Track copyright changes over time with audit trail
+- Associate copyright information with trips, locations, and time periods
+- Enable search and filtering by copyright owner
+- Support copyright metadata export for legal and attribution purposes
+- Warn about potential copyright conflicts or missing attribution
+
+**Validation Criteria**:
+- [ ] Can assign copyright ownership when new SD cards are first encountered
+- [ ] Can track copyright information by camera and SD card combination
+- [ ] Can support multiple copyright owners and shared content scenarios
+- [ ] Can link copyright metadata with media files and provenance
+- [ ] Can prompt for copyright assignment when new cards are detected
+- [ ] Can verify and update copyright metadata for shared cards
+- [ ] Can store comprehensive copyright owner information
+- [ ] Can support different copyright licenses and usage permissions
+- [ ] Can track copyright changes with complete audit trail
+- [ ] Can associate copyright information with trips, locations, and time periods
+- [ ] Can search and filter media by copyright owner
+- [ ] Can export copyright metadata for legal and attribution purposes
+- [ ] Can warn about copyright conflicts or missing attribution
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -584,7 +617,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-29)**
+### **System and Maintenance (22-30)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
@@ -593,6 +626,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Apple Photos integration and geo location markers
 - Trip reports and content generation
 - Video production provenance tracking
+- Copyright tracking and management
 
 ## Implementation Priority
 
@@ -611,13 +645,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Use Case 27: Apple Photos integration and geo location markers
 - Use Case 28: Trip reports and content generation
 - Use Case 29: Video production provenance tracking
+- Use Case 30: Copyright tracking and management
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-29
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-30
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
