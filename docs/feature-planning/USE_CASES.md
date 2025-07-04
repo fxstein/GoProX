@@ -441,6 +441,29 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can search logs by unique identifiers and time ranges
 - [ ] Can export log data for external analysis and debugging
 
+### **Use Case 26: GPS Track Import and Export**
+**Description**: Import and export GPS tracks from external navigation software to associate with media files and organize by trips.
+
+**Requirements**:
+- Import GPX files from navigation software (e.g., Scenic Motorcycle Navigation)
+- Support multiple GPX files per trip that can be combined into a single clean track
+- Organize GPS tracks by named trips (e.g., "CAMP 2025 Dolomites July 1-8")
+- Associate GPS tracks with all media files from the same trip/time period
+- Support both recorded tracks and planned routes
+- Export GPS tracks in standard formats (GPX, KML, etc.) for use in other software
+- Handle track merging, cleaning, and optimization
+- Support trip metadata (dates, locations, participants, notes)
+
+**Validation Criteria**:
+- [ ] Can import GPX files from external navigation software
+- [ ] Can combine multiple GPX files into a single clean trip track
+- [ ] Can organize tracks by named trips with date ranges
+- [ ] Can associate GPS tracks with media files from the same trip
+- [ ] Can export tracks in standard formats for external use
+- [ ] Can handle both recorded tracks and planned routes
+- [ ] Can clean and optimize GPS tracks (remove noise, smooth paths)
+- [ ] Can store trip metadata and associate with tracks and media
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -472,11 +495,12 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-25)**
+### **System and Maintenance (22-26)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
 - Comprehensive logging and traceability
+- GPS track import and export
 
 ## Implementation Priority
 
@@ -491,13 +515,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 
 ### **Lower Priority (Phase 3)**
 - Use Cases 19-24: Advanced features, performance monitoring, compatibility, edge cases
+- Use Case 26: GPS track import and export
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-25
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-26
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
