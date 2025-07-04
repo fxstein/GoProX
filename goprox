@@ -553,6 +553,18 @@ function _import_media()
   _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
   _info "Library: $importdir ($(realpath "${importdir/#\~/$HOME}"))"
 
+  # Determine force mode for import operation
+  local import_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == import:* ]]; then
+      import_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Apply force mode protection
+  _apply_force_mode "import" "$import_force_mode" "$source"
+
   # Remove previous import marker
   rm -f $source/$DEFAULT_IMPORTED_MARKER
 
@@ -1083,6 +1095,18 @@ function _archive_media()
   _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
   _info "Library: $archivedir ($(realpath "${archivedir/#\~/$HOME}"))"
 
+  # Determine force mode for archive operation
+  local archive_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == archive:* ]]; then
+      archive_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Apply force mode protection
+  _apply_force_mode "archive" "$archive_force_mode" "$source"
+  
   # Remove previous archive marker
   rm -f $source/$DEFAULT_ARCHIVED_MARKER
 
@@ -1137,36 +1161,58 @@ function _clean_media()
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
-    # Only proceed if we just finished archiving or importing this media
-    if [ "$archive" = true ] || [ "$import" = true ]; then
-      # One more check to make sure any prior step did not result in an exiftool error
-      _debug "exiftool status: $exiftoolstatus"
-      if (( $exiftoolstatus )) then
-        _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) due to exiftool error status: ${exiftoolstatus}"
-        _error "Please check output."
+    # Determine force mode for clean operation
+    local clean_force_mode="normal"
+    for scope in "${force_scopes[@]}"; do
+      if [[ "$scope" == clean:* ]]; then
+        clean_force_mode=$(echo "$scope" | cut -d: -f2)
+        break
+      fi
+    done
+    
+    # Apply force mode protection
+    if ! _apply_force_mode "clean" "$clean_force_mode" "$source"; then
+      # Normal mode - require archive/import safety checks
+      if [ "$archive" != true ] && [ "$import" != true ]; then
+        _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) without prior archive or import"
+        _error "Run options --archive or --import and --clean together"
+        _error "Or use --force --clean for standalone clean operation"
         exit 1
       fi
-      if [ -e "$source/DCIM" ]; then
-        _debug "Removing $source/DCIM"
-        rm -rfv $source/DCIM || {
-          # Cleanup failed
-          _error "Cleaning ${source} ($(realpath "${source/#\~/$HOME}")) failed!"
-          exit 1
-        }
+      
+      # Check for archive/import markers
+      if [[ ! -f "$source/$DEFAULT_ARCHIVED_MARKER" ]] && [[ ! -f "$source/$DEFAULT_IMPORTED_MARKER" ]]; then
+        _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) without archive or import marker"
+        _error "Source must be archived or imported before cleaning"
+        _error "Or use --force --clean for standalone clean operation"
+        exit 1
       fi
-      for xfile in $source/mdb*(N); do
-        _debug "Removing $xfile"
-        rm -rfv $xfile || {
-          # Cleanup failed
-          _error "Cleaning ${source} failed!"
-          exit 1
-        }
-      done
-    else
-      _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) without prior archive or import"
-      _error "Run options --archive or --import and --clean together"
+    fi
+    
+    # One more check to make sure any prior step did not result in an exiftool error
+    _debug "exiftool status: $exiftoolstatus"
+    if (( $exiftoolstatus )) then
+      _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) due to exiftool error status: ${exiftoolstatus}"
+      _error "Please check output."
       exit 1
     fi
+    
+    if [ -e "$source/DCIM" ]; then
+      _debug "Removing $source/DCIM"
+      rm -rfv $source/DCIM || {
+        # Cleanup failed
+        _error "Cleaning ${source} ($(realpath "${source/#\~/$HOME}")) failed!"
+        exit 1
+      }
+    fi
+    for xfile in $source/mdb*(N); do
+      _debug "Removing $xfile"
+      rm -rfv $xfile || {
+        # Cleanup failed
+        _error "Cleaning ${source} failed!"
+        exit 1
+      }
+    done
   else
     _error "Will not clean ${source} ($(realpath "${source/#\~/$HOME}")) cannot verify it is a GoPro storage device"
     _error "Missing $source/MISC/version.txt ($(realpath "${source/#\~/$HOME}"/MISC/version.txt))"
@@ -1319,10 +1365,19 @@ function _archive_all_gopro_cards()
         _echo "  Serial number: $serial_number"
         _echo "  Firmware version: $firmware_version"
         
+        # Determine force mode for archive operation
+        local archive_force_mode="normal"
+        for scope in "${force_scopes[@]}"; do
+          if [[ "$scope" == archive:* ]]; then
+            archive_force_mode=$(echo "$scope" | cut -d: -f2)
+            break
+          fi
+        done
+        
         # Check if already archived
         if [[ -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
-          if [[ "$FORCE" == "true" ]]; then
-            _echo "  Already archived, but --force specified, will re-archive"
+          if [[ "$archive_force_mode" == "force" ]]; then
+            _echo "  🚨 FORCE: Already archived, but force mode enabled, will re-archive"
             rm -f "$volume/$DEFAULT_ARCHIVED_MARKER"
           else
             _echo "  Already archived, skipping"
@@ -1340,7 +1395,7 @@ function _archive_all_gopro_cards()
         
         # Archive this card
         echo
-        if [[ "$FORCE" == "true" ]] || safe_confirm "Archive media from $volume_name? (y/N)"; then
+        if [[ "$archive_force_mode" == "force" ]] || safe_confirm "Archive media from $volume_name? (y/N)"; then
           _info "Archiving $volume_name..."
           
           # Set source to this volume temporarily
@@ -1558,7 +1613,16 @@ function _clean_all_gopro_cards()
           fi
         fi
         
-        # CRITICAL SAFETY CHECK: Only clean if previously archived or imported
+        # Determine force mode for clean operation
+        local clean_force_mode="normal"
+        for scope in "${force_scopes[@]}"; do
+          if [[ "$scope" == clean:* ]]; then
+            clean_force_mode=$(echo "$scope" | cut -d: -f2)
+            break
+          fi
+        done
+        
+        # CRITICAL SAFETY CHECK: Only clean if previously archived or imported (unless force mode)
         local has_archive_marker=false
         local has_import_marker=false
         
@@ -1573,10 +1637,16 @@ function _clean_all_gopro_cards()
         fi
         
         if [[ "$has_archive_marker" == false && "$has_import_marker" == false ]]; then
-          _echo "  ⚠️  No archive or import marker found - skipping for safety"
-          _echo "     (Clean operations require successful archive or import first)"
-          ((no_archive_count++))
-          continue
+          if [[ "$clean_force_mode" == "force" ]]; then
+            _echo "  🚨 FORCE: No archive or import marker found, but force mode enabled"
+            _echo "     (Force mode bypasses archive/import safety requirements)"
+          else
+            _echo "  ⚠️  No archive or import marker found - skipping for safety"
+            _echo "     (Clean operations require successful archive or import first)"
+            _echo "     (Use --force --clean for standalone clean operation)"
+            ((no_archive_count++))
+            continue
+          fi
         fi
         
         # Check if there's media to clean
@@ -1588,7 +1658,7 @@ function _clean_all_gopro_cards()
         
         # Clean this card
         echo
-        if [[ "$FORCE" == "true" ]] || safe_confirm "Clean media from $volume_name? (y/N)"; then
+        if [[ "$clean_force_mode" == "force" ]] || safe_confirm "Clean media from $volume_name? (y/N)"; then
           _info "Cleaning $volume_name..."
           
           # Set source to this volume temporarily
@@ -2497,8 +2567,44 @@ if [[ "$archive" != true && "$import" != true && "$clean" != true && "$geonames"
   exit 0
 fi
 
+# Source the force mode protection module
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh" ]]; then
+  source "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh"
+else
+  _error "Force mode protection module not found: $SCRIPT_DIR/scripts/core/force-mode-protection.zsh"
+  exit 1
+fi
+
+# Validate force mode combinations before execution
+if ! _validate_force_combination "$archive" "$import" "$clean" "$process" "$FORCE"; then
+  exit 1
+fi
+
+# Determine force mode scope for each operation
+force_scopes=($(_determine_force_scope "$archive" "$import" "$clean" "$process" "$FORCE"))
+
+# Show force mode summary if force mode is enabled
+if [[ "$FORCE" == "true" && ${#force_scopes[@]} -gt 0 ]]; then
+  _show_force_summary "$dry_run" "${force_scopes[@]}"
+fi
+
 # Execute in order: archive, import, clean, geonames, process, firmware
 if [ "$archive" = true ]; then
+  # Find archive operation in force scopes
+  local archive_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == archive:* ]]; then
+      archive_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Confirm force operation if needed
+  if ! _confirm_force_operation "archive:$archive_force_mode" "$dry_run"; then
+    exit 1
+  fi
+  
   # If source is the default (current directory) and no specific source was provided,
   # scan for all GoPro SD cards and archive them
   if [[ "$source" == "." && -z "$sourceopt" ]]; then
@@ -2507,10 +2613,40 @@ if [ "$archive" = true ]; then
     _archive_media
   fi
 fi
+
 if [ "$import" = true ]; then
+  # Find import operation in force scopes
+  local import_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == import:* ]]; then
+      import_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Confirm force operation if needed
+  if ! _confirm_force_operation "import:$import_force_mode" "$dry_run"; then
+    exit 1
+  fi
+  
   _import_media
 fi
+
 if [ "$clean" = true ]; then
+  # Find clean operation in force scopes
+  local clean_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == clean:* ]]; then
+      clean_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Confirm force operation if needed
+  if ! _confirm_force_operation "clean:$clean_force_mode" "$dry_run"; then
+    exit 1
+  fi
+  
   # If source is the default (current directory) and no specific source was provided,
   # scan for all GoPro SD cards and clean them (only if previously archived/imported)
   if [[ "$source" == "." && -z "$sourceopt" ]]; then
