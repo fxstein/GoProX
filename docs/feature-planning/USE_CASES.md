@@ -8,7 +8,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 
 ## Summary
 
-GoProX provides a comprehensive media management ecosystem with **31 use cases** organized into five categories that cover the entire media lifecycle from capture through production to publication.
+GoProX provides a comprehensive media management system with **31 use cases** organized into five categories that cover the entire media lifecycle from capture through production to publication.
 
 ### **Total Use Cases: 31**
 
@@ -84,7 +84,7 @@ GoProX provides a comprehensive media management ecosystem with **31 use cases**
 
 **Future-Proof:** Extensible architecture supporting new devices, formats, and workflows
 
-This comprehensive use case set transforms GoProX from a simple media management tool into a complete ecosystem for intelligent media handling, content creation, and professional workflows across the entire action camera and drone industry.
+This comprehensive use case set transforms GoProX from a simple media management tool into a complete system for intelligent media handling, content creation, and professional workflows across the entire action camera and drone industry.
 
 ## Use Cases
 
