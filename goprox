@@ -426,7 +426,7 @@ function _validate_config()
   
   # Validate mountoptions array
   if [[ -n "$mountoptions" ]]; then
-    # Check if mountoptions is a valid array format
+    # Check if mountoptions is a valid array format (should start with '(' and end with ')')
     if [[ ! "$mountoptions" =~ '^\(.*\)$' ]]; then
       _warning "Invalid mountoptions format: $mountoptions"
       _warning "Using default mount options"
@@ -1473,11 +1473,30 @@ colors
 # enable built in stat
 zmodload zsh/stat
 
-# If no parameters have been provided, scan for GoPro SD cards
-if [[ $# -eq 0 ]] ; then
-  _detect_and_rename_gopro_sd
-  exit 0
+# Always load config and validate storage before any workflow
+if [[ -f "$config" ]]; then
+  _info "Loading config file: $config"
+  source $config
+  # Validate configuration values after loading
+  _validate_config
 fi
+
+# Override any parameters that were specified in config
+if [[ -n $sourceopt ]]; then
+  source=$sourceopt
+fi
+if [[ -n $libraryopt ]]; then
+  library=$libraryopt
+fi
+if [[ -n $copyrightopt ]]; then
+  copyright=$copyrightopt
+fi
+if [[ -n $geonamesopt ]]; then
+  geonamesacct=$geonamesopt
+fi
+
+# Validate storage hierarchy (same as verbose mode)
+_validate_storage
 
 # Parse options
 declare -A opts
@@ -1742,21 +1761,6 @@ _info $BANNER_TEXT
 # Check if all required dependencies are installed
 _validate_dependencies
 
-# Load config file first
-# Check if we have a config file to work with
-if [[ -f "$config" ]]; then
-  _info "Loading config file: $config"
-  [[ $loglevel -le 1 ]] && tail $config
-  source $config
-  # Validate configuration values after loading
-  _validate_config
-fi
-
-_debug "SourceOpt: $sourceopt"
-_debug "LibraryOpt: $libraryopt"
-_debug "CopyrightOpt: $copyrightopt"
-_debug "GeonamesOpt: $geonamesopt"
-
 # Create optional timefilters
 # Must be executed BEFORE iffilter logic as exiftool -if4 must be left of -if0
 _create_timefilter || {
@@ -1871,13 +1875,6 @@ if [ "$test" = true ]; then
   _echo "TESTING successful!"
   exit 0
 fi
-
-# Before proceeding validate storage hierarchy
-# This is necessary when dealing with linked subdirectories located on
-# separate storage devices like external SSDs or HDDs. When those devices
-# are not mounted, links to them still exist but are none operational.
-# Depending on processing options, various steps might become impossible.
-_validate_storage
 
 if [ "$show_config" = true ]; then
   _echo "Displaying GoProX configuration..."
@@ -2143,6 +2140,13 @@ if [ "$mount" = true ]; then
 
   _echo "Mount processing finished."
   
+  exit 0
+fi
+
+# Check if any specific tasks were requested
+# If no tasks were specified, run the default SD card detection/rename workflow
+if [[ "$archive" != true && "$import" != true && "$clean" != true && "$geonames" != true && "$timeshift" != true && "$process" != true && "$firmware" != true ]]; then
+  _detect_and_rename_gopro_sd
   exit 0
 fi
 
