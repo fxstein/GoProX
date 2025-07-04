@@ -522,6 +522,37 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can include metadata summaries and statistics in generated content
 - [ ] Can support collaborative content creation with multiple users
 
+### **Use Case 29: Video Production Provenance Tracking**
+**Description**: Import video productions from editing software and maintain complete provenance from source media to final published videos.
+
+**Requirements**:
+- Import video productions created through professional editing software (e.g., Black Magic DaVinci Resolve)
+- Link final produced videos back to their source media files with complete provenance chain
+- Track all source media files used in each video production
+- Maintain editing metadata (cuts, effects, color grading, audio mixing)
+- Store production project files and settings for future reference
+- Track version history of video productions (rough cuts, final versions, revisions)
+- Associate video productions with trips, locations, and time periods
+- Support multiple output formats and quality levels for the same production
+- Track publishing history and distribution channels for produced videos
+- Enable search and retrieval of all videos that used specific source media
+- Store production notes, credits, and collaboration information
+- Support export of production metadata for external tools and workflows
+
+**Validation Criteria**:
+- [ ] Can import video productions from professional editing software
+- [ ] Can link final videos back to source media with complete provenance
+- [ ] Can track all source media files used in each video production
+- [ ] Can maintain editing metadata and project settings
+- [ ] Can store production project files for future reference
+- [ ] Can track version history of video productions
+- [ ] Can associate video productions with trips, locations, and time periods
+- [ ] Can support multiple output formats and quality levels
+- [ ] Can track publishing history and distribution channels
+- [ ] Can search for all videos that used specific source media
+- [ ] Can store production notes, credits, and collaboration information
+- [ ] Can export production metadata for external tools and workflows
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -553,7 +584,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-28)**
+### **System and Maintenance (22-29)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
@@ -561,6 +592,7 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - GPS track import and export
 - Apple Photos integration and geo location markers
 - Trip reports and content generation
+- Video production provenance tracking
 
 ## Implementation Priority
 
@@ -578,13 +610,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Use Case 26: GPS track import and export
 - Use Case 27: Apple Photos integration and geo location markers
 - Use Case 28: Trip reports and content generation
+- Use Case 29: Video production provenance tracking
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-28
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-29
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
