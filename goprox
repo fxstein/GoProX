@@ -87,6 +87,7 @@ Options:
   --config              specify config file
                         defaults to ~/.goprox
   --debug               run program in debug mode
+  --force               skip confirmations and force operations (bypass markers)
   --time                specify time format for output
                         format: specify time format for output
   --version             show version information and exit
@@ -1209,11 +1210,7 @@ function _fetch_and_cache_firmware_zip() {
   local camera_name="$(basename $(dirname "$firmware_dir"))"
   local cache_subdir="$FIRMWARE_CACHE_DIR/$cache_type/$camera_name/$firmware_name"
   mkdir -p "$cache_subdir"
-  local zip_name="UPDATE.zip"
-  if [[ "$camera_name" == "The Remote" ]]; then
-    zip_name="REMOTE.UPDATE.zip"
-  fi
-  local cached_zip="$cache_subdir/$zip_name"
+  local cached_zip="$cache_subdir/firmware.zip"
   if [[ ! -f "$cached_zip" ]]; then
     _info "Downloading firmware from $firmware_url to $cached_zip..." >&2
     curl -L -o "$cached_zip" "$firmware_url" || {
@@ -1324,9 +1321,14 @@ function _archive_all_gopro_cards()
         
         # Check if already archived
         if [[ -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
-          _echo "  Already archived, skipping"
-          ((already_archived_count++))
-          continue
+          if [[ "$FORCE" == "true" ]]; then
+            _echo "  Already archived, but --force specified, will re-archive"
+            rm -f "$volume/$DEFAULT_ARCHIVED_MARKER"
+          else
+            _echo "  Already archived, skipping"
+            ((already_archived_count++))
+            continue
+          fi
         fi
         
         # Check if there's media to archive
@@ -1338,7 +1340,7 @@ function _archive_all_gopro_cards()
         
         # Archive this card
         echo
-        if safe_confirm "Archive media from $volume_name? (y/N)"; then
+        if [[ "$FORCE" == "true" ]] || safe_confirm "Archive media from $volume_name? (y/N)"; then
           _info "Archiving $volume_name..."
           
           # Set source to this volume temporarily
@@ -1415,9 +1417,15 @@ function _firmware_all_gopro_cards()
         
         # Check if firmware update already prepared
         if [[ -d "$volume/UPDATE" ]] && [[ -f "$volume/UPDATE/DATA.bin" ]]; then
-          _echo "  Firmware update already prepared, skipping"
-          ((already_updated_count++))
-          continue
+          if [[ "$FORCE" == "true" ]]; then
+            _echo "  Firmware update already prepared, but --force specified, will re-update"
+            rm -rf "$volume/UPDATE"
+            rm -f "$volume/$DEFAULT_FWCHECKED_MARKER"
+          else
+            _echo "  Firmware update already prepared, skipping"
+            ((already_updated_count++))
+            continue
+          fi
         fi
         
         # Detect firmware type and check for updates
@@ -1452,7 +1460,7 @@ function _firmware_all_gopro_cards()
             
             # Offer to update firmware
             echo
-            if safe_confirm "Update firmware on $volume_name to $latestversion? (y/N)"; then
+            if [[ "$FORCE" == "true" ]] || safe_confirm "Update firmware on $volume_name to $latestversion? (y/N)"; then
               _info "Updating firmware on $volume_name..."
               
               # Set source to this volume temporarily
@@ -1754,6 +1762,7 @@ zparseopts -D -E -F -A opts - \
             -non-interactive \
             -auto-confirm \
             -default-yes \
+            -force \
 	          || {
     # Unknown option
     _error "Unknown option: $@"
@@ -1937,6 +1946,9 @@ for key val in "${(kv@)opts}"; do
       ;;
     --default-yes)
       DEFAULT_YES=true
+      ;;
+    --force)
+      FORCE=true
       ;;
   esac
 done
