@@ -840,6 +840,10 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 
 **RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach with meaningful type prefixes for easy identification.
 
+## Git Divergence Handling
+
+- When encountering diverging branches (local and remote both have unique commits), always check for commit timestamp collisions before defaulting to a rebase. If two commits have the same timestamp, amend the local commit to have a unique timestamp, then rebase or merge as appropriate. This prevents persistent divergence caused by identical commit times.
+
 ## Critical Rules
 
 1. **NEVER hardcode paths to system utilities** (rm, mkdir, cat, echo, etc.) - always use the command name and let the shell find it in PATH

@@ -80,7 +80,8 @@ _determine_force_scope() {
     elif [[ "$eject" == "true" && "$clean" != "true" && "$archive" != "true" && "$import" != "true" && "$process" != "true" ]]; then
       force_scope+=("eject:force")
     else
-      # Combined operations - force applies to archive/import but not clean
+      # Combined operations - force applies to archive/import/firmware but not clean
+      # Clean runs in normal mode when combined with other operations
       if [[ "$archive" == "true" ]]; then
         force_scope+=("archive:force")
       fi
@@ -193,7 +194,14 @@ _confirm_force_operation() {
     return 0
   fi
   
-  # Show appropriate warning
+  # Only require confirmation for clean operations (destructive)
+  # Archive/import operations in force mode bypass checks without user input
+  if [[ "$operation" != "clean" ]]; then
+    _log_force_action "FORCE_AUTO_APPLIED" "$operation" "$mode" "bypassing checks without confirmation"
+    return 0
+  fi
+  
+  # Show appropriate warning for clean operations
   _show_force_warning "$force_scope" "$dry_run"
   
   # Get required confirmation text
@@ -201,12 +209,6 @@ _confirm_force_operation() {
   case "$operation" in
     "clean")
       required_confirmation="$FORCE_CONFIRMATION_CLEAN"
-      ;;
-    "archive")
-      required_confirmation="$FORCE_CONFIRMATION_ARCHIVE"
-      ;;
-    "import")
-      required_confirmation="$FORCE_CONFIRMATION_IMPORT"
       ;;
     "eject")
       required_confirmation="$FORCE_CONFIRMATION_EJECT"

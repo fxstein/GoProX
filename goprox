@@ -1112,7 +1112,11 @@ function _archive_media()
   _apply_force_mode "archive" "$archive_force_mode" "$source"
   
   # Remove previous archive marker
-  rm -f $source/$DEFAULT_ARCHIVED_MARKER
+  if [[ "$dry_run" == "true" ]]; then
+    _echo "🚦 DRY RUN MODE - Would remove previous marker: $source/$DEFAULT_ARCHIVED_MARKER"
+  else
+    rm -f $source/$DEFAULT_ARCHIVED_MARKER
+  fi
 
   # Check if this is a GoPro storage card
   if [[ -f "$source/MISC/version.txt" ]]; then
@@ -1137,12 +1141,18 @@ function _archive_media()
 
     _info "Archive: "$archivename
 
-    tar --totals --exclude='.Spotlight-V100' --exclude='.Trash*' --exclude='.goprox.*' \
-        -zcvf "${archivedir/#\~/$HOME}/${archivename}.tar.gz" "${source/#\~/$HOME}" || {
-      # Archive failed
-      _error "Archive creation failed!"
-      exit 1
-    }
+    if [[ "$dry_run" == "true" ]]; then
+      _echo "🚦 DRY RUN MODE - Would create archive: ${archivedir/#\~/$HOME}/${archivename}.tar.gz"
+      _echo "🚦 DRY RUN MODE - Would archive source: ${source/#\~/$HOME}"
+      _echo "🚦 DRY RUN MODE - Would exclude: .Spotlight-V100, .Trash*, .goprox.*"
+    else
+      tar --totals --exclude='.Spotlight-V100' --exclude='.Trash*' --exclude='.goprox.*' \
+          -zcvf "${archivedir/#\~/$HOME}/${archivename}.tar.gz" "${source/#\~/$HOME}" || {
+        # Archive failed
+        _error "Archive creation failed!"
+        exit 1
+      }
+    fi
   else
     _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
     _error "Missing $(realpath ${source})/MISC/version.txt"
@@ -1152,7 +1162,11 @@ function _archive_media()
   _echo "Finished media archive"
 
   # Leave a marker
-  touch $source/$DEFAULT_ARCHIVED_MARKER
+  if [[ "$dry_run" == "true" ]]; then
+    _echo "🚦 DRY RUN MODE - Would create marker: $source/$DEFAULT_ARCHIVED_MARKER"
+  else
+    touch $source/$DEFAULT_ARCHIVED_MARKER
+  fi
 }
 
 function _clean_media()
