@@ -85,6 +85,22 @@ This document establishes the foundational architectural decisions and design pa
 - Treat this file as the canonical source for project-specific standards and instructions.
 - If a rule is ambiguous, ask for clarification before proceeding.
 
+## Git Operations (CRITICAL)
+- **NEVER run git operations in interactive mode** when performing automated tasks, commits, merges, or rebases.
+- **Always use non-interactive git commands** to avoid opening editors (vim, nano, etc.) that can hang the process.
+- **For rebases and merges**: Use `--no-edit` flag or set `GIT_EDITOR=true` to prevent interactive editor opening.
+- **For commits**: Use `-m` flag to specify commit messages directly on command line.
+- **For interactive rebases**: Avoid `git rebase -i` unless explicitly requested by user.
+- **When conflicts occur**: Resolve them programmatically and use `git add` to stage resolved files.
+- **Examples of safe git commands**:
+  ```zsh
+  git commit -m "message"                    # Non-interactive commit
+  git merge --no-edit                        # Non-interactive merge
+  GIT_EDITOR=true git rebase --continue     # Non-interactive rebase continue
+  git rebase --abort                         # Abort stuck operations
+  ```
+- **If git operations hang**: Use `Ctrl+C` to interrupt and then `git rebase --abort` or `git merge --abort` to reset state.
+
 ## Release Workflow Automation
 
 - When the user requests a release, always use the `./scripts/release/gitflow-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
