@@ -279,6 +279,161 @@ This section documents all use cases and requirements for the Intelligent Media 
 - [ ] Can support bulk migration operations
 - [ ] Can maintain complete migration history
 
+### **Use Case 16: Multi-User Collaboration and User Management**
+**Description**: Support multiple users working with the same GoProX library or metadata database.
+
+**Requirements**:
+- Support for user accounts or profiles in metadata system
+- Track which user performed which operation (import, delete, archive, etc.)
+- Optional permissions or access control for sensitive operations
+- Audit log of user actions for accountability
+- Support for team workflows and shared libraries
+
+**Validation Criteria**:
+- [ ] Can identify which user performed each operation
+- [ ] Can restrict or allow actions based on user role
+- [ ] Can review a history of user actions
+- [ ] Can support shared library access
+- [ ] Can maintain user-specific preferences and settings
+
+### **Use Case 17: Automated Backup and Disaster Recovery**
+**Description**: Protect against data loss due to hardware failure, accidental deletion, or corruption.
+
+**Requirements**:
+- Automated scheduled backups of the metadata database and media files
+- Support for backup to local, network, or cloud destinations
+- Easy restore process for both metadata and media
+- Versioned backups for rollback capability
+- Integrity verification of backup data
+
+**Validation Criteria**:
+- [ ] Can schedule and verify automated backups
+- [ ] Can restore from backup to a previous state
+- [ ] Can perform partial or full recovery
+- [ ] Can verify backup integrity
+- [ ] Can manage backup retention and cleanup
+
+### **Use Case 18: Delta/Incremental Processing and Reprocessing**
+**Description**: Efficiently handle large libraries and only process new or changed files.
+
+**Requirements**:
+- Detect and process only new or modified media since last run
+- Support for reprocessing files if processing logic or metadata schema changes
+- Track processing version/history per file
+- Optimize processing for large libraries
+- Support for selective reprocessing based on criteria
+
+**Validation Criteria**:
+- [ ] Can process only new/changed files efficiently
+- [ ] Can reprocess files and update metadata as needed
+- [ ] Can track which files need reprocessing after schema/logic updates
+- [ ] Can perform selective reprocessing by criteria
+- [ ] Can optimize processing performance for large libraries
+
+### **Use Case 19: Advanced Duplicate Detection and Resolution**
+**Description**: Prevent and resolve duplicate media files across libraries, archives, or storage devices.
+
+**Requirements**:
+- Detect duplicates by hash, metadata, or content analysis
+- Provide tools to merge, delete, or link duplicates
+- Track duplicate resolution history and decisions
+- Support for fuzzy matching and near-duplicate detection
+- Integration with existing library management workflows
+
+**Validation Criteria**:
+- [ ] Can identify duplicates across all storage locations
+- [ ] Can resolve duplicates with user guidance or automatically
+- [ ] Can track actions taken on duplicates
+- [ ] Can detect near-duplicates and similar content
+- [ ] Can integrate duplicate resolution with import workflows
+
+### **Use Case 20: Third-Party Integration and API Access**
+**Description**: Allow external tools or scripts to interact with GoProX metadata and workflows.
+
+**Requirements**:
+- Provide a documented API (CLI, REST, or file-based) for querying and updating metadata
+- Support for export/import of metadata in standard formats (JSON, CSV, etc.)
+- Integration hooks for automation (e.g., post-import, post-archive)
+- Webhook support for external system notifications
+- Plugin architecture for custom integrations
+
+**Validation Criteria**:
+- [ ] Can access and update metadata via API or CLI
+- [ ] Can export/import metadata for use in other tools
+- [ ] Can trigger external scripts on workflow events
+- [ ] Can receive webhook notifications for system events
+- [ ] Can extend functionality through plugin system
+
+### **Use Case 21: Performance Monitoring and Resource Management**
+**Description**: Monitor and optimize performance for large-scale operations.
+
+**Requirements**:
+- Track processing times, resource usage, and bottlenecks
+- Provide performance reports and optimization suggestions
+- Alert on low disk space or high resource usage
+- Monitor system health and GoProX performance metrics
+- Support for performance tuning and optimization
+
+**Validation Criteria**:
+- [ ] Can generate performance reports and metrics
+- [ ] Can alert users to resource issues and bottlenecks
+- [ ] Can suggest optimizations for large libraries
+- [ ] Can monitor system health and performance
+- [ ] Can provide performance tuning recommendations
+
+### **Use Case 22: Firmware and Camera Compatibility Matrix**
+**Description**: Track and manage compatibility between firmware versions, camera models, and features.
+
+**Requirements**:
+- Maintain a compatibility matrix in metadata system
+- Warn users of incompatible firmware or features
+- Suggest upgrades or downgrades as needed
+- Track feature availability by camera/firmware combination
+- Support for compatibility testing and validation
+
+**Validation Criteria**:
+- [ ] Can display compatibility information for any camera/firmware
+- [ ] Can warn or block incompatible operations
+- [ ] Can suggest compatible firmware versions
+- [ ] Can track feature availability by camera model
+- [ ] Can validate compatibility before operations
+
+### **Use Case 23: Edge Case Handling and Recovery**
+**Description**: Handle rare or unexpected situations gracefully.
+
+**Requirements**:
+- Corrupted SD card or media file recovery
+- Handling of partially imported or interrupted operations
+- Support for non-GoPro media or mixed card content
+- Recovery from system failures or crashes
+- Graceful degradation when resources are limited
+
+**Validation Criteria**:
+- [ ] Can recover from interrupted or failed operations
+- [ ] Can process or skip non-GoPro media as configured
+- [ ] Can repair or quarantine corrupted files
+- [ ] Can resume operations after system failures
+- [ ] Can operate with limited resources gracefully
+
+### **Use Case 24: GoProX Version Tracking and Reprocessing**
+**Description**: Track which GoProX version processed each media file to enable selective reprocessing when new features or bug fixes are available.
+
+**Requirements**:
+- Record GoProX version with every operation (import, process, archive, etc.)
+- Track processing version history for each media file
+- Support for identifying files processed with specific GoProX versions
+- Enable selective reprocessing based on version criteria
+- Track feature availability and bug fixes by version
+- Support for bulk reprocessing of files from older versions
+
+**Validation Criteria**:
+- [ ] Can record GoProX version with every operation
+- [ ] Can query files processed with specific GoProX versions
+- [ ] Can identify files that need reprocessing due to version updates
+- [ ] Can perform bulk reprocessing based on version criteria
+- [ ] Can track feature availability and bug fixes by version
+- [ ] Can show version upgrade recommendations for existing files
+
 ## Implementation Strategy
 
 ### Phase 1: Intelligent Detection and Setup
@@ -500,6 +655,13 @@ CREATE TABLE media_files (
     gopro_cloud_upload_date TEXT,
     apple_photos_imported BOOLEAN DEFAULT FALSE,
     apple_photos_import_date TEXT,
+    -- GoProX version tracking for reprocessing
+    import_goprox_version TEXT, -- Version used for import operation
+    process_goprox_version TEXT, -- Version used for processing operation
+    archive_goprox_version TEXT, -- Version used for archive operation
+    last_processed_version TEXT, -- Most recent version that processed this file
+    needs_reprocessing BOOLEAN DEFAULT FALSE, -- Flag for files needing reprocessing
+    reprocessing_reason TEXT, -- Why reprocessing is needed (new feature, bug fix, etc.)
     notes TEXT,
     FOREIGN KEY (camera_id) REFERENCES cameras(id),
     FOREIGN KEY (source_sd_card_id) REFERENCES storage_devices(id),
@@ -518,6 +680,8 @@ CREATE TABLE processing_history (
     operation_location_lon REAL,
     operation_timezone TEXT,
     status TEXT NOT NULL, -- 'success', 'failed', 'skipped'
+    goprox_version TEXT NOT NULL, -- GoProX version used for this operation
+    operation_details TEXT, -- JSON details of the operation
     details TEXT,
     FOREIGN KEY (media_file_id) REFERENCES media_files(id),
     FOREIGN KEY (computer_id) REFERENCES computers(id)
@@ -572,6 +736,21 @@ CREATE TABLE metadata_sync_status (
     sync_timezone TEXT,
     notes TEXT,
     FOREIGN KEY (computer_id) REFERENCES computers(id)
+);
+
+-- GoProX Version Features and Bug Fixes (tracks what changed in each version)
+CREATE TABLE goprox_version_features (
+    id INTEGER PRIMARY KEY,
+    version TEXT NOT NULL,
+    feature_type TEXT NOT NULL, -- 'feature', 'bug_fix', 'improvement', 'breaking_change'
+    feature_name TEXT NOT NULL,
+    description TEXT,
+    affects_processing BOOLEAN DEFAULT FALSE, -- Whether this affects media processing
+    affects_metadata BOOLEAN DEFAULT FALSE, -- Whether this affects metadata extraction
+    affects_import BOOLEAN DEFAULT FALSE, -- Whether this affects import operations
+    affects_archive BOOLEAN DEFAULT FALSE, -- Whether this affects archive operations
+    release_date TEXT,
+    notes TEXT
 );
 ```
 
@@ -632,6 +811,91 @@ record_sd_card_usage() {
         datetime('now'),
         '$firmware_version'
     );
+EOF
+}
+
+# GoProX Version Tracking Functions
+record_processing_operation() {
+    local media_file_id="$1"
+    local operation_type="$2"
+    local goprox_version="$3"
+    local computer_id="$4"
+    local operation_details="$5"
+    
+    sqlite3 "$HOME/.goprox/metadata.db" << EOF
+    INSERT INTO processing_history (
+        media_file_id, operation_type, operation_date, computer_id, 
+        goprox_version, operation_details, status
+    ) VALUES (
+        $media_file_id, '$operation_type', datetime('now'), $computer_id,
+        '$goprox_version', '$operation_details', 'success'
+    );
+    
+    -- Update media file with version information
+    UPDATE media_files 
+    SET last_processed_version = '$goprox_version'
+    WHERE id = $media_file_id;
+EOF
+}
+
+update_media_file_version() {
+    local media_file_id="$1"
+    local operation_type="$2"
+    local goprox_version="$3"
+    
+    case "$operation_type" in
+        "import")
+            sqlite3 "$HOME/.goprox/metadata.db" << EOF
+            UPDATE media_files 
+            SET import_goprox_version = '$goprox_version'
+            WHERE id = $media_file_id;
+EOF
+            ;;
+        "process")
+            sqlite3 "$HOME/.goprox/metadata.db" << EOF
+            UPDATE media_files 
+            SET process_goprox_version = '$goprox_version'
+            WHERE id = $media_file_id;
+EOF
+            ;;
+        "archive")
+            sqlite3 "$HOME/.goprox/metadata.db" << EOF
+            UPDATE media_files 
+            SET archive_goprox_version = '$goprox_version'
+            WHERE id = $media_file_id;
+EOF
+            ;;
+    esac
+}
+
+mark_files_for_reprocessing() {
+    local target_version="$1"
+    local reason="$2"
+    
+    sqlite3 "$HOME/.goprox/metadata.db" << EOF
+    UPDATE media_files 
+    SET needs_reprocessing = TRUE, reprocessing_reason = '$reason'
+    WHERE last_processed_version < '$target_version'
+    AND processing_status = 'processed';
+EOF
+}
+
+get_files_needing_reprocessing() {
+    sqlite3 "$HOME/.goprox/metadata.db" << 'EOF'
+    SELECT filename, file_path, last_processed_version, reprocessing_reason
+    FROM media_files 
+    WHERE needs_reprocessing = TRUE
+    ORDER BY last_processed_version;
+EOF
+}
+
+get_version_statistics() {
+    sqlite3 "$HOME/.goprox/metadata.db" << 'EOF'
+    SELECT last_processed_version, COUNT(*) as file_count
+    FROM media_files 
+    WHERE last_processed_version IS NOT NULL
+    GROUP BY last_processed_version
+    ORDER BY last_processed_version;
 EOF
 }
 ```
@@ -769,6 +1033,49 @@ SELECT m.filename, a.processing_location_lat, a.processing_location_lon, a.proce
 FROM media_files m
 JOIN archives a ON m.source_archive_id = a.id
 WHERE a.processing_location_lat IS NOT NULL;
+
+-- GoProX Version Tracking Queries
+
+-- Find all files processed with a specific GoProX version
+SELECT m.filename, m.file_path, m.last_processed_version, ph.operation_date
+FROM media_files m
+JOIN processing_history ph ON m.id = ph.media_file_id
+WHERE ph.goprox_version = '01.10.00'
+ORDER BY ph.operation_date DESC;
+
+-- Find files that need reprocessing due to version updates
+SELECT m.filename, m.last_processed_version, m.reprocessing_reason, m.file_path
+FROM media_files m
+WHERE m.needs_reprocessing = TRUE
+ORDER BY m.last_processed_version;
+
+-- Get version statistics for all processed files
+SELECT last_processed_version, COUNT(*) as file_count
+FROM media_files 
+WHERE last_processed_version IS NOT NULL
+GROUP BY last_processed_version
+ORDER BY last_processed_version;
+
+-- Find files processed before a specific version (for bulk reprocessing)
+SELECT m.filename, m.file_path, m.last_processed_version
+FROM media_files m
+WHERE m.last_processed_version < '01.10.00'
+AND m.processing_status = 'processed'
+ORDER BY m.last_processed_version;
+
+-- Track processing operations by version
+SELECT ph.goprox_version, ph.operation_type, COUNT(*) as operation_count
+FROM processing_history ph
+GROUP BY ph.goprox_version, ph.operation_type
+ORDER BY ph.goprox_version DESC, ph.operation_type;
+
+-- Find files that might benefit from new features
+SELECT m.filename, m.last_processed_version, gvf.feature_name, gvf.description
+FROM media_files m
+JOIN goprox_version_features gvf ON gvf.version > m.last_processed_version
+WHERE gvf.affects_processing = TRUE
+AND m.processing_status = 'processed'
+ORDER BY gvf.version DESC;
 ```
 
 #### Potential Gaps and Considerations
