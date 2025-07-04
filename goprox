@@ -1512,6 +1512,126 @@ function _firmware_all_gopro_cards()
   _echo "Firmware scanning finished."
 }
 
+function _clean_all_gopro_cards()
+{
+  _echo "Scanning for GoPro SD cards to clean..."
+  
+  local found_gopro=false
+  local cleaned_count=0
+  local already_cleaned_count=0
+  local skipped_count=0
+  local no_archive_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        found_gopro=true
+        
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+        
+        _echo "Found GoPro SD card: $volume_name"
+        _echo "  Camera type: $camera_type"
+        _echo "  Serial number: $serial_number"
+        _echo "  Firmware version: $firmware_version"
+        
+        # Check if already cleaned
+        if [[ -f "$volume/$DEFAULT_CLEANED_MARKER" ]]; then
+          if [[ "$FORCE" == "true" ]]; then
+            _echo "  Already cleaned, but --force specified, will re-clean"
+            rm -f "$volume/$DEFAULT_CLEANED_MARKER"
+          else
+            _echo "  Already cleaned, skipping"
+            ((already_cleaned_count++))
+            continue
+          fi
+        fi
+        
+        # CRITICAL SAFETY CHECK: Only clean if previously archived or imported
+        local has_archive_marker=false
+        local has_import_marker=false
+        
+        if [[ -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
+          has_archive_marker=true
+          _echo "  ✓ Archive marker found"
+        fi
+        
+        if [[ -f "$volume/$DEFAULT_IMPORTED_MARKER" ]]; then
+          has_import_marker=true
+          _echo "  ✓ Import marker found"
+        fi
+        
+        if [[ "$has_archive_marker" == false && "$has_import_marker" == false ]]; then
+          _echo "  ⚠️  No archive or import marker found - skipping for safety"
+          _echo "     (Clean operations require successful archive or import first)"
+          ((no_archive_count++))
+          continue
+        fi
+        
+        # Check if there's media to clean
+        if [[ ! -d "$volume/DCIM" ]] || [[ -z "$(find "$volume/DCIM" -type f 2>/dev/null | head -1)" ]]; then
+          _echo "  No media files found, skipping"
+          ((skipped_count++))
+          continue
+        fi
+        
+        # Clean this card
+        echo
+        if [[ "$FORCE" == "true" ]] || safe_confirm "Clean media from $volume_name? (y/N)"; then
+          _info "Cleaning $volume_name..."
+          
+          # Set source to this volume temporarily
+          local original_source="$source"
+          source="$volume"
+          
+          # Call the existing clean function
+          _clean_media
+          
+          # Restore original source
+          source="$original_source"
+          
+          ((cleaned_count++))
+        else
+          _info "Clean cancelled for $volume_name"
+        fi
+        
+        echo
+      fi
+    fi
+  done
+  
+  if [[ "$found_gopro" == false ]]; then
+    _info "No GoPro SD cards found"
+  else
+    _echo "Clean Summary:"
+    if [[ $already_cleaned_count -gt 0 ]]; then
+      _echo "  - $already_cleaned_count already cleaned"
+    fi
+    if [[ $no_archive_count -gt 0 ]]; then
+      _echo "  - $no_archive_count skipped (no archive/import marker)"
+    fi
+    if [[ $skipped_count -gt 0 ]]; then
+      _echo "  - $skipped_count skipped (no media)"
+    fi
+    if [[ $cleaned_count -gt 0 ]]; then
+      _echo "  - $cleaned_count newly cleaned"
+    fi
+  fi
+  
+  _echo "Clean scanning finished."
+}
+
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
@@ -2391,7 +2511,13 @@ if [ "$import" = true ]; then
   _import_media
 fi
 if [ "$clean" = true ]; then
-  _clean_media
+  # If source is the default (current directory) and no specific source was provided,
+  # scan for all GoPro SD cards and clean them (only if previously archived/imported)
+  if [[ "$source" == "." && -z "$sourceopt" ]]; then
+    _clean_all_gopro_cards
+  else
+    _clean_media
+  fi
 fi
 if [ "$geonames" = true ]; then
   _geonames_media
