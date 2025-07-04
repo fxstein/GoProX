@@ -66,8 +66,7 @@ Commands:
                         this is also leveraged by the goprox launch agent
   --enhanced            run enhanced default behavior (intelligent media management)
                         automatically detects GoPro SD cards and recommends optimal workflows
-  --firmware-focused    run firmware-focused workflow (rename cards, check firmware, install labs)
-                        streamlined workflow for firmware management with labs preference
+
   --rename-cards        rename detected GoPro SD cards to standard format
                         automatically detects and renames all GoPro SD cards
   --dry-run             simulate all actions without making any changes (safe testing mode)
@@ -216,6 +215,9 @@ validimported=false
 validprocessed=false
 validdeleted=false
 tempdir=""
+
+# Always auto-rename GoPro SD cards at the start of every run
+_auto_rename_all_gopro_cards
 
 function _debug()
 {
@@ -1822,9 +1824,94 @@ function _clean_all_gopro_cards()
   _echo "Clean scanning finished."
 }
 
+# Helper function to automatically rename GoPro SD cards
+function _auto_rename_gopro_card() {
+  local volume="$1"
+  local volume_name="$2"
+  local camera_type="$3"
+  local serial_number="$4"
+  
+  # Extract last 4 digits of serial number for shorter name
+  local short_serial=${serial_number: -4}
+  
+  # Create new volume name: CAMERA_TYPE-SERIAL_LAST_4
+  # Remove "Black" from camera type and clean up special characters
+  local clean_camera_type=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')
+  local new_volume_name="${clean_camera_type}-${short_serial}"
+  
+  # Check if new name is different from current name
+  if [[ "$volume_name" != "$new_volume_name" ]]; then
+    # Check if new name already exists
+    if [[ -d "/Volumes/$new_volume_name" ]]; then
+      _warning "Volume name '$new_volume_name' already exists, keeping original name"
+      return 1
+    fi
+    
+    # Automatically rename without prompting
+    _info "Auto-renaming '$volume_name' to '$new_volume_name'..."
+    
+    # Get the device identifier for the volume
+    local device_id=$(diskutil info "$volume" | grep "Device Identifier" | awk '{print $3}')
+    
+    # Use diskutil to rename the volume using device identifier
+    if diskutil rename "$device_id" "$new_volume_name"; then
+      _echo "Successfully renamed '$volume_name' to '$new_volume_name'"
+      return 0
+    else
+      _error "Failed to rename volume, keeping original name"
+      return 1
+    fi
+  fi
+  
+  return 0
+}
+
+# Centralized function to auto-rename all GoPro SD cards before processing
+function _auto_rename_all_gopro_cards() {
+  _echo "Auto-renaming GoPro SD cards to standard format..."
+  
+  local renamed_count=0
+  local skipped_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        
+        # Auto-rename this card
+        if _auto_rename_gopro_card "$volume" "$volume_name" "$camera_type" "$serial_number"; then
+          ((renamed_count++))
+        else
+          ((skipped_count++))
+        fi
+      fi
+    fi
+  done
+  
+  if [[ $renamed_count -gt 0 ]]; then
+    _echo "Auto-rename Summary: $renamed_count renamed, $skipped_count skipped"
+  fi
+  
+  return 0
+}
+
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
+  
+  # Auto-rename all cards first
+  _auto_rename_all_gopro_cards
   
   local found_gopro=false
   local renamed_count=0
@@ -1864,19 +1951,13 @@ function _detect_and_rename_gopro_sd()
         _echo "  Serial number: $serial_number"
         _echo "  Firmware version: $firmware_version"
         
-        # Extract last 4 digits of serial number for shorter name
+        # Check if name is already in correct format
         local short_serial=${serial_number: -4}
-        
-        # Create new volume name: CAMERA_TYPE-SERIAL_LAST_4
-        # Remove "Black" from camera type and clean up special characters
         local clean_camera_type=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')
-        local new_volume_name="${clean_camera_type}-${short_serial}"
+        local expected_name="${clean_camera_type}-${short_serial}"
         
-        # Check if new name is different from current name
-        if [[ "$volume_name" == "$new_volume_name" ]]; then
+        if [[ "$volume_name" == "$expected_name" ]]; then
           ((already_correct_count++))
-        else
-          _echo "  Proposed new name: $new_volume_name"
         fi
         
         # Detect firmware type and check for updates
@@ -1948,33 +2029,7 @@ function _detect_and_rename_gopro_sd()
           _echo "  No $firmware_type firmware found for $camera_type"
         fi
         
-        # Only proceed with rename logic if name needs to be changed
-        if [[ "$volume_name" != "$new_volume_name" ]]; then
-          # Check if new name already exists
-          if [[ -d "/Volumes/$new_volume_name" ]]; then
-            _warning "Volume name '$new_volume_name' already exists, skipping rename"
-            continue
-          fi
-          
-          # Confirm rename operation
-          echo
-          if safe_confirm "Do you want to rename '$volume_name' to '$new_volume_name'? (y/N)"; then
-            _info "Renaming volume..."
-            
-            # Get the device identifier for the volume
-            local device_id=$(diskutil info "$volume" | grep "Device Identifier" | awk '{print $3}')
-            
-            # Use diskutil to rename the volume using device identifier
-            if diskutil rename "$device_id" "$new_volume_name"; then
-              _echo "Successfully renamed '$volume_name' to '$new_volume_name'"
-              ((renamed_count++))
-            else
-              _error "Failed to rename volume"
-            fi
-          else
-            _info "Rename cancelled"
-          fi
-        fi
+
         
         echo
       fi
@@ -1987,9 +2042,6 @@ function _detect_and_rename_gopro_sd()
     _echo "Summary: Found $((already_correct_count + renamed_count)) GoPro SD card(s)"
     if [[ $already_correct_count -gt 0 ]]; then
       _echo "  - $already_correct_count already correctly named"
-    fi
-    if [[ $renamed_count -gt 0 ]]; then
-      _echo "  - $renamed_count renamed"
     fi
     if [[ $firmware_updated_count -gt 0 ]]; then
       _echo "  - $firmware_updated_count firmware updates prepared"
@@ -2060,7 +2112,6 @@ zparseopts -D -E -F -A opts - \
             -modified-before: \
             -mount:: \
             -enhanced \
-            -firmware-focused \
             -rename-cards \
             -dry-run \
             -show-config \
@@ -2202,10 +2253,7 @@ for key val in "${(kv@)opts}"; do
       # Perform enhanced default behavior (intelligent media management)
       enhanced=true
     ;;
-    --firmware-focused)
-      # Perform firmware-focused workflow (rename, check firmware, install labs)
-      firmware_focused=true
-    ;;
+
     --rename-cards)
       # Rename detected GoPro SD cards to standard format
       rename_cards=true
@@ -2470,23 +2518,7 @@ if [ "$enhanced" = true ]; then
   exit 0
 fi
 
-if [ "$firmware_focused" = true ]; then
-  _echo "Firmware-focused workflow mode - rename cards, check firmware, install labs"
-  
-  # Export dry_run flag for subscripts
-  export dry_run
-  # Source the firmware-focused workflow module
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  if [[ -f "$SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh" ]]; then
-    source "$SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh"
-    run_firmware_focused_workflow
-  else
-    _error "Firmware-focused workflow module not found: $SCRIPT_DIR/scripts/core/firmware-focused-workflow.zsh"
-    exit 1
-  fi
-  
-  exit 0
-fi
+
 
 if [ "$rename_cards" = true ]; then
   _echo "SD Card Renaming Mode"
@@ -2711,6 +2743,11 @@ force_scopes=($(_determine_force_scope "$archive" "$import" "$clean" "$process" 
 # Show force mode summary if force mode is enabled
 if [[ "$FORCE" == "true" && ${#force_scopes[@]} -gt 0 ]]; then
   _show_force_summary "$dry_run" "${force_scopes[@]}"
+fi
+
+# Auto-rename all GoPro SD cards before processing (if any processing tasks are requested)
+if [[ "$archive" == true || "$import" == true || "$clean" == true || "$firmware" == true || "$eject" == true ]]; then
+  _auto_rename_all_gopro_cards
 fi
 
 # Execute in order: archive, import, clean, geonames, process, firmware

@@ -8,11 +8,13 @@ readonly FORCE_OPERATION_CLEAN="clean"
 readonly FORCE_OPERATION_ARCHIVE="archive"
 readonly FORCE_OPERATION_IMPORT="import"
 readonly FORCE_OPERATION_PROCESS="process"
+readonly FORCE_OPERATION_EJECT="eject"
 
 # Force mode confirmation requirements
 readonly FORCE_CONFIRMATION_CLEAN="FORCE"
 readonly FORCE_CONFIRMATION_ARCHIVE="FORCE"
 readonly FORCE_CONFIRMATION_IMPORT="FORCE"
+readonly FORCE_CONFIRMATION_EJECT="FORCE"
 
 # Force mode scope validation
 _validate_force_combination() {
@@ -20,7 +22,8 @@ _validate_force_combination() {
   local import="$2"
   local clean="$3"
   local process="$4"
-  local force="$5"
+  local eject="$5"
+  local force="$6"
   
   # If force is not enabled, no validation needed
   if [[ "$force" != "true" ]]; then
@@ -33,6 +36,7 @@ _validate_force_combination() {
   [[ "$import" == "true" ]] && ((operation_count++))
   [[ "$clean" == "true" ]] && ((operation_count++))
   [[ "$process" == "true" ]] && ((operation_count++))
+  [[ "$eject" == "true" ]] && ((operation_count++))
   
   # Check for invalid combinations
   if [[ "$clean" == "true" && "$process" == "true" ]]; then
@@ -43,6 +47,7 @@ _validate_force_combination() {
     _error "   • --force --clean (standalone only, requires 'FORCE' confirmation)"
     _error "   • --force --archive (standalone only)"
     _error "   • --force --import (standalone only)"
+    _error "   • --force --eject (standalone only)"
     _error "   • --force --archive --clean (force archive, normal clean)"
     _error "   • --force --import --clean (force import, normal clean)"
     _error ""
@@ -59,18 +64,21 @@ _determine_force_scope() {
   local import="$2"
   local clean="$3"
   local process="$4"
-  local force="$5"
+  local eject="$5"
+  local force="$6"
   
   local force_scope=()
   
   if [[ "$force" == "true" ]]; then
     # Standalone operations get full force mode
-    if [[ "$clean" == "true" && "$archive" != "true" && "$import" != "true" && "$process" != "true" ]]; then
+    if [[ "$clean" == "true" && "$archive" != "true" && "$import" != "true" && "$process" != "true" && "$eject" != "true" ]]; then
       force_scope+=("clean:force")
-    elif [[ "$archive" == "true" && "$clean" != "true" && "$import" != "true" && "$process" != "true" ]]; then
+    elif [[ "$archive" == "true" && "$clean" != "true" && "$import" != "true" && "$process" != "true" && "$eject" != "true" ]]; then
       force_scope+=("archive:force")
-    elif [[ "$import" == "true" && "$clean" != "true" && "$archive" != "true" && "$process" != "true" ]]; then
+    elif [[ "$import" == "true" && "$clean" != "true" && "$archive" != "true" && "$process" != "true" && "$eject" != "true" ]]; then
       force_scope+=("import:force")
+    elif [[ "$eject" == "true" && "$clean" != "true" && "$archive" != "true" && "$import" != "true" && "$process" != "true" ]]; then
+      force_scope+=("eject:force")
     else
       # Combined operations - force applies to archive/import but not clean
       if [[ "$archive" == "true" ]]; then
@@ -85,6 +93,9 @@ _determine_force_scope() {
       if [[ "$process" == "true" ]]; then
         force_scope+=("process:normal")
       fi
+      if [[ "$eject" == "true" ]]; then
+        force_scope+=("eject:normal")
+      fi
     fi
   else
     # No force mode - all operations are normal
@@ -92,6 +103,7 @@ _determine_force_scope() {
     [[ "$import" == "true" ]] && force_scope+=("import:normal")
     [[ "$clean" == "true" ]] && force_scope+=("clean:normal")
     [[ "$process" == "true" ]] && force_scope+=("process:normal")
+    [[ "$eject" == "true" ]] && force_scope+=("eject:normal")
   fi
   
   echo "${force_scope[@]}"
@@ -150,6 +162,20 @@ _show_force_warning() {
         _warning "   Type 'FORCE' to proceed:"
       fi
       ;;
+    "eject")
+      if [[ "$mode" == "force" ]]; then
+        _warning "⚠️  WARNING: --force with --eject will:"
+        _warning "   • Skip individual confirmations"
+        _warning "   • Eject ALL detected GoPro SD cards"
+        _warning "   • Bypass user confirmations for each card"
+        _warning ""
+        if [[ "$dry_run" == "true" ]]; then
+          _warning "   🚦 DRY RUN MODE - No actual changes will be made"
+          _warning ""
+        fi
+        _warning "   Type 'FORCE' to proceed:"
+      fi
+      ;;
   esac
 }
 
@@ -181,6 +207,9 @@ _confirm_force_operation() {
       ;;
     "import")
       required_confirmation="$FORCE_CONFIRMATION_IMPORT"
+      ;;
+    "eject")
+      required_confirmation="$FORCE_CONFIRMATION_EJECT"
       ;;
     *)
       return 0
@@ -265,6 +294,13 @@ _show_force_summary() {
           _info "   Import mode: NORMAL (confirmations required)"
         fi
         ;;
+      "eject")
+        if [[ "$mode" == "force" ]]; then
+          _info "   Eject mode: FORCE (skip confirmations)"
+        else
+          _info "   Eject mode: NORMAL (confirmations required)"
+        fi
+        ;;
     esac
   done
   
@@ -343,15 +379,24 @@ _apply_force_mode() {
         return 1  # Indicate normal mode (confirmations required)
       fi
       ;;
-    "import")
-      if [[ "$force_mode" == "force" ]]; then
-        _log_force_action "FORCE_IMPORT_APPLIED" "$operation" "$force_mode" "skipping confirmations"
-        return 0
-      else
-        _log_force_action "NORMAL_IMPORT_APPLIED" "$operation" "$force_mode" "using normal confirmations"
-        return 1  # Indicate normal mode (confirmations required)
-      fi
-      ;;
+          "import")
+        if [[ "$force_mode" == "force" ]]; then
+          _log_force_action "FORCE_IMPORT_APPLIED" "$operation" "$force_mode" "skipping confirmations"
+          return 0
+        else
+          _log_force_action "NORMAL_IMPORT_APPLIED" "$operation" "$force_mode" "using normal confirmations"
+          return 1  # Indicate normal mode (confirmations required)
+        fi
+        ;;
+      "eject")
+        if [[ "$force_mode" == "force" ]]; then
+          _log_force_action "FORCE_EJECT_APPLIED" "$operation" "$force_mode" "skipping confirmations"
+          return 0
+        else
+          _log_force_action "NORMAL_EJECT_APPLIED" "$operation" "$force_mode" "using normal confirmations"
+          return 1  # Indicate normal mode (confirmations required)
+        fi
+        ;;
   esac
   
   return 1  # Default to normal mode
