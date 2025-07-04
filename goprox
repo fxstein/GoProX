@@ -216,6 +216,46 @@ validprocessed=false
 validdeleted=false
 tempdir=""
 
+# Centralized function to auto-rename all GoPro SD cards before processing
+function _auto_rename_all_gopro_cards() {
+  _echo "Auto-renaming GoPro SD cards to standard format..."
+  
+  local renamed_count=0
+  local skipped_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        
+        # Auto-rename this card
+        if _auto_rename_gopro_card "$volume" "$volume_name" "$camera_type" "$serial_number"; then
+          ((renamed_count++))
+        else
+          ((skipped_count++))
+        fi
+      fi
+    fi
+  done
+  
+  if [[ $renamed_count -gt 0 ]]; then
+    _echo "Auto-rename Summary: $renamed_count renamed, $skipped_count skipped"
+  fi
+  
+  return 0
+}
+
 # Always auto-rename GoPro SD cards at the start of every run
 _auto_rename_all_gopro_cards
 
@@ -1161,11 +1201,12 @@ function _archive_media()
 
   _echo "Finished media archive"
 
-  # Leave a marker
+  # Leave a marker with timestamp
   if [[ "$dry_run" == "true" ]]; then
     _echo "🚦 DRY RUN MODE - Would create marker: $source/$DEFAULT_ARCHIVED_MARKER"
+    _echo "🚦 DRY RUN MODE - Would store timestamp: $(date +%s)"
   else
-    touch $source/$DEFAULT_ARCHIVED_MARKER
+    date +%s > "$source/$DEFAULT_ARCHIVED_MARKER"
   fi
 }
 
@@ -1350,6 +1391,51 @@ function _firmware()
   _echo "Finished firmware check."
 }
 
+# Helper function to check if new files exist since last archive
+function _has_new_files_since_archive() {
+  local volume="$1"
+  local marker_file="$volume/$DEFAULT_ARCHIVED_MARKER"
+  
+  # If no marker exists, definitely needs archiving
+  if [[ ! -f "$marker_file" ]]; then
+    return 0  # true - needs archiving
+  fi
+  
+  # Read the archive timestamp
+  local archive_time
+  if ! archive_time=$(cat "$marker_file" 2>/dev/null); then
+    # Marker exists but can't read timestamp, assume needs archiving
+    return 0
+  fi
+  
+  # Check if archive_time is a valid number
+  if [[ ! "$archive_time" =~ ^[0-9]+$ ]]; then
+    # Invalid timestamp format, assume needs archiving
+    return 0
+  fi
+  
+  # Check if DCIM directory exists and has files
+  if [[ ! -d "$volume/DCIM" ]]; then
+    return 1  # false - no DCIM, no need to archive
+  fi
+  
+  # Find the newest file in DCIM and get its modification time (macOS compatible)
+  local newest_file_time
+  newest_file_time=$(find "$volume/DCIM" -type f -exec stat -f %m {} \; 2>/dev/null | sort -n | tail -1)
+  
+  # If no files found, no need to archive
+  if [[ -z "$newest_file_time" ]]; then
+    return 1  # false - no files, no need to archive
+  fi
+  
+  # Compare timestamps (newest_file_time > archive_time means new files)
+  if (( newest_file_time > archive_time )); then
+    return 0  # true - has new files, needs archiving
+  else
+    return 1  # false - no new files, already archived
+  fi
+}
+
 function _archive_all_gopro_cards()
 {
   _echo "Scanning for GoPro SD cards to archive..."
@@ -1392,13 +1478,16 @@ function _archive_all_gopro_cards()
           fi
         done
         
-        # Check if already archived
+        # Check if already archived or has new files since last archive
         if [[ -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
           if [[ "$archive_force_mode" == "force" ]]; then
             _echo "  🚨 FORCE: Already archived, but force mode enabled, will re-archive"
             rm -f "$volume/$DEFAULT_ARCHIVED_MARKER"
+          elif _has_new_files_since_archive "$volume"; then
+            _echo "  Has new files since last archive, will re-archive"
+            rm -f "$volume/$DEFAULT_ARCHIVED_MARKER"
           else
-            _echo "  Already archived, skipping"
+            _echo "  Already archived and no new files, skipping"
             ((already_archived_count++))
             continue
           fi
@@ -1875,46 +1964,6 @@ function _auto_rename_gopro_card() {
       _error "Failed to rename volume, keeping original name"
       return 1
     fi
-  fi
-  
-  return 0
-}
-
-# Centralized function to auto-rename all GoPro SD cards before processing
-function _auto_rename_all_gopro_cards() {
-  _echo "Auto-renaming GoPro SD cards to standard format..."
-  
-  local renamed_count=0
-  local skipped_count=0
-  
-  for volume in /Volumes/*; do
-    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
-      local volume_name=$(basename "$volume")
-      
-      # Skip system volumes
-      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
-        continue
-      fi
-      
-      # Check if this is a GoPro SD card
-      local version_file="$volume/MISC/version.txt"
-      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
-        # Extract camera information
-        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
-        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
-        
-        # Auto-rename this card
-        if _auto_rename_gopro_card "$volume" "$volume_name" "$camera_type" "$serial_number"; then
-          ((renamed_count++))
-        else
-          ((skipped_count++))
-        fi
-      fi
-    fi
-  done
-  
-  if [[ $renamed_count -gt 0 ]]; then
-    _echo "Auto-rename Summary: $renamed_count renamed, $skipped_count skipped"
   fi
   
   return 0
