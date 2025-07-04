@@ -61,6 +61,7 @@ Commands:
   --firmware-labs       update sdcard to the latest GoPro Labs firmware version
   --geonames            add geonames information to imported directories to enable time processing
   --mount               trigger mountpoint processing
+  --eject               safely eject GoPro SD cards after processing
                         will search for GoPro media card mountpoints and kick of processing
                         this is also leveraged by the goprox launch agent
   --enhanced            run enhanced default behavior (intelligent media management)
@@ -166,6 +167,7 @@ geonames=false
 archive=false
 clean=false
 firmware=false
+eject=false
 version=false
 mount=false
 enhanced=false
@@ -1436,6 +1438,124 @@ function _archive_all_gopro_cards()
   _echo "Archive scanning finished."
 }
 
+function _eject_media()
+{
+  _echo "Ejecting media..."
+  _info "Source: $source ($(realpath "${source/#\~/$HOME}"))"
+
+  # Check if this is a GoPro storage card
+  if [[ -f "$source/MISC/version.txt" ]]; then
+    # Extract camera information for logging
+    camera=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera type"')
+    serial=$(sed -e x -e '$ {s/,$//;p;x;}' -e 1d $source/MISC/version.txt | jq -r '."camera serial number"')
+    
+    _info "Camera: ${camera}"
+    _info "Serial: ${serial:(-4)}"
+    
+    # Check if the volume is mounted
+    if [[ -d "$source" ]] && mount | grep -q "$source"; then
+      _info "Ejecting $source..."
+      
+      if [[ "$dry_run" == "true" ]]; then
+        _echo "🚦 DRY RUN MODE - Would eject $source"
+      else
+        # Use diskutil to safely eject the volume
+        if diskutil eject "$source"; then
+          _echo "Successfully ejected $source"
+        else
+          _error "Failed to eject $source"
+          exit 1
+        fi
+      fi
+    else
+      _warning "Volume $source is not mounted or not accessible"
+    fi
+  else
+    _error "Cannot verify that $(realpath ${source}) is a GoPro storage device"
+    _error "Missing $(realpath ${source})/MISC/version.txt"
+    exit 1
+  fi
+  
+  _echo "Finished ejecting media"
+}
+
+function _eject_all_gopro_cards()
+{
+  _echo "Scanning for GoPro SD cards to eject..."
+  
+  local found_gopro=false
+  local ejected_count=0
+  local already_ejected_count=0
+  local failed_count=0
+  
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local volume_name=$(basename "$volume")
+      
+      # Skip system volumes
+      if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+        continue
+      fi
+      
+      # Check if this is a GoPro SD card
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        found_gopro=true
+        
+        # Extract camera information
+        local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+        local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+        local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
+        
+        _echo "Found GoPro SD card: $volume_name"
+        _echo "  Camera type: $camera_type"
+        _echo "  Serial number: $serial_number"
+        _echo "  Firmware version: $firmware_version"
+        
+        # Check if volume is still mounted
+        if [[ -d "$volume" ]] && mount | grep -q "$volume"; then
+          _info "Ejecting $volume_name..."
+          if [[ "$dry_run" == "true" ]]; then
+            _echo "🚦 DRY RUN MODE - Would eject $volume_name"
+            ((ejected_count++))
+          else
+            # Use diskutil to safely eject the volume
+            if diskutil eject "$volume"; then
+              _echo "Successfully ejected $volume_name"
+              ((ejected_count++))
+            else
+              _error "Failed to eject $volume_name"
+              ((failed_count++))
+            fi
+          fi
+        else
+          _echo "  Volume not mounted or already ejected"
+          ((already_ejected_count++))
+        fi
+        
+        echo
+      fi
+    fi
+  done
+  
+  if [[ "$found_gopro" == false ]]; then
+    _info "No GoPro SD cards found"
+  else
+    _echo "Eject Summary:"
+    if [[ $already_ejected_count -gt 0 ]]; then
+      _echo "  - $already_ejected_count already ejected/not mounted"
+    fi
+    if [[ $failed_count -gt 0 ]]; then
+      _echo "  - $failed_count failed to eject"
+    fi
+    if [[ $ejected_count -gt 0 ]]; then
+      _echo "  - $ejected_count newly ejected"
+    fi
+  fi
+  
+  _echo "Eject scanning finished."
+}
+
 function _firmware_all_gopro_cards()
 {
   _echo "Scanning for GoPro SD cards to update firmware..."
@@ -1932,6 +2052,7 @@ zparseopts -D -E -F -A opts - \
             -debug \
             -firmware \
             -firmware-labs \
+            -eject \
             -geonames:: \
             -if: \
             -modified-on: \
@@ -2044,6 +2165,9 @@ for key val in "${(kv@)opts}"; do
     --firmware-labs)
       firmware=true
       firmwareopt="labs"
+    ;;
+    --eject)
+      eject=true
     ;;
     --geonames)
       geonames=true
@@ -2562,7 +2686,7 @@ fi
 
 # Check if any specific tasks were requested
 # If no tasks were specified, run the default SD card detection/rename workflow
-if [[ "$archive" != true && "$import" != true && "$clean" != true && "$geonames" != true && "$timeshift" != true && "$process" != true && "$firmware" != true ]]; then
+if [[ "$archive" != true && "$import" != true && "$clean" != true && "$geonames" != true && "$timeshift" != true && "$process" != true && "$firmware" != true && "$eject" != true ]]; then
   _detect_and_rename_gopro_sd
   exit 0
 fi
@@ -2577,12 +2701,12 @@ else
 fi
 
 # Validate force mode combinations before execution
-if ! _validate_force_combination "$archive" "$import" "$clean" "$process" "$FORCE"; then
+if ! _validate_force_combination "$archive" "$import" "$clean" "$process" "$eject" "$FORCE"; then
   exit 1
 fi
 
 # Determine force mode scope for each operation
-force_scopes=($(_determine_force_scope "$archive" "$import" "$clean" "$process" "$FORCE"))
+force_scopes=($(_determine_force_scope "$archive" "$import" "$clean" "$process" "$eject" "$FORCE"))
 
 # Show force mode summary if force mode is enabled
 if [[ "$FORCE" == "true" && ${#force_scopes[@]} -gt 0 ]]; then
@@ -2671,6 +2795,30 @@ if [ "$firmware" = true ]; then
     _firmware_all_gopro_cards
   else
     _firmware
+  fi
+fi
+
+if [ "$eject" = true ]; then
+  # Find eject operation in force scopes
+  local eject_force_mode="normal"
+  for scope in "${force_scopes[@]}"; do
+    if [[ "$scope" == eject:* ]]; then
+      eject_force_mode=$(echo "$scope" | cut -d: -f2)
+      break
+    fi
+  done
+  
+  # Confirm force operation if needed
+  if ! _confirm_force_operation "eject:$eject_force_mode" "$dry_run"; then
+    exit 1
+  fi
+  
+  # If source is the default (current directory) and no specific source was provided,
+  # scan for all GoPro SD cards and eject them
+  if [[ "$source" == "." && -z "$sourceopt" ]]; then
+    _eject_all_gopro_cards
+  else
+    _eject_media
   fi
 fi
 
