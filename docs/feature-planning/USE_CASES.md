@@ -491,6 +491,37 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - [ ] Can export geo location markers in standard formats
 - [ ] Can distinguish between regular media files and special geo location markers
 
+### **Use Case 28: Trip Reports and Content Generation**
+**Description**: Generate trip reports, blog articles, and content from collected media files and metadata with markdown annotations and website integration.
+
+**Requirements**:
+- Support markdown annotations for trips and locations that can be leveraged in content creation
+- Generate trip reports with integrated media files, GPS tracks, and metadata
+- Create blog articles with embedded media and location information
+- Support content generation for photo and video production workflows
+- Generate trip logs for website integration (e.g., Framer websites)
+- Pull select media files into generated content based on criteria (best photos, key moments, etc.)
+- Include geo location data, timestamps, and device information in generated content
+- Support templates for different content types (trip reports, blog posts, social media)
+- Enable automatic content generation with manual review and editing capabilities
+- Export content in multiple formats (Markdown, HTML, PDF, JSON for API integration)
+- Include metadata summaries, statistics, and analytics in generated content
+- Support collaborative content creation with multiple contributors
+
+**Validation Criteria**:
+- [ ] Can create and edit markdown annotations for trips and locations
+- [ ] Can generate trip reports with integrated media, GPS tracks, and metadata
+- [ ] Can create blog articles with embedded media and location information
+- [ ] Can generate content for photo and video production workflows
+- [ ] Can create trip logs suitable for website integration (Framer, etc.)
+- [ ] Can select and pull specific media files into generated content
+- [ ] Can include geo location data, timestamps, and device information in content
+- [ ] Can use templates for different content types and formats
+- [ ] Can support both automatic and manual content generation workflows
+- [ ] Can export content in multiple formats (Markdown, HTML, PDF, JSON)
+- [ ] Can include metadata summaries and statistics in generated content
+- [ ] Can support collaborative content creation with multiple users
+
 ## Use Case Categories
 
 ### **Core Media Management (1-6)**
@@ -522,13 +553,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Third-party integration and APIs
 - Performance monitoring
 
-### **System and Maintenance (22-27)**
+### **System and Maintenance (22-28)**
 - Firmware and camera compatibility
 - Edge case handling and recovery
 - GoProX version tracking and reprocessing
 - Comprehensive logging and traceability
 - GPS track import and export
 - Apple Photos integration and geo location markers
+- Trip reports and content generation
 
 ## Implementation Priority
 
@@ -545,13 +577,14 @@ GoProX is designed to be an intelligent media management assistant that handles 
 - Use Cases 19-24: Advanced features, performance monitoring, compatibility, edge cases
 - Use Case 26: GPS track import and export
 - Use Case 27: Apple Photos integration and geo location markers
+- Use Case 28: Trip reports and content generation
 
 ## Cross-References
 
 This document serves as the central reference for all GoProX features. Individual feature documents should reference specific use cases from this document rather than duplicating use case definitions.
 
 ### **Related Documents**
-- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-27
+- [Intelligent Media Management](../issue-73-intelligent-media-management/ISSUE-73-INTELLIGENT_MEDIA_MANAGEMENT.md) - Implementation details for use cases 1-28
 - [Enhanced Default Behavior](../issue-67-enhanced-default-behavior/ISSUE-67-ENHANCED_DEFAULT_BEHAVIOR.md) - Focuses on use cases 1-8
 - [Architecture Design Principles](../architecture/DESIGN_PRINCIPLES.md) - Design principles that inform these use cases
 
