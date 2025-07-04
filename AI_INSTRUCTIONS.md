@@ -101,6 +101,20 @@ This document establishes the foundational architectural decisions and design pa
   ```
 - **If git operations hang**: Use `Ctrl+C` to interrupt and then `git rebase --abort` or `git merge --abort` to reset state.
 
+## Git Rebase Debugging (CRITICAL)
+- **NEVER automatically perform a rebase** if a rebase prompt appears during push operations.
+- **STOP immediately** when a rebase is suggested or required and present the situation to the user.
+- **Debug first**: Before any rebase operation, run detailed branch comparison commands to identify the root cause:
+  ```zsh
+  git fetch origin
+  git log --oneline --decorate --graph -20
+  git log --oneline --decorate --graph -20 origin/<branch-name>
+  git cherry -v origin/<branch-name> <local-branch-name>
+  ```
+- **Present findings**: Show the user the exact differences between local and remote branches.
+- **Wait for direction**: Do not proceed with rebase until the user explicitly requests it after reviewing the debug information.
+- **Root cause analysis**: If rebase prompts occur repeatedly, investigate for history rewrites, force-pushes, or automation that may be causing branch divergence.
+
 ## Release Workflow Automation
 
 - When the user requests a release, always use the `./scripts/release/gitflow-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
