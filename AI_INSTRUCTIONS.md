@@ -141,6 +141,20 @@ This document establishes the foundational architectural decisions and design pa
 - Use zsh-specific features like `typeset -a` for arrays when appropriate.
 - If debugging is needed, test with bash temporarily but always fix the root cause in zsh.
 
+## GoProX Command Execution (CRITICAL)
+
+- **ALWAYS use `unbuffer` when running GoProX commands** to ensure all output appears in chat environments like Cursor.
+- **For all GoProX tests, runs, or executions**, use the format: `unbuffer ./goprox [options]`
+- **This ensures real-time output visibility** and prevents hanging on interactive prompts.
+- **Examples**:
+  ```zsh
+  unbuffer ./goprox --firmware-labs --verbose
+  unbuffer ./goprox --dry-run --archive --import --clean
+  unbuffer ./goprox --enhanced --auto-confirm
+  ```
+- **For non-interactive runs**, add `--auto-confirm` or `--dry-run` flags to avoid prompts.
+- **If `unbuffer` is not available**, use `stdbuf -oL` as fallback: `stdbuf -oL ./goprox [options] | cat`
+
 ## Logging and Debug Output Requirements
 
 - **MANDATORY**: Always use the structured logger module (`scripts/core/logger.zsh`) for all output, including debug information.

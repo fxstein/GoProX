@@ -24,6 +24,82 @@ goprox --dry-run         # Default behavior in dry-run mode
 - `--enhanced` - Enhanced intelligent workflow
 - `--rename-cards` - SD card renaming only
 
+## Storage Validation
+
+Before any operations begin, GoProX performs comprehensive storage validation to ensure all required directories are available and accessible.
+
+### Storage Hierarchy Validation
+
+**Required Storage Structure:**
+```
+library/
+├── archive/          # Required for --archive operations
+├── imported/         # Required for --import operations  
+├── processed/        # Required for --process operations
+└── deleted/          # Required for cleanup operations
+```
+
+**Validation Process:**
+- Checks if library root directory exists and is accessible
+- Validates each subdirectory (archive, imported, processed, deleted)
+- Handles symbolic links to external storage devices
+- Creates missing directories if possible
+- Reports broken links and inaccessible storage
+
+**Storage Validation Output:**
+```zsh
+Validating storage hierarchy...
+goprox library: /Users/username/goprox directory validated
+goprox archive: /Users/username/goprox/archive directory validated
+goprox imported: /Users/username/goprox/imported directory validated
+goprox processed: /Users/username/goprox/processed directory validated
+goprox deleted: /Users/username/goprox/deleted directory validated
+Finished storage hierarchy validation.
+```
+
+### Operation Availability Based on Storage
+
+**Archive Operations (`--archive`):**
+- **Requires:** `archive/` directory
+- **Behavior:** Fails with error if archive directory is missing or inaccessible
+- **Example:** `goprox --archive` requires valid archive storage
+
+**Import Operations (`--import`):**
+- **Requires:** `archive/` AND `imported/` directories
+- **Behavior:** Fails with error if either directory is missing or inaccessible
+- **Example:** `goprox --import` requires both archive and imported storage
+
+**Process Operations (`--process`):**
+- **Requires:** `imported/` AND `processed/` directories
+- **Behavior:** Fails with error if either directory is missing or inaccessible
+- **Example:** `goprox --process` requires both imported and processed storage
+
+**Clean Operations (`--clean`):**
+- **Requires:** `deleted/` directory (for cleanup operations)
+- **Behavior:** Fails with error if deleted directory is missing or inaccessible
+- **Example:** `goprox --clean` requires valid deleted storage
+
+### Distributed Storage Support
+
+**Symbolic Link Validation:**
+- Supports symbolic links to external storage devices
+- Validates link integrity and accessibility
+- Warns about broken links but continues if operation doesn't require that storage
+- Example distributed setup:
+```zsh
+goprox/
+├── archive/          # Local storage
+├── imported -> /Volumes/External/imported/    # External storage
+├── processed -> /Volumes/External/processed/  # External storage
+└── deleted/          # Local storage
+```
+
+**Broken Link Handling:**
+```zsh
+Warning: goprox imported: /Users/username/goprox/imported is a broken link to /Volumes/External/imported/
+Warning: Make sure the storage device is mounted and the directory has not been moved.
+```
+
 ## Default Workflow: `_detect_and_rename_gopro_sd()`
 
 The default behavior executes the `_detect_and_rename_gopro_sd()` function, which performs the following tasks:
@@ -86,8 +162,6 @@ The default behavior executes the `_detect_and_rename_gopro_sd()` function, whic
 Do you want to update to H22.01.02.32.00? (y/N)
 ```
 
-
-
 **Safety Checks:**
 - Confirms before any destructive operations
 - Checks for naming conflicts (if target name already exists)
@@ -108,6 +182,60 @@ Summary: Found 2 GoPro SD card(s)
 - Cards already correctly named
 - Cards successfully renamed
 - Firmware updates prepared
+
+## Storage Validation Impact on Default Behavior
+
+### Default Behavior with Valid Storage
+
+When all storage directories are available, the default behavior runs normally:
+- SD card detection and renaming
+- Firmware analysis and updates
+- No archive/import/process operations (these require explicit flags)
+
+### Default Behavior with Missing Storage
+
+**Missing Archive Storage:**
+```zsh
+$ goprox --archive
+Validating storage hierarchy...
+Warning: goprox archive: /Users/username/goprox/archive directory or link is missing
+Creating /Users/username/goprox/archive directory...
+goprox archive: /Users/username/goprox/archive directory validated
+# Archive operation proceeds normally
+```
+
+**Missing Import Storage:**
+```zsh
+$ goprox --import
+Validating storage hierarchy...
+Warning: goprox imported: /Users/username/goprox/imported directory or link is missing
+Creating /Users/username/goprox/imported directory...
+goprox imported: /Users/username/goprox/imported directory validated
+# Import operation proceeds normally
+```
+
+**Broken External Storage Links:**
+```zsh
+$ goprox --process
+Validating storage hierarchy...
+Warning: goprox imported: /Users/username/goprox/imported is a broken link to /Volumes/External/imported/
+Warning: Make sure the storage device is mounted and the directory has not been moved.
+Error: Invalid imported directory. Cannot proceed with import.
+```
+
+### Storage Validation in Default Mode
+
+**Default behavior (no processing options):**
+- Storage validation runs but doesn't block execution
+- Only validates storage if specific operations are requested
+- SD card detection and renaming work regardless of storage state
+- Firmware operations work independently of storage validation
+
+**Processing operations:**
+- Storage validation is mandatory and blocks execution if requirements not met
+- Clear error messages indicate which storage is missing
+- Automatic directory creation when possible
+- Graceful handling of distributed storage setups
 
 ## Enhanced Default Behavior: `--enhanced`
 
@@ -135,7 +263,61 @@ When using `--enhanced`, GoProX runs an intelligent media management workflow:
 - Requests user approval
 - Supports dry-run mode
 
+## Force Mode Protection: `--force`
 
+The `--force` flag provides intelligent protection mechanisms with different behaviors based on operation combinations:
+
+### Force Mode Behavior
+
+**Standalone Operations (Force Mode):**
+- `--force --clean` - Requires explicit "FORCE" confirmation (destructive operation)
+- `--force --archive` - Bypasses confirmations, re-processes completed operations
+- `--force --import` - Bypasses confirmations, re-processes completed operations
+- `--force --eject` - Bypasses confirmations for all cards
+
+**Combined Operations (Mixed Mode):**
+- `--force --archive --import --firmware` - Archive/import/firmware bypass confirmations
+- `--force --archive --clean` - Archive bypasses confirmations, clean uses normal safety checks
+- `--force --import --clean` - Import bypasses confirmations, clean uses normal safety checks
+- `--force --archive --import --clean` - Archive/import bypass confirmations, clean uses normal safety checks
+
+**Force Mode Examples:**
+```zsh
+goprox --force --archive --import --firmware  # Archive/import/firmware bypass confirmation
+goprox --force --clean                        # Requires explicit FORCE confirmation
+goprox --force --archive --clean              # Archive bypasses, clean uses normal checks
+```
+
+**Safety Confirmation for Standalone Clean:**
+```
+⚠️  WARNING: --force --clean is destructive and will:
+   • Remove media files from ALL detected SD cards
+   • Skip archive/import safety requirements
+   • Bypass all user confirmations
+   • Potentially cause permanent data loss
+
+Type 'FORCE' to proceed with this destructive operation: FORCE
+```
+
+## Archive Detection System
+
+### Timestamp-Based Archive Detection
+
+**Archive Marker System:**
+- Creates `.goprox.archived` marker file with Unix timestamp
+- Stores timestamp when archive operation completes
+- Prevents unnecessary re-archiving of unchanged cards
+
+**Smart Re-archiving Logic:**
+- Compares current file timestamps against archive marker timestamp
+- Only re-archives if new files exist since last archive
+- Handles cases where new media is added without cleaning
+
+**Archive Detection Process:**
+1. Checks for `.goprox.archived` marker file
+2. If marker exists, compares file timestamps
+3. If new files detected, offers re-archive option
+4. Updates marker timestamp after successful archive
 
 ## Mount Event Processing: `--mount`
 
@@ -211,12 +393,12 @@ When triggered by mount events, GoProX can automatically process newly mounted c
 - Summary reports
 
 **Verbose Mode (`--verbose`):**
-- Detailed debug information
+- Info-level messages and echo statements
 - Step-by-step progress
-- Extended logging
+- Extended logging details
 
 **Debug Mode (`--debug`):**
-- Full debug output
+- Full debug output with command tracing
 - Internal state information
 - Performance metrics
 
@@ -265,6 +447,53 @@ Estimated duration: 5-10 minutes
 Proceed with workflow execution? [Y/n]: Y
 ```
 
+### Force Mode with Archive Detection
+```zsh
+$ goprox --force --archive --verbose
+🚀 FORCE MODE ENABLED
+====================
+Archive, import, and firmware operations will bypass confirmation.
+
+Scanning for GoPro SD cards...
+Found GoPro SD card: HERO11-8034
+  Camera type: HERO11 Black
+  Archive marker found (2024-01-15 14:30:22)
+  Checking for new files since last archive...
+  New files detected - re-archiving required
+
+Archiving media files (bypassing confirmation)...
+[Archive process details...]
+Archive completed. Updated marker timestamp.
+```
+
+### Combined Force Mode Operations
+```zsh
+$ goprox --force --archive --import --clean --verbose
+📋 FORCE MODE SUMMARY:
+   Force operations: archive import
+   Normal operations: clean
+   Archive mode: FORCE (skip confirmations, re-process)
+   Import mode: FORCE (skip confirmations, re-process)
+   Clean mode: NORMAL (safety checks required)
+
+Scanning for GoPro SD cards...
+Found GoPro SD card: HERO11-8034
+  Camera type: HERO11 Black
+
+Archiving media files (bypassing confirmation)...
+[Archive process details...]
+Archive completed.
+
+Importing media files (bypassing confirmation)...
+[Import process details...]
+Import completed.
+
+Cleaning SD card (normal safety checks)...
+⚠️  WARNING: This will permanently delete all media files from the SD card!
+Type FORCE to confirm: FORCE
+Cleaning completed.
+```
+
 ### Dry-Run Mode
 ```zsh
 $ goprox --dry-run --verbose
@@ -279,6 +508,7 @@ Found GoPro SD card: GOPRO
   Firmware version: H22.01.01.20.00
   Proposed new name: HERO11-8034
   [DRY RUN] Would rename 'GOPRO' to 'HERO11-8034'
+  [DRY RUN] Would offer firmware update to H22.01.02.32.00
 ```
 
 ## Best Practices
@@ -318,7 +548,7 @@ Found GoPro SD card: GOPRO
 
 **Avoid:**
 - Running without reviewing changes
-- Skipping confirmation prompts
+- Skipping confirmation prompts (except with `--force`)
 - Processing cards with important unbacked-up data
 - Interrupting firmware updates
 
@@ -344,4 +574,9 @@ Found GoPro SD card: GOPRO
 **Naming conflicts:**
 - Check for existing volume names
 - Use unique serial numbers
-- Verify target name availability 
+- Verify target name availability
+
+**Archive detection issues:**
+- Check `.goprox.archived` marker file
+- Verify timestamp format and permissions
+- Use `--force` to bypass archive detection if needed 

@@ -216,6 +216,72 @@ validprocessed=false
 validdeleted=false
 tempdir=""
 
+# Function to auto-rename a single GoPro SD card
+function _auto_rename_gopro_card() {
+  local volume_path="$1"
+  local volume_name="$2"
+  local camera_type="$3"
+  local serial_number="$4"
+  
+  # Generate expected name: CAMERA_TYPE-SERIAL_LAST_4
+  local expected_name=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')-${serial_number: -4}
+  
+  # Show renaming details in verbose mode
+  if [[ $loglevel -le 1 ]]; then
+    _info "  Current name: $volume_name"
+    _info "  Expected name: $expected_name"
+  fi
+  
+  # Check if renaming is needed
+  if [[ "$volume_name" == "$expected_name" ]]; then
+    if [[ $loglevel -le 1 ]]; then
+      _info "  Status: Already correctly named (skipping)"
+    else
+      _debug "Card already correctly named: $volume_name"
+    fi
+    return 1  # Return 1 to indicate skipped (not renamed)
+  fi
+  
+  # Check if target name already exists
+  if [[ -d "/Volumes/$expected_name" ]]; then
+    if [[ $loglevel -le 1 ]]; then
+      _info "  Status: Target name '$expected_name' already exists (skipping)"
+    else
+      _warning "Target name '$expected_name' already exists, skipping rename of '$volume_name'"
+    fi
+    return 1  # Return 1 to indicate skipped
+  fi
+  
+  # Get the device identifier for the volume
+  local device_id=$(diskutil info "$volume_path" | grep "Device Identifier" | awk '{print $3}')
+  if [[ -z "$device_id" ]]; then
+    _error "Could not determine device identifier for volume: $volume_name"
+    return 1
+  fi
+  
+  # Show renaming action in verbose mode
+  if [[ $loglevel -le 1 ]]; then
+    _info "  Status: Renaming '$volume_name' → '$expected_name'"
+  fi
+  
+  # Use diskutil to rename the volume
+  if diskutil rename "$device_id" "$expected_name"; then
+    if [[ $loglevel -le 1 ]]; then
+      _info "  Status: Successfully renamed"
+    else
+      _info "Successfully renamed '$volume_name' to '$expected_name'"
+    fi
+    return 0  # Return 0 to indicate success
+  else
+    if [[ $loglevel -le 1 ]]; then
+      _info "  Status: Failed to rename"
+    else
+      _error "Failed to rename volume '$volume_name' to '$expected_name'"
+    fi
+    return 1
+  fi
+}
+
 # Centralized function to auto-rename all GoPro SD cards before processing
 function _auto_rename_all_gopro_cards() {
   _echo "Auto-renaming GoPro SD cards to standard format..."
@@ -239,6 +305,22 @@ function _auto_rename_all_gopro_cards() {
         local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
         local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
         
+        # Extract volume UUID for verbose output
+        local volume_uuid=""
+        if command -v diskutil >/dev/null 2>&1; then
+          volume_uuid=$(diskutil info "$volume" | grep "Volume UUID" | awk '{print $3}')
+        fi
+        
+        # Show card details in verbose mode
+        if [[ $loglevel -le 1 ]]; then
+          _info "Found GoPro SD card: $volume_name"
+          if [[ -n "$volume_uuid" ]]; then
+            _info "  Volume UUID: $volume_uuid"
+          fi
+          _info "  Camera type: $camera_type"
+          _info "  Serial number: $serial_number"
+        fi
+        
         # Auto-rename this card
         if _auto_rename_gopro_card "$volume" "$volume_name" "$camera_type" "$serial_number"; then
           ((renamed_count++))
@@ -256,8 +338,7 @@ function _auto_rename_all_gopro_cards() {
   return 0
 }
 
-# Always auto-rename GoPro SD cards at the start of every run
-_auto_rename_all_gopro_cards
+# Auto-rename will be called after functions are defined
 
 function _debug()
 {
@@ -1369,9 +1450,30 @@ function _firmware()
       echo "No firmware zip found or downloaded for $latestfirmware"
       return
     fi
-    if [[ $latestversion != $version ]]; then
-      _warning "New firmware available: ${version} >> ${latestversion}"
-      _warning "Transferring newer firmware to ${source}"
+    # For labs firmware, always update regardless of current version
+    # For official firmware, only update if newer version is available
+    local should_update=false
+    local update_reason=""
+    
+    if [[ $firmwareopt == "labs" ]]; then
+      # Labs firmware: always update to switch to labs
+      should_update=true
+      if [[ $latestversion != $version ]]; then
+        update_reason="Switching to labs firmware: ${version} → ${latestversion}"
+      else
+        update_reason="Switching to labs firmware (same version): ${version} → ${latestversion}"
+      fi
+    else
+      # Official firmware: only update if newer version available
+      if [[ $latestversion != $version ]]; then
+        should_update=true
+        update_reason="New firmware available: ${version} → ${latestversion}"
+      fi
+    fi
+    
+    if [[ "$should_update" == true ]]; then
+      _warning "$update_reason"
+      _warning "Transferring firmware to ${source}"
       rm -rf "${source}/UPDATE"
       mkdir -p "${source}/UPDATE"
       unzip -o -uj "$firmwarezip" -d "${source}/UPDATE" || {
@@ -1708,23 +1810,31 @@ function _firmware_all_gopro_cards()
           fi
         fi
         
-        # Detect firmware type and check for updates
-        local firmware_type="official"
-        local firmware_suffix=${firmware_version: -2}
-        if [[ "$firmware_suffix" =~ ^7[0-9]$ ]]; then
-          firmware_type="labs"
-        fi
-        _echo "  Firmware type: $firmware_type"
-        
-        # Check for newer firmware
+        # Determine firmware type to check based on command line option
+        local firmware_type_to_check=""
         local firmwarebase=""
         local cache_type=""
-        if [[ "$firmware_type" == "labs" ]]; then
+        
+        # Determine current firmware type
+        local current_firmware_type="official"
+        local firmware_suffix=${firmware_version: -2}
+        if [[ "$firmware_suffix" =~ ^7[0-9]$ ]]; then
+          current_firmware_type="labs"
+        fi
+        
+        if [[ $firmwareopt == "labs" ]]; then
+          # --firmware-labs: Always check for labs firmware
+          firmware_type_to_check="labs"
           firmwarebase="${GOPROX_HOME}/firmware/labs/${camera_type}"
           cache_type="labs"
+          _echo "  Checking for labs firmware (--firmware-labs specified)"
+          _echo "  Current firmware type: $current_firmware_type"
         else
-          firmwarebase="${GOPROX_HOME}/firmware/official/${camera_type}"
-          cache_type="official"
+          # --firmware or default: Check current firmware type
+          firmware_type_to_check="$current_firmware_type"
+          firmwarebase="${GOPROX_HOME}/firmware/${current_firmware_type}/${camera_type}"
+          cache_type="$current_firmware_type"
+          _echo "  Firmware type: $current_firmware_type"
         fi
         
         local latestfirmware=""
@@ -1735,8 +1845,41 @@ function _firmware_all_gopro_cards()
         
         if [[ -n "$latestfirmware" ]]; then
           local latestversion="${latestfirmware##*/}"
-          if [[ "$latestversion" != "$firmware_version" ]]; then
-            _echo "  Newer $firmware_type firmware available: $firmware_version → $latestversion"
+          
+          # For labs firmware, always offer update regardless of current version
+          # For official firmware, only offer if newer version available
+          local should_offer_update=false
+          local update_message=""
+          
+          if [[ $firmwareopt == "labs" ]]; then
+            # --firmware-labs logic:
+            # - Always switch from official to labs firmware (regardless of version)
+            # - If already on labs, only update if newer labs version available
+            if [[ "$current_firmware_type" == "official" ]]; then
+              # Always switch from official to labs
+              should_offer_update=true
+              if [[ "$latestversion" != "$firmware_version" ]]; then
+                update_message="Switching from official to labs firmware: $firmware_version → $latestversion"
+              else
+                update_message="Switching from official to labs firmware (same version): $firmware_version → $latestversion"
+              fi
+            else
+              # Already on labs firmware - only update if newer version available
+              if [[ "$latestversion" != "$firmware_version" ]]; then
+                should_offer_update=true
+                update_message="Newer labs firmware available: $firmware_version → $latestversion"
+              fi
+            fi
+          else
+            # Official firmware: only offer if newer version available
+            if [[ "$latestversion" != "$firmware_version" ]]; then
+              should_offer_update=true
+              update_message="Newer $firmware_type_to_check firmware available: $firmware_version → $latestversion"
+            fi
+          fi
+          
+          if [[ "$should_offer_update" == true ]]; then
+            _echo "  $update_message"
             
             # Offer to update firmware
             echo
@@ -1758,11 +1901,11 @@ function _firmware_all_gopro_cards()
               _info "Firmware update cancelled for $volume_name"
             fi
           else
-            _echo "  Firmware is up to date ($firmware_type)"
+            _echo "  Firmware is up to date ($firmware_type_to_check)"
             ((up_to_date_count++))
           fi
         else
-          _echo "  No $firmware_type firmware found for $camera_type"
+          _echo "  No $firmware_type_to_check firmware found for $camera_type"
           ((no_firmware_count++))
         fi
         
@@ -1927,54 +2070,13 @@ function _clean_all_gopro_cards()
   _echo "Clean scanning finished."
 }
 
-# Helper function to automatically rename GoPro SD cards
-function _auto_rename_gopro_card() {
-  local volume="$1"
-  local volume_name="$2"
-  local camera_type="$3"
-  local serial_number="$4"
-  
-  # Extract last 4 digits of serial number for shorter name
-  local short_serial=${serial_number: -4}
-  
-  # Create new volume name: CAMERA_TYPE-SERIAL_LAST_4
-  # Remove "Black" from camera type and clean up special characters
-  local clean_camera_type=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')
-  local new_volume_name="${clean_camera_type}-${short_serial}"
-  
-  # Check if new name is different from current name
-  if [[ "$volume_name" != "$new_volume_name" ]]; then
-    # Check if new name already exists
-    if [[ -d "/Volumes/$new_volume_name" ]]; then
-      _warning "Volume name '$new_volume_name' already exists, keeping original name"
-      return 1
-    fi
-    
-    # Automatically rename without prompting
-    _info "Auto-renaming '$volume_name' to '$new_volume_name'..."
-    
-    # Get the device identifier for the volume
-    local device_id=$(diskutil info "$volume" | grep "Device Identifier" | awk '{print $3}')
-    
-    # Use diskutil to rename the volume using device identifier
-    if diskutil rename "$device_id" "$new_volume_name"; then
-      _echo "Successfully renamed '$volume_name' to '$new_volume_name'"
-      return 0
-    else
-      _error "Failed to rename volume, keeping original name"
-      return 1
-    fi
-  fi
-  
-  return 0
-}
+# Removed duplicate _auto_rename_gopro_card function - using the enhanced version above
 
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
   
-  # Auto-rename all cards first
-  _auto_rename_all_gopro_cards
+  # Auto-rename already happened at the start of the script
   
   local found_gopro=false
   local renamed_count=0
@@ -2413,6 +2515,9 @@ _info $BANNER_TEXT
 # Check if all required dependencies are installed
 _validate_dependencies
 
+# Always auto-rename GoPro SD cards at the start of every run
+_auto_rename_all_gopro_cards
+
 # Create optional timefilters
 # Must be executed BEFORE iffilter logic as exiftool -if4 must be left of -if0
 _create_timefilter || {
@@ -2809,9 +2914,7 @@ if [[ "$FORCE" == "true" && ${#force_scopes[@]} -gt 0 ]]; then
 fi
 
 # Auto-rename all GoPro SD cards before processing (if any processing tasks are requested)
-if [[ "$archive" == true || "$import" == true || "$clean" == true || "$firmware" == true || "$eject" == true ]]; then
-  _auto_rename_all_gopro_cards
-fi
+# Removed redundant call - auto-renaming now happens once at the start of every run
 
 # Execute in order: archive, import, clean, geonames, process, firmware
 if [ "$archive" = true ]; then
