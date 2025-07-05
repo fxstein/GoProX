@@ -67,7 +67,7 @@ The default behavior executes the `_detect_and_rename_gopro_sd()` function, whic
 - **Labs firmware:** Versions ending in `.7x` (e.g., `.70`, `.71`, `.72`)
 
 **Firmware Update Check:**
-- Scans local firmware database (`firmware/` and `firmware.labs/` directories)
+- Scans local firmware database (`firmware/official/` and `firmware/labs/` directories)
 - Compares current version with latest available version
 - Identifies if firmware update is available
 - Checks if firmware update files already exist on card

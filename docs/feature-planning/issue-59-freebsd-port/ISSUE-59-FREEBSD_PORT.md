@@ -75,8 +75,6 @@ do-install:
 # NOTE: Firmware isn't included to keep the package size low.
 #${MKDIR} ${STAGEDIR}${DATADIR}/firmware
 #(cd ${WRKSRC}/firmware && ${COPYTREE_SHARE} . ${STAGEDIR}${DATADIR}/firmware)
-#${MKDIR} ${STAGEDIR}${DATADIR}/firmware.labs
-#(cd ${WRKSRC}/firmware.labs && ${COPYTREE_SHARE} . ${STAGEDIR}${DATADIR}/firmware.labs)
 ```
 
 #### 2.2 On-Demand Download

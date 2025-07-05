@@ -408,7 +408,6 @@ function _clean_sd_card() {
   # Preserve camera metadata only (not macOS system files)
   local preserve_patterns=(
     "MISC/version.txt"           # Camera identification
-    "MISC/firmware/"             # Firmware files
     "DCIM/"                      # Camera directory structure
     "MISC/"                      # Camera system files
   )
