@@ -264,12 +264,21 @@ function _auto_rename_gopro_card() {
     _info "  Status: Renaming '$volume_name' → '$expected_name'"
   fi
   
-  # Use diskutil to rename the volume
-  if diskutil rename "$device_id" "$expected_name"; then
+  # Use diskutil to rename the volume and capture output
+  local rename_output=$(diskutil rename "$device_id" "$expected_name" 2>&1)
+  local rename_exit_code=$?
+  
+  if [[ $rename_exit_code -eq 0 ]]; then
+    # Extract the device identifier from diskutil output and create enhanced message
+    local device_part=$(echo "$rename_output" | grep -o "disk[0-9]*s[0-9]*")
+    if [[ -n "$device_part" ]]; then
+      _echo "  Volume $volume_name ($device_part) renamed to $expected_name"
+    else
+      _echo "  Volume $volume_name renamed to $expected_name"
+    fi
+    
     if [[ $loglevel -le 1 ]]; then
       _info "  Status: Successfully renamed"
-    else
-      _info "Successfully renamed '$volume_name' to '$expected_name'"
     fi
     return 0  # Return 0 to indicate success
   else
@@ -2122,8 +2131,6 @@ function _detect_and_rename_gopro_sd()
         fi
         _echo "  Camera type: $camera_type"
         _echo "  Serial number: $serial_number"
-        _echo "  Firmware version: $firmware_version"
-        
         # Check if name is already in correct format
         local short_serial=${serial_number: -4}
         local clean_camera_type=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')
@@ -2139,7 +2146,6 @@ function _detect_and_rename_gopro_sd()
         if [[ "$firmware_suffix" =~ ^7[0-9]$ ]]; then
           firmware_type="labs"
         fi
-        _echo "  Firmware type: $firmware_type"
         
         # Remove firmware checked marker to allow re-checking
         rm -f "$volume/$DEFAULT_FWCHECKED_MARKER"
@@ -2148,10 +2154,10 @@ function _detect_and_rename_gopro_sd()
         local firmwarebase=""
         local cache_type=""
         if [[ "$firmware_type" == "labs" ]]; then
-          firmwarebase="${GOPROX_HOME}/firmware.labs/${camera_type}"
+          firmwarebase="${GOPROX_HOME}/firmware/labs/${camera_type}"
           cache_type="labs"
         else
-          firmwarebase="${GOPROX_HOME}/firmware/${camera_type}"
+          firmwarebase="${GOPROX_HOME}/firmware/official/${camera_type}"
           cache_type="official"
         fi
         
@@ -2161,15 +2167,18 @@ function _detect_and_rename_gopro_sd()
           latestfirmware="${latestfirmware%/}"
         fi
         
+        # Display firmware status with visual indicators
         if [[ -n "$latestfirmware" ]]; then
           local latestversion="${latestfirmware##*/}"
           if [[ "$latestversion" != "$firmware_version" ]]; then
+            # Outdated firmware - show warning symbol and newer version
+            _echo "  Firmware: $firmware_version ($firmware_type) ⚠️  Outdated"
+            _echo "    Newer version available: $latestversion"
+            
             # Check if firmware update files already exist
             if [[ -d "$volume/UPDATE" ]] && [[ -f "$volume/UPDATE/DATA.bin" ]]; then
-              _echo "  Firmware update already prepared (UPDATE directory exists)"
+              _echo "    Firmware update already prepared (UPDATE directory exists)"
             else
-              _echo "  Newer $firmware_type firmware available: $firmware_version → $latestversion"
-              
               # Offer to update firmware
               echo
               if safe_confirm "Do you want to update to $latestversion? (y/N)"; then
@@ -2196,10 +2205,12 @@ function _detect_and_rename_gopro_sd()
               fi
             fi
           else
-            _echo "  Firmware is up to date ($firmware_type)"
+            # Up-to-date firmware - show checkmark
+            _echo "  Firmware: $firmware_version ($firmware_type) ✅ Up to date"
           fi
         else
-          _echo "  No $firmware_type firmware found for $camera_type"
+          # No firmware found for this camera type
+          _echo "  Firmware: $firmware_version ($firmware_type) ❌ No $firmware_type firmware found for $camera_type"
         fi
         
 
