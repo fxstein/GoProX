@@ -284,10 +284,9 @@ function _auto_rename_gopro_card() {
 
 # Centralized function to auto-rename all GoPro SD cards before processing
 function _auto_rename_all_gopro_cards() {
-  _echo "Auto-renaming GoPro SD cards to standard format..."
-  
   local renamed_count=0
   local skipped_count=0
+  local found_gopro_cards=false
   
   for volume in /Volumes/*; do
     if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
@@ -301,6 +300,12 @@ function _auto_rename_all_gopro_cards() {
       # Check if this is a GoPro SD card
       local version_file="$volume/MISC/version.txt"
       if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        # Show header only when first GoPro card is found
+        if [[ "$found_gopro_cards" == false ]]; then
+          _echo "Auto-renaming GoPro SD cards to standard format..."
+          found_gopro_cards=true
+        fi
+        
         # Extract camera information
         local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
         local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
