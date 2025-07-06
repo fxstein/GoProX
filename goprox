@@ -2213,7 +2213,49 @@ function _detect_and_rename_gopro_sd()
           _echo "  Firmware: $firmware_version ($firmware_type) ❌ No $firmware_type firmware found for $camera_type"
         fi
         
-
+        # Check archive status and new media
+        local archive_file=""
+        local last_archived=""
+        local new_media_count=0
+        
+        # Look for archive file in the archive directory
+        local archive_dir="${library/#\~/$HOME}/archive"
+        if [[ -L "$archive_dir" ]]; then
+          archive_dir=$(readlink "$archive_dir")
+        fi
+        if [[ -d "$archive_dir" ]]; then
+          # Convert camera type to archive format (HERO10 Black -> HERO10_Black)
+          local archive_camera_type=$(echo "$camera_type" | sed 's/ /_/g')
+          archive_file=$(find "$archive_dir" -name "*${archive_camera_type}*${short_serial}*.tar.gz" -type f 2>/dev/null | sort | tail -n 1)
+          if [[ -n "$archive_file" ]]; then
+            # Extract timestamp from filename (format: YYYYMMDDHHMMSS_...)
+            local timestamp=$(basename "$archive_file" | grep -o '^[0-9]\{14\}' | head -n 1)
+            if [[ -n "$timestamp" ]]; then
+              last_archived=$(date -j -f "%Y%m%d%H%M%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "Unknown")
+            fi
+          fi
+        fi
+        
+        # Count new media files since last archive
+        if [[ -n "$last_archived" ]]; then
+          new_media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) -newermt "$last_archived" 2>/dev/null | wc -l | tr -d ' ')
+        else
+          # If no archive found, count all media files
+          new_media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
+        fi
+        
+        # Display archive and media status
+        if [[ -n "$last_archived" ]]; then
+          _echo "  Last archived: $last_archived"
+        else
+          _echo "  Last archived: Never"
+        fi
+        
+        if [[ $new_media_count -gt 0 ]]; then
+          _echo "  New media: $new_media_count files since last archive"
+        else
+          _echo "  New media: None"
+        fi
         
         echo
       fi
