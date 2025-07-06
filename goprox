@@ -2265,11 +2265,72 @@ function _detect_and_rename_gopro_sd()
   if [[ "$found_gopro" == false ]]; then
     _info "No GoPro SD cards found"
     _echo "GoPro SD cards found: none"
+    _echo "No automatic tasks identified"
   else
     local total_cards=$((already_correct_count + renamed_count))
     _echo "GoPro SD cards found: $total_cards"
     if [[ $firmware_updated_count -gt 0 ]]; then
       _echo "  - $firmware_updated_count firmware updates prepared"
+    fi
+    
+    # Check if any automatic tasks are needed
+    local has_new_media=false
+    local has_actions=false
+    
+    # Check if any cards have new media
+    for volume in /Volumes/*; do
+      if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+        local volume_name=$(basename "$volume")
+        if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+          continue
+        fi
+        
+        local version_file="$volume/MISC/version.txt"
+        if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+          # Count media files on this card
+          local media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
+          if [[ $media_count -gt 0 ]]; then
+            has_new_media=true
+            has_actions=true
+          fi
+        fi
+      fi
+    done
+    
+    # Check for staged firmware updates
+    local staged_firmware_cards=()
+    for volume in /Volumes/*; do
+      if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+        local volume_name=$(basename "$volume")
+        if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+          continue
+        fi
+        
+        local version_file="$volume/MISC/version.txt"
+        if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+          # Check if firmware update is staged
+          if [[ -d "$volume/UPDATE" ]] && [[ -f "$volume/UPDATE/DATA.bin" ]]; then
+            staged_firmware_cards+=("$volume_name")
+          fi
+        fi
+      fi
+    done
+    
+    # Add firmware updates to actions
+    if [[ $firmware_updated_count -gt 0 ]]; then
+      has_actions=true
+    fi
+    
+    if [[ "$has_actions" == false ]]; then
+      _echo "No automatic tasks identified"
+      
+      # Show TODO for staged firmware updates
+      if [[ ${#staged_firmware_cards[@]} -gt 0 ]]; then
+        _echo "  TODO: Insert cards into cameras to perform firmware upgrades:"
+        for card in "${staged_firmware_cards[@]}"; do
+          _echo "    - $card"
+        done
+      fi
     fi
   fi
 }
