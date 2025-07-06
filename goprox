@@ -2211,17 +2211,14 @@ function _detect_and_rename_gopro_sd()
   
   if [[ "$found_gopro" == false ]]; then
     _info "No GoPro SD cards found"
+    _echo "GoPro SD cards found: none"
   else
-    _echo "Summary: Found $((already_correct_count + renamed_count)) GoPro SD card(s)"
-    if [[ $already_correct_count -gt 0 ]]; then
-      _echo "  - $already_correct_count already correctly named"
-    fi
+    local total_cards=$((already_correct_count + renamed_count))
+    _echo "GoPro SD cards found: $total_cards"
     if [[ $firmware_updated_count -gt 0 ]]; then
       _echo "  - $firmware_updated_count firmware updates prepared"
     fi
   fi
-  
-  _echo "SD card detection finished."
 }
 
 # Enable color output
