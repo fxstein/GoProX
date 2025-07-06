@@ -1,7 +1,16 @@
 #!/bin/zsh
 
-# GoProX Pre-commit Hook
+# GoProX Commit Message Hook
 # Ensures all commits reference GitHub issues
+#
+# IMPORTANT: This is a SIMPLE, FOCUSED solution designed to prevent branch divergence
+# caused by commit amending. DO NOT add extra scripts, workflows, or complexity.
+#
+# Purpose: Block commits without (refs #XX) to prevent the need for amending pushed commits
+# Solution: Simple validation only - let the user fix the message and commit again
+#
+# If you're tempted to add more features here, STOP and ask the user first.
+# This hook should remain minimal and focused on its single responsibility.
 
 # Get the commit message from the commit-msg file
 commit_msg_file="$1"
@@ -34,6 +43,6 @@ else
     echo "$commit_msg"
     echo "---"
     echo ""
-    echo "Please amend your commit with a proper issue reference."
+    echo "Please add the issue reference and try committing again."
     exit 1
 fi

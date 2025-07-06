@@ -115,6 +115,16 @@ This document establishes the foundational architectural decisions and design pa
 - **Wait for direction**: Do not proceed with rebase until the user explicitly requests it after reviewing the debug information.
 - **Root cause analysis**: If rebase prompts occur repeatedly, investigate for history rewrites, force-pushes, or automation that may be causing branch divergence.
 
+## Commit Message Hook Protection (CRITICAL)
+- **NEVER modify the commit-msg hook to add extra features, scripts, or complexity**
+- **The commit-msg hook is a SIMPLE, FOCUSED solution designed to prevent branch divergence**
+- **Purpose**: Block commits without (refs #XX) to prevent the need for amending pushed commits
+- **Solution**: Simple validation only - let the user fix the message and commit again
+- **If tempted to add more features**: STOP and ask the user first
+- **This hook should remain minimal and focused on its single responsibility**
+- **DO NOT create additional scripts or workflows** to "fix" commit messages
+- **The hook itself IS the solution** - it prevents the problem before it occurs
+
 ## Release Workflow Automation
 
 - When the user requests a release, always use the `./scripts/release/gitflow-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
