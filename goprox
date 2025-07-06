@@ -552,11 +552,14 @@ function _validate_config()
   
   # Validate mountoptions array
   if [[ -n "$mountoptions" ]]; then
-    # Check if mountoptions is a valid array format (should start with '(' and end with ')')
-    if [[ ! "$mountoptions" =~ '^\(.*\)$' ]]; then
-      _warning "Invalid mountoptions format: $mountoptions"
-      _warning "Using default mount options"
-      mountoptions="$DEFAULT_MOUNTOPTIONS"
+    # Check if mountoptions is actually an array
+    if [[ ! "$(declare -p mountoptions 2>/dev/null)" =~ "declare -a" ]]; then
+      # Only warn if this is not the default value (to avoid false positives)
+      if [[ "$mountoptions" != "$DEFAULT_MOUNTOPTIONS" ]]; then
+        _warning "Invalid mountoptions format: $mountoptions"
+        _warning "Using default mount options"
+        mountoptions="$DEFAULT_MOUNTOPTIONS"
+      fi
     fi
   else
     _info "Mount options not specified, using defaults"
