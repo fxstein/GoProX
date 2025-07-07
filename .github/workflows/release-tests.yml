@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: "Install dependencies"
         run: |
@@ -70,6 +72,8 @@ jobs:
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: "Download test results"
         uses: actions/download-artifact@v4
