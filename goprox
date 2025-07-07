@@ -1,5 +1,10 @@
 #!/bin/zsh
 
+# Debug: Log all arguments received and working directory
+echo "DEBUG: Script started with arguments: $@" >&2
+echo "DEBUG: Current working directory: $(pwd)" >&2
+echo "DEBUG: Script location: $(cd "$(dirname "$0")" && pwd)/$(basename "$0")" >&2
+
 #
 # goprox: The missing GoPro data and workflow manager for macOS
 #
