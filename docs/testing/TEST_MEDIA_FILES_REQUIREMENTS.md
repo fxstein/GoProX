@@ -3,6 +3,18 @@
 ## Overview
 The GoProX processing tests require real media files from different GoPro camera models to be meaningful. Currently, the test suite lacks diverse media files, making it impossible to properly test the core functionality.
 
+## Purpose
+
+This document specifies the requirements for test media files, including which GoPro camera models need coverage, what file types are required, and how to organize and implement test media file collections.
+
+## Use When
+
+- Understanding what test files are needed for comprehensive testing
+- Planning test coverage expansion for new GoPro camera models
+- Adding new media file types to the test suite
+- Organizing and structuring test media file collections
+- Implementing test scenarios with real media files
+
 ## Required Media Files
 
 ### GoPro Models to Cover

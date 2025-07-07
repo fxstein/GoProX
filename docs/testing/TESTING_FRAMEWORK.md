@@ -4,6 +4,18 @@
 
 The GoProX testing framework provides a comprehensive suite of tests to validate the GoProX CLI tool functionality, CI/CD infrastructure, and development environment. All test scripts follow a standardized structure with proper logging, environmental details, and configurable verbosity levels.
 
+## Purpose
+
+This document serves as the primary reference for understanding and using the GoProX testing framework. It covers the architecture, standards, and best practices for all testing activities.
+
+## Use When
+
+- Understanding the overall testing framework architecture
+- Writing new test scripts or modifying existing ones
+- Debugging test failures and issues
+- Setting up testing environments
+- Implementing testing best practices
+
 ## Test Script Structure
 
 ### Standardized Template
