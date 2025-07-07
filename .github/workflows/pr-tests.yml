@@ -21,7 +21,7 @@ jobs:
           lfs: true
 
       - name: "Pull LFS files"
-        run: git lfs checkout
+        run: git lfs pull
 
       - name: "Debug LFS and file status"
         run: |
