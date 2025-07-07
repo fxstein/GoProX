@@ -2195,6 +2195,94 @@ function _clean_all_gopro_cards()
 
 # Removed duplicate _auto_rename_gopro_card function - using the enhanced version above
 
+# Function to assess system readiness for workflow execution
+function _assess_system_readiness() {
+  local capabilities=()
+  
+  # Check library root (required for all operations)
+  if _test_library_component "library" "${library/#\~/$HOME}" >/dev/null 2>&1; then
+    capabilities+=("library_root")
+  fi
+  
+  # Check archive directory
+  if _test_library_component "archive" "${library/#\~/$HOME}/archive" >/dev/null 2>&1; then
+    capabilities+=("archive")
+  fi
+  
+  # Check import directory
+  if _test_library_component "imported" "${library/#\~/$HOME}/imported" >/dev/null 2>&1; then
+    capabilities+=("import")
+  fi
+  
+  # Check process directory
+  if _test_library_component "processed" "${library/#\~/$HOME}/processed" >/dev/null 2>&1; then
+    capabilities+=("process")
+  fi
+  
+  # Check deleted directory
+  if _test_library_component "deleted" "${library/#\~/$HOME}/deleted" >/dev/null 2>&1; then
+    capabilities+=("clean")
+  fi
+  
+  echo "${capabilities[@]}"
+}
+
+# Function to analyze content requirements for a volume
+function _analyze_content_requirements() {
+  local volume="$1"
+  local last_archived="$2"
+  
+  local new_media_count=0
+  local total_media_count=0
+  
+  if [[ -n "$last_archived" ]]; then
+    new_media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) -newermt "$last_archived" 2>/dev/null | wc -l | tr -d ' ')
+  else
+    total_media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
+    new_media_count=$total_media_count
+  fi
+  
+  echo "new_media:$new_media_count"
+}
+
+# Function to select available workflows based on system capabilities and content
+function _select_available_workflows() {
+  local capabilities="$1"
+  local content_state="$2"
+  
+  local available_workflows=()
+  
+  case "$content_state" in
+    "new_media_present")
+      if [[ "$capabilities" == *"archive"* ]]; then
+        available_workflows+=("archive")
+        available_workflows+=("archive_clean")
+      fi
+      
+      if [[ "$capabilities" == *"import"* ]]; then
+        available_workflows+=("import")
+        available_workflows+=("import_clean")
+      fi
+      
+      if [[ "$capabilities" == *"archive"* && "$capabilities" == *"import"* ]]; then
+        available_workflows+=("archive_import_clean")
+      fi
+      
+      available_workflows+=("skip")
+      ;;
+      
+    "no_new_media")
+      available_workflows+=("skip")
+      
+      if [[ "$capabilities" == *"clean"* ]]; then
+        available_workflows+=("clean_only")
+      fi
+      ;;
+  esac
+  
+  echo "${available_workflows[@]}"
+}
+
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
@@ -2383,7 +2471,14 @@ function _detect_and_rename_gopro_sd()
     local has_new_media=false
     local has_actions=false
     
-    # Check if any cards have new media
+    # Assess system readiness for workflow execution
+    local system_capabilities=$(_assess_system_readiness)
+    _debug "System capabilities: $system_capabilities"
+    
+    # Check if any cards have new media and determine content requirements
+    local cards_with_new_media=()
+    local total_new_files=0
+    
     for volume in /Volumes/*; do
       if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
         local volume_name=$(basename "$volume")
@@ -2393,11 +2488,15 @@ function _detect_and_rename_gopro_sd()
         
         local version_file="$volume/MISC/version.txt"
         if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
-          # Count media files on this card
-          local media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
-          if [[ $media_count -gt 0 ]]; then
+          # Analyze content requirements for this volume
+          local content_analysis=$(_analyze_content_requirements "$volume" "$last_archived")
+          local new_media_count=$(echo "$content_analysis" | cut -d: -f2)
+          
+          if [[ $new_media_count -gt 0 ]]; then
             has_new_media=true
             has_actions=true
+            cards_with_new_media+=("$volume")
+            total_new_files=$((total_new_files + new_media_count))
           fi
         fi
       fi
@@ -2431,12 +2530,65 @@ function _detect_and_rename_gopro_sd()
       _echo "No automatic tasks identified"
       
       # Show TODO for staged firmware updates
-      if [[ ${#staged_firmware_cards[@]} -gt 0 ]]; then
+      if [[ ${#staged_firmware_cards} -gt 0 ]]; then
         _echo "  TODO: Insert cards into cameras to perform firmware upgrades:"
         for card in "${staged_firmware_cards[@]}"; do
           _echo "    - $card"
         done
       fi
+    fi
+    
+    # Present workflow options if new media is detected
+    if [[ "$has_new_media" == true ]]; then
+      _echo "New media detected: $total_new_files files across ${#cards_with_new_media} cards"
+      
+      # Determine content state for workflow selection
+      local content_state="new_media_present"
+      local available_workflows=($(_select_available_workflows "$system_capabilities" "$content_state"))
+      
+      _echo "Available workflows:"
+      local i=1
+      while [[ $i -le ${#available_workflows} ]]; do
+        local workflow="${available_workflows[$i]}"
+        case "$workflow" in
+          "archive") _echo "  $i. Archive media to backup storage" ;;
+          "archive_clean") _echo "  $i. Archive media and clean SD cards" ;;
+          "import") _echo "  $i. Import media to library" ;;
+          "import_clean") _echo "  $i. Import media and clean SD cards" ;;
+          "archive_import_clean") _echo "  $i. Archive, import, and clean (recommended)" ;;
+          "skip") _echo "  $i. Skip - do nothing" ;;
+        esac
+        ((i++))
+      done
+
+      # Find the default (archive_clean if available, else first)
+      local default_choice=1
+      i=1
+      while [[ $i -le ${#available_workflows} ]]; do
+        if [[ "${available_workflows[$i]}" == "archive_clean" ]]; then
+          default_choice=$i
+          break
+        fi
+        ((i++))
+      done
+      _echo "Default choice: $default_choice"
+
+      # Interactive prompt
+      local user_choice=""
+      while true; do
+        echo -n "Select workflow [${default_choice}]: "
+        read -r user_choice
+        if [[ -z "$user_choice" ]]; then
+          user_choice=$default_choice
+        fi
+        if [[ "$user_choice" =~ ^[0-9]+$ ]] && (( user_choice >= 1 && user_choice <= ${#available_workflows} )); then
+          break
+        else
+          _echo "Invalid selection. Please enter a number between 1 and ${#available_workflows}. (You entered: '$user_choice')"
+        fi
+      done
+      local selected_workflow="${available_workflows[$user_choice]}"
+      _echo "Selected workflow: $selected_workflow"
     fi
   fi
 }
