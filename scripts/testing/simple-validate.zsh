@@ -84,7 +84,11 @@ echo "${YELLOW}DEBUG: Test directory contents before GoProX run:${NC}"
 ls -la test/ 2>/dev/null || echo "test/ directory does not exist"
 
 echo -n "Testing: GoProX test mode... "
-if ./goprox --test >/dev/null 2>&1; then
+# Capture the actual output of GoProX test mode
+GOPROX_OUTPUT=$(./goprox --test --verbose 2>&1)
+GOPROX_EXIT_CODE=$?
+
+if [[ $GOPROX_EXIT_CODE -eq 0 ]]; then
     echo "${GREEN}✅ PASS${NC}"
     ((PASSED++))
     
@@ -98,9 +102,10 @@ else
     echo "${RED}❌ FAIL${NC}"
     ((FAILED++))
     
-    # Debug: Show error output if GoProX test mode failed
-    echo "${YELLOW}DEBUG: GoProX test mode failed. Running with verbose output:${NC}"
-    ./goprox --test --verbose 2>&1 | head -20
+    # Debug: Show the actual GoProX output
+    echo "${YELLOW}DEBUG: GoProX test mode failed with exit code $GOPROX_EXIT_CODE${NC}"
+    echo "${YELLOW}DEBUG: GoProX output (first 30 lines):${NC}"
+    echo "$GOPROX_OUTPUT" | head -30
 fi
 
 echo ""
