@@ -66,5 +66,5 @@ jobs:
       - name: "Run shell script tests"
         run: |
           echo "🧪 Testing shell scripts..."
-          zsh ./scripts/testing/run-tests.zsh --params
-          zsh ./scripts/testing/run-tests.zsh --config
+          zsh ./scripts/testing/run-test-suite.zsh --params
+          zsh ./scripts/testing/run-test-suite.zsh --config

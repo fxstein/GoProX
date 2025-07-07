@@ -86,7 +86,7 @@ Every test script outputs detailed environmental information at startup:
 
 ### Core Validation Scripts
 
-#### `simple-validate.zsh`
+#### `validate-basic.zsh`
 **Purpose**: Basic GoProX testing environment and core functionality validation
 
 **Tests**:
@@ -99,30 +99,30 @@ Every test script outputs detailed environmental information at startup:
 **Usage**:
 ```bash
 # Default verbose mode
-./scripts/testing/simple-validate.zsh
+./scripts/testing/validate-basic.zsh
 
 # Debug mode for troubleshooting
-./scripts/testing/simple-validate.zsh --debug
+./scripts/testing/validate-basic.zsh --debug
 
 # Quiet mode for automation
-./scripts/testing/simple-validate.zsh --quiet
+./scripts/testing/validate-basic.zsh --quiet
 ```
 
-#### `validate-all.zsh`
+#### `validate-integration.zsh`
 **Purpose**: Comprehensive validation including testing setup and CI/CD infrastructure
 
 **Tests**:
-- Runs both `simple-validate.zsh` and `validate-ci.zsh`
+- Runs both `validate-basic.zsh` and `validate-ci.zsh`
 - Provides unified summary and recommendations
 - Orchestrates multiple validation scripts
 
 **Usage**:
 ```bash
 # Run comprehensive validation
-./scripts/testing/validate-all.zsh
+./scripts/testing/validate-integration.zsh
 
 # Debug mode for detailed output
-./scripts/testing/validate-all.zsh --debug
+./scripts/testing/validate-integration.zsh --debug
 ```
 
 #### `validate-ci.zsh`
@@ -148,13 +148,13 @@ Every test script outputs detailed environmental information at startup:
 
 ### Specialized Test Scripts
 
-#### `test-file-comparison.zsh`
+#### `test-regression.zsh`
 **Purpose**: File comparison and regression testing with real media files
 
-#### `enhanced-test-suites.zsh`
+#### `test-integration.zsh`
 **Purpose**: Advanced test scenarios and edge cases
 
-#### `test-homebrew-integration.zsh`
+#### `test-homebrew.zsh`
 **Purpose**: Homebrew formula and multi-channel testing
 
 #### `validate-setup.zsh`
@@ -168,12 +168,12 @@ The CI/CD system uses a hierarchical approach:
 
 1. **PR Tests** (`pr-tests.yml`)
    - Fast validation for pull requests
-   - Runs `simple-validate.zsh`
+   - Runs `validate-basic.zsh`
    - Duration: ~2-3 minutes
 
 2. **Integration Tests** (`integration-tests.yml`)
    - Full regression testing for main/develop
-   - Runs `validate-all.zsh` and `test-file-comparison.zsh`
+   - Runs `validate-integration.zsh` and `test-regression.zsh`
    - Duration: ~5-10 minutes
 
 3. **Release Tests** (`release-tests.yml`)
@@ -271,13 +271,13 @@ test/
 
 ```bash
 # Check script execution
-zsh ./scripts/testing/simple-validate.zsh --debug
+zsh ./scripts/testing/validate-basic.zsh --debug
 
 # Validate environment
 zsh ./scripts/testing/validate-ci.zsh --debug
 
 # Test specific functionality
-zsh ./scripts/testing/test-file-comparison.zsh --debug
+zsh ./scripts/testing/test-regression.zsh --debug
 
 # Check CI simulation
 zsh ./scripts/testing/validate-ci.zsh --debug | grep "Ubuntu environment"
@@ -302,7 +302,7 @@ zsh ./scripts/testing/validate-ci.zsh --debug | grep "Ubuntu environment"
 
 ## References
 
-- [Test Script Template](../scripts/testing/test-script-template.zsh)
+- [Test Script Template](../scripts/testing/test-template.zsh)
 - [CI/CD Integration Guide](CI_INTEGRATION.md)
 - [Test Media Requirements](TEST_MEDIA_FILES_REQUIREMENTS.md)
 - [Test Output Management](TEST_OUTPUT_MANAGEMENT.md)

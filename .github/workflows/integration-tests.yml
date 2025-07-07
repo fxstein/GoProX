@@ -39,12 +39,12 @@ jobs:
       - name: "Run comprehensive validation"
         run: |
           echo "🧪 Running comprehensive validation..."
-          zsh ./scripts/testing/validate-all.zsh
+          zsh ./scripts/testing/validate-integration.zsh
 
       - name: "Run file comparison tests"
         run: |
           echo "🧪 Running file comparison tests..."
-          zsh ./scripts/testing/test-file-comparison.zsh
+          zsh ./scripts/testing/test-regression.zsh
 
       - name: "Upload test results"
         if: always()

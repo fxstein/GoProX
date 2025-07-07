@@ -37,7 +37,7 @@ jobs:
       - name: "Run basic validation"
         run: |
           echo "🧪 Running basic validation..."
-          zsh ./scripts/testing/simple-validate.zsh
+          zsh ./scripts/testing/validate-basic.zsh
 
       - name: "Upload test results"
         if: always()

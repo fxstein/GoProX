@@ -36,17 +36,17 @@ jobs:
       - name: "Run all integration tests"
         run: |
           echo "🧪 Running all integration tests..."
-          zsh ./scripts/testing/validate-all.zsh
+          zsh ./scripts/testing/validate-integration.zsh
 
       - name: "Run enhanced test suites"
         run: |
           echo "🧪 Running enhanced test suites..."
-          zsh ./scripts/testing/enhanced-test-suites.zsh
+          zsh ./scripts/testing/test-integration.zsh
 
       - name: "Run Homebrew integration tests"
         run: |
           echo "🧪 Running Homebrew integration tests..."
-          zsh ./scripts/testing/test-homebrew-integration.zsh
+          zsh ./scripts/testing/test-homebrew.zsh
 
       - name: "Validate release configuration"
         run: |

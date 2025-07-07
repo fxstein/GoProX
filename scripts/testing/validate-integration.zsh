@@ -211,7 +211,7 @@ log_info "Starting comprehensive validation execution..."
 echo ""
 
 # Run both validations
-run_validation "simple-validate.zsh" "Testing Setup Validation"
+run_validation "validate-basic.zsh" "Basic Environment Validation"
 run_validation "validate-ci.zsh" "CI/CD Infrastructure Validation"
 
 # =============================================================================
