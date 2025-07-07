@@ -95,6 +95,8 @@ else
         echo "DEBUG: Script works when run with zsh directly"
     else
         echo "DEBUG: Script fails even when run with zsh directly"
+        echo "DEBUG: Trying to run script with bash to see error..."
+        bash goprox --help 2>&1 | head -5
     fi
 fi
 
