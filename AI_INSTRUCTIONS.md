@@ -165,6 +165,17 @@ This document establishes the foundational architectural decisions and design pa
 - **For non-interactive runs**, add `--auto-confirm` or `--dry-run` flags to avoid prompts.
 - **If `unbuffer` is not available**, use `stdbuf -oL` as fallback: `stdbuf -oL ./goprox [options] | cat`
 
+## GitHub CLI Environment Issues (CRITICAL)
+
+- **If GitHub CLI (`gh`) commands fail with errors like "head: |: No such file or directory" or similar malformed command errors**, immediately check the `PAGER` environment variable.
+- **The issue is likely caused by an incorrectly set PAGER variable** that contains malformed commands or pipe characters.
+- **Diagnosis**: Run `echo $PAGER` to check the current value. If it contains pipes (`|`) or malformed commands, this is the problem.
+- **Solution**: Unset the PAGER variable: `unset PAGER`
+- **Root cause**: This typically happens when PAGER gets set to invalid values during testing or debugging sessions.
+- **Prevention**: Be careful when setting environment variables for testing - avoid setting PAGER to complex commands with pipes.
+- **Verification**: After unsetting PAGER, test GitHub CLI commands to confirm they work properly.
+- **CRITICAL**: You MUST fix any shell environment problems you encounter and MUST NOT ignore or mask them. Shell environment issues can cause cascading failures and must be resolved at the root cause.
+
 ## Logging and Debug Output Requirements
 
 - **MANDATORY**: Always use the structured logger module (`scripts/core/logger.zsh`) for all output, including debug information.
