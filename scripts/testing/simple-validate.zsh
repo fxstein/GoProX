@@ -84,6 +84,20 @@ echo "${YELLOW}DEBUG: Test directory contents before GoProX run:${NC}"
 ls -la test/ 2>/dev/null || echo "test/ directory does not exist"
 
 echo -n "Testing: GoProX test mode... "
+# First, test if the script can be executed at all
+echo "DEBUG: Testing script execution..."
+if ./goprox --help >/dev/null 2>&1; then
+    echo "DEBUG: Script can be executed (help works)"
+else
+    echo "DEBUG: Script cannot be executed (help fails)"
+    echo "DEBUG: Trying to run script directly with zsh..."
+    if zsh goprox --help >/dev/null 2>&1; then
+        echo "DEBUG: Script works when run with zsh directly"
+    else
+        echo "DEBUG: Script fails even when run with zsh directly"
+    fi
+fi
+
 # Capture the actual output of GoProX test mode
 GOPROX_OUTPUT=$(./goprox --test --verbose 2>&1)
 GOPROX_EXIT_CODE=$?
