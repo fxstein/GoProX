@@ -2796,6 +2796,16 @@ if [ "$test" = true ]; then
   copyright="This is a Test Copyright"
   _process_media
 
+  # Log all file paths after they've been set
+  _info "Test mode file paths:"
+  _info "  Library:   $library ($(realpath "${library/#\~/$HOME}"))"
+  _info "  Archive:   $archivedir ($(realpath "${archivedir/#\~/$HOME}"))"
+  _info "  Imported:  $importdir ($(realpath "${importdir/#\~/$HOME}"))"
+  _info "  Processed: $processdir ($(realpath "${processdir/#\~/$HOME}"))"
+  _info "  Deleted:   ${library}/deleted ($(realpath "${library/#\~/$HOME}/deleted"))"
+  _info "  Source:    $source ($(realpath "${source/#\~/$HOME}"))"
+  _info "  Originals: ./test/originals ($(realpath ./test/originals))"
+
   _info "Comparing test output..."
   if ! git diff --quiet ./test/; then
     # changes detected
