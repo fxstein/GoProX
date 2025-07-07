@@ -20,6 +20,24 @@ jobs:
         with:
           lfs: true
 
+      - name: "Debug LFS and file status"
+        run: |
+          echo "=== LFS Environment Debug ==="
+          echo "Git LFS version:"
+          git lfs version
+          echo ""
+          echo "LFS environment:"
+          git lfs env
+          echo ""
+          echo "LFS tracked files:"
+          git lfs ls-files
+          echo ""
+          echo "Test directory file sizes:"
+          find test/originals -type f -name "*.jpg" -o -name "*.JPG" -o -name "*.lrv" -o -name "*.LRV" -o -name "*.thm" -o -name "*.THM" | xargs ls -la
+          echo ""
+          echo "Git status:"
+          git status --porcelain
+
       - name: "Install dependencies"
         run: |
           sudo apt-get update
