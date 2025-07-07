@@ -211,7 +211,8 @@ apifilter+=('s/HERO11 Black Mini/GoPro_Hero11_Mini/g;')
 apifilter+=('s/HERO10 Black/GoPro_Hero10/g;')
 apifilter+=('s/HERO9 Black/GoPro_Hero9/g;')
 apifilter+=('s/HERO8 Black/GoPro_Hero8/g;')
-apifilter+=('s/GoPro Max/GoPro_Max/g')
+apifilter+=('s/GoPro Max/GoPro_Max/g;')
+apifilter+=('s/Insta360 X3/360X3/g')
 
 exiftoolstatus=0
 validlibrary=false
@@ -230,6 +231,50 @@ else
   exit 1
 fi
 
+# Function to detect Insta360 X3 camera and extract serial number
+function _detect_insta360_x3() {
+  local volume_path="$1"
+  
+  # Check for Insta360 X3 files (DNG + INSP pairs or INSV videos)
+  local found_insta360=false
+  local serial_number=""
+  
+  # Look for INSP files (Insta360 sidecar files) - use find to avoid glob errors
+  while IFS= read -r -d '' insp_file; do
+    if [[ -f "$insp_file" ]]; then
+      # Extract serial number from INSP file
+      local extracted_serial=$(strings "$insp_file" | grep -o "IAQEF240[0-9A-Z]*" | sed 's/IAQEF240//' | head -1)
+      if [[ -n "$extracted_serial" ]]; then
+        serial_number="$extracted_serial"
+        found_insta360=true
+        break
+      fi
+    fi
+  done < <(find "$volume_path"/DCIM -name "*.insp" -type f -print0 2>/dev/null)
+  
+  # If no INSP files found, look for INSV files
+  if [[ "$found_insta360" == false ]]; then
+    while IFS= read -r -d '' insv_file; do
+      if [[ -f "$insv_file" ]]; then
+        # Extract serial number from INSV file
+        local extracted_serial=$(strings "$insv_file" | grep -o "IAQEF240[0-9A-Z]*" | sed 's/IAQEF240//' | head -1)
+        if [[ -n "$extracted_serial" ]]; then
+          serial_number="$extracted_serial"
+          found_insta360=true
+          break
+        fi
+      fi
+    done < <(find "$volume_path"/DCIM -name "*.insv" -type f -print0 2>/dev/null)
+  fi
+  
+  if [[ "$found_insta360" == true ]]; then
+    echo "$serial_number"
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Function to auto-rename a single GoPro SD card
 function _auto_rename_gopro_card() {
   local volume_path="$1"
@@ -237,8 +282,15 @@ function _auto_rename_gopro_card() {
   local camera_type="$3"
   local serial_number="$4"
   
-  # Generate expected name: CAMERA_TYPE-SERIAL_LAST_4
-  local expected_name=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')-${serial_number: -4}
+  # Generate expected name based on camera type
+  local expected_name=""
+  if [[ "$camera_type" == "Insta360 X3" ]]; then
+    # Insta360 X3 naming: 360X3-BYMD (last 4 digits of serial)
+    expected_name="360X3-${serial_number: -4}"
+  else
+    # GoPro naming: CAMERA_TYPE-SERIAL_LAST_4
+    expected_name=$(echo "$camera_type" | sed 's/ Black//g' | sed 's/ /-/g' | sed 's/[^A-Za-z0-9-]//g')-${serial_number: -4}
+  fi
   
   # Show renaming details in verbose mode
   if [[ $loglevel -le 1 ]]; then
@@ -310,10 +362,11 @@ function _auto_rename_all_gopro_cards() {
   local renamed_count=0
   local skipped_count=0
   local found_gopro_cards=false
+  local found_insta360_cards=false
   
   # Check if /Volumes exists (only exists on macOS)
   if [[ ! -d "/Volumes" ]]; then
-    _debug "No /Volumes directory found (not macOS), skipping GoPro SD card auto-rename"
+    _debug "No /Volumes directory found (not macOS), skipping SD card auto-rename"
     return 0
   fi
   
@@ -360,6 +413,39 @@ function _auto_rename_all_gopro_cards() {
           ((renamed_count++))
         else
           ((skipped_count++))
+        fi
+      else
+        # Check if this is an Insta360 X3 SD card
+        local insta360_serial=$(_detect_insta360_x3 "$volume")
+        if [[ $? -eq 0 ]] && [[ -n "$insta360_serial" ]]; then
+          # Show header only when first Insta360 card is found
+          if [[ "$found_insta360_cards" == false ]]; then
+            _echo "Auto-renaming Insta360 X3 SD cards to standard format..."
+            found_insta360_cards=true
+          fi
+          
+          # Extract volume UUID for verbose output
+          local volume_uuid=""
+          if command -v diskutil >/dev/null 2>&1; then
+            volume_uuid=$(diskutil info "$volume" | grep "Volume UUID" | awk '{print $3}')
+          fi
+          
+          # Show card details in verbose mode
+          if [[ $loglevel -le 1 ]]; then
+            _info "Found Insta360 X3 SD card: $volume_name"
+            if [[ -n "$volume_uuid" ]]; then
+              _info "  Volume UUID: $volume_uuid"
+            fi
+            _info "  Camera type: Insta360 X3"
+            _info "  Serial number: $insta360_serial"
+          fi
+          
+          # Auto-rename this Insta360 X3 card
+          if _auto_rename_gopro_card "$volume" "$volume_name" "Insta360 X3" "$insta360_serial"; then
+            ((renamed_count++))
+          else
+            ((skipped_count++))
+          fi
         fi
       fi
     fi
