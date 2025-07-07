@@ -23,6 +23,8 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: "Install yamllint"
         run: |
           python -m pip install --upgrade pip
@@ -37,6 +39,8 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: "Install jsonlint"
         run: |
           npm install -g jsonlint
@@ -51,6 +55,8 @@ jobs:
     if: contains(github.event.head_commit.modified, 'goprox') || contains(github.event.head_commit.modified, '.zsh')
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: "Setup zsh"
         run: |
           echo "Using zsh version:"
