@@ -2797,13 +2797,23 @@ if [ "$test" = true ]; then
   _process_media
 
   _info "Comparing test output..."
-  git diff --quiet ./test/ || {
+  if ! git diff --quiet ./test/; then
     # changes detected
     _error "Test failed!"
     echo $fg[red]
     git diff --stat ./test/
+    # For each changed file, log filename and size difference
+    while IFS= read -r file; do
+      # Only consider files (not directories)
+      if [[ -f "$file" ]]; then
+        oldsize=$(git show HEAD:"$file" 2>/dev/null | wc -c | tr -d ' ')
+        newsize=$(wc -c < "$file" | tr -d ' ')
+        if [[ -z "$oldsize" ]]; then oldsize=0; fi
+        _error "Changed: $file (size: $oldsize -> $newsize bytes)"
+      fi
+    done < <(git diff --name-only ./test/)
     exit 1
-  }
+  fi
   _echo "TESTING successful!"
   exit 0
 fi

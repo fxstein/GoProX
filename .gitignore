@@ -20,3 +20,5 @@ output/
 # GitHub backup files
 *.tar.gz
 .env
+
+test/deleted/

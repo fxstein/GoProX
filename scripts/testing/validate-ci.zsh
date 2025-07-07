@@ -211,10 +211,10 @@ fi
 
 # 3. Test Scripts for CI
 log_info "Section 3: Test Scripts for CI"
-test_check "Simple validation script exists" "test -f scripts/testing/simple-validate.zsh" "Simple validation script must exist"
-test_check "Simple validation script executable" "test -x scripts/testing/simple-validate.zsh" "Simple validation script must be executable"
-test_check "Comprehensive validation script exists" "test -f scripts/testing/validate-all.zsh" "Comprehensive validation script must exist"
-test_check "Comprehensive validation script executable" "test -x scripts/testing/validate-all.zsh" "Comprehensive validation script must be executable"
+test_check "Basic validation script exists" "test -f scripts/testing/validate-basic.zsh" "Basic validation script must exist"
+test_check "Basic validation script executable" "test -x scripts/testing/validate-basic.zsh" "Basic validation script must be executable"
+test_check "Integration validation script exists" "test -f scripts/testing/validate-integration.zsh" "Integration validation script must exist"
+test_check "Integration validation script executable" "test -x scripts/testing/validate-integration.zsh" "Integration validation script must be executable"
 
 # 4. CI Environment Simulation
 log_info "Section 4: CI Environment Simulation"
@@ -227,11 +227,11 @@ if (
     command -v jq >/dev/null && \
     command -v zsh >/dev/null && \
     # Check if scripts are executable (check each individually)
-    test -x scripts/testing/simple-validate.zsh && \
-    test -x scripts/testing/validate-all.zsh && \
+    test -x scripts/testing/validate-basic.zsh && \
+    test -x scripts/testing/validate-integration.zsh && \
     test -x goprox && \
     # Check if we can run basic validation
-    ./scripts/testing/simple-validate.zsh --quiet >/dev/null 2>&1
+    ./scripts/testing/validate-basic.zsh --quiet >/dev/null 2>&1
 ); then
     log_success "✅ Ubuntu environment simulation - PASS"
     ((PASSED++))
@@ -257,7 +257,7 @@ fi
 
 # 7. Documentation for CI
 log_info "Section 7: Documentation for CI"
-test_check "CI integration doc exists" "test -f docs/testing/CI_INTEGRATION.md" "CI integration documentation should exist"
+test_check "CI integration doc exists" "test -f docs/testing/CI_CD_INTEGRATION.md" "CI integration documentation should exist"
 test_check "Test framework doc exists" "test -f docs/testing/TESTING_FRAMEWORK.md" "Test framework documentation should exist"
 
 # 8. Workflow Triggers
