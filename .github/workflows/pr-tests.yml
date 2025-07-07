@@ -37,7 +37,7 @@ jobs:
       - name: "Run basic validation"
         run: |
           echo "🧪 Running basic validation..."
-          zsh ./scripts/testing/validate-basic.zsh
+          zsh ./scripts/testing/validate-basic.zsh --debug
 
       - name: "Upload test results"
         if: always()
@@ -45,4 +45,4 @@ jobs:
         with:
           name: "pr-test-results"
           path: "output/"
-          retention-days: 3 
+          retention-days: 3

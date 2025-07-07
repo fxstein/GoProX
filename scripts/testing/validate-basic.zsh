@@ -279,6 +279,18 @@ if [[ $GOPROX_EXIT_CODE -eq 0 ]]; then
         ls -la test/ 2>/dev/null || echo "test/ directory still does not exist"
     fi
     
+    # Debug: Check if directories exist and show their details
+    log_debug "Checking directory existence:"
+    log_debug "Current working directory: $(pwd)"
+    log_debug "test/imported exists: $(test -d test/imported && echo "YES" || echo "NO")"
+    log_debug "test/processed exists: $(test -d test/processed && echo "YES" || echo "NO")"
+    if [[ "$DEBUG" == "true" ]]; then
+        log_debug "test/imported contents:"
+        ls -la test/imported 2>/dev/null || echo "test/imported does not exist"
+        log_debug "test/processed contents:"
+        ls -la test/processed 2>/dev/null || echo "test/processed does not exist"
+    fi
+    
     test_check "Test imported created" "test -d test/imported" "GoProX should create imported directory"
     test_check "Test processed created" "test -d test/processed" "GoProX should create processed directory"
 else

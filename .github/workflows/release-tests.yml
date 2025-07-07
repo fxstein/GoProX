@@ -84,7 +84,7 @@ jobs:
           echo "Generated: $(date)"
           echo "Branch: ${{ github.ref }}"
           echo ""
-          
+
           if [[ -d "test-results" ]]; then
             find test-results -name "*.txt" -type f | while read -r report; do
               echo "📋 $(basename "$report"):"
@@ -103,26 +103,26 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             let summary = '## 🚀 Release Validation Results\n\n';
-            
+
             if (context.payload.workflow_run?.conclusion === 'success') {
               summary += '✅ **Release validation passed**\n\n';
             } else {
               summary += '❌ **Release validation failed**\n\n';
             }
-            
+
             summary += '### Tests Executed:\n';
             summary += '- Integration Tests\n';
             summary += '- Enhanced Test Suites\n';
             summary += '- Homebrew Integration\n';
             summary += '- Release Configuration\n\n';
-            
+
             summary += '📊 **Test Reports**: Available in workflow artifacts\n';
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: summary
-            }); 
+            });

@@ -2742,9 +2742,9 @@ fi
 if [ "$test" = true ]; then
   _echo "TESTING - Performing tests..."
   _info "Removing prior test data..."
-  rm -r "./test/archive"
-  rm -r "./test/imported"
-  rm -r "./test/processed"
+  rm -rf "./test/archive"
+  rm -rf "./test/imported"
+  rm -rf "./test/processed"
 
   _info "Setting up test structure..."
   _info "Creating test/archive directory..."

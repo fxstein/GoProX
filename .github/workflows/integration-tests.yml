@@ -76,7 +76,7 @@ jobs:
           echo "=========================="
           echo "Generated: $(date)"
           echo ""
-          
+
           if [[ -d "test-results" ]]; then
             find test-results -name "*.txt" -type f | while read -r report; do
               echo "📋 $(basename "$report"):"
@@ -87,4 +87,4 @@ jobs:
             done
           else
             echo "No test results found"
-          fi 
+          fi
