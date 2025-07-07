@@ -20,6 +20,9 @@ jobs:
         with:
           lfs: true
 
+      - name: "Pull LFS files"
+        run: git lfs pull
+
       - name: "Debug LFS and file status"
         run: |
           echo "=== LFS Environment Debug ==="
