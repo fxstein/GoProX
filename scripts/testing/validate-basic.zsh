@@ -201,9 +201,8 @@ test_check "GoProX help works" "./goprox --help >/dev/null 2>&1; test \$? -eq 1"
 # 2. Test Framework Tests
 log_info "Section 2: Test Framework"
 test_check "Test framework exists" "test -f scripts/testing/test-framework.zsh" "Core test framework script must exist"
-test_check "Test suites exist" "test -f scripts/testing/test-suites.zsh" "Test suites script must exist"
-test_check "Test runner exists" "test -f scripts/testing/run-tests.zsh" "Main test runner script must exist"
-test_check "Test runner executable" "test -x scripts/testing/run-tests.zsh" "Test runner must be executable"
+test_check "Test runner exists" "test -f scripts/testing/run-test-suite.zsh" "Main test runner script must exist"
+test_check "Test runner executable" "test -x scripts/testing/run-test-suite.zsh" "Test runner must be executable"
 
 # 3. Test Media Tests
 log_info "Section 3: Test Media"
@@ -220,8 +219,8 @@ test_check ".gitattributes includes media" "grep -q 'test/\*\*/\*\.jpg' .gitattr
 
 # 5. File Comparison Framework Tests
 log_info "Section 5: File Comparison Framework"
-test_check "Comparison script exists" "test -f scripts/testing/test-file-comparison.zsh" "File comparison script must exist"
-test_check "Comparison script executable" "test -x scripts/testing/test-file-comparison.zsh" "File comparison script must be executable"
+test_check "Regression test script exists" "test -f scripts/testing/test-regression.zsh" "Regression test script must exist"
+test_check "Regression test script executable" "test -x scripts/testing/test-regression.zsh" "Regression test script must be executable"
 
 # 6. Documentation Tests
 log_info "Section 6: Documentation"
@@ -262,6 +261,13 @@ fi
 log_info "Executing GoProX test mode"
 GOPROX_OUTPUT=$(./goprox --test --verbose 2>&1)
 GOPROX_EXIT_CODE=$?
+
+# Debug: Show the full GoProX output for troubleshooting
+log_debug "GoProX test mode exit code: $GOPROX_EXIT_CODE"
+log_debug "GoProX test mode full output:"
+if [[ "$DEBUG" == "true" ]]; then
+    echo "$GOPROX_OUTPUT"
+fi
 
 if [[ $GOPROX_EXIT_CODE -eq 0 ]]; then
     log_success "✅ GoProX test mode - PASS"
