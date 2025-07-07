@@ -269,7 +269,8 @@ if [[ "$DEBUG" == "true" ]]; then
     echo "$GOPROX_OUTPUT"
 fi
 
-if [[ $GOPROX_EXIT_CODE -eq 0 ]]; then
+# Check if GoProX test mode actually succeeded
+if [[ $GOPROX_EXIT_CODE -eq 0 ]] && echo "$GOPROX_OUTPUT" | grep -q "TESTING successful"; then
     log_success "✅ GoProX test mode - PASS"
     ((PASSED++))
     
@@ -303,6 +304,11 @@ else
     if [[ "$DEBUG" == "true" ]]; then
         echo "$GOPROX_OUTPUT" | head -30
     fi
+    
+    # Even if test mode failed, check if directories were created (for debugging)
+    log_debug "Checking if directories were created despite failure:"
+    log_debug "test/imported exists: $(test -d test/imported && echo "YES" || echo "NO")"
+    log_debug "test/processed exists: $(test -d test/processed && echo "YES" || echo "NO")"
 fi
 
 # =============================================================================
