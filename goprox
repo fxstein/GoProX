@@ -2645,11 +2645,17 @@ fi
 
 _info $BANNER_TEXT
 
+_debug "Script execution flow: Starting main execution"
+
 # Check if all required dependencies are installed
 _validate_dependencies
 
+_debug "Script execution flow: Dependencies validated"
+
 # Always auto-rename GoPro SD cards at the start of every run
 _auto_rename_all_gopro_cards
+
+_debug "Script execution flow: Auto-rename completed"
 
 # Create optional timefilters
 # Must be executed BEFORE iffilter logic as exiftool -if4 must be left of -if0
@@ -2734,11 +2740,15 @@ if [ -z $library ] && [ "$test" != true ]; then
   exit 1
 fi
 
+_debug "Script execution flow: Library validation completed"
+
 if [ "$setup" = true ]; then
   # Setup config file for current user
   _setup
   exit 0
 fi
+
+_debug "Script execution flow: Setup check completed"
 
 if [ "$test" = true ]; then
   _debug "Entering test mode section"
