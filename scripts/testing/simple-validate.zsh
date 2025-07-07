@@ -1,6 +1,9 @@
 #!/bin/zsh
 # Simple GoProX Testing Setup Validation
 
+# Ensure output directory exists for test artifacts (important for CI/CD)
+mkdir -p output
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
