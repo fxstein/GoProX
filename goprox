@@ -216,6 +216,15 @@ validprocessed=false
 validdeleted=false
 tempdir=""
 
+# Source the force mode protection module early to ensure functions are available
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh" ]]; then
+  source "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh"
+else
+  echo "Error: Force mode protection module not found: $SCRIPT_DIR/scripts/core/force-mode-protection.zsh" >&2
+  exit 1
+fi
+
 # Function to auto-rename a single GoPro SD card
 function _auto_rename_gopro_card() {
   local volume_path="$1"
@@ -3010,14 +3019,7 @@ if [[ "$archive" != true && "$import" != true && "$clean" != true && "$geonames"
   exit 0
 fi
 
-# Source the force mode protection module
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [[ -f "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh" ]]; then
-  source "$SCRIPT_DIR/scripts/core/force-mode-protection.zsh"
-else
-  _error "Force mode protection module not found: $SCRIPT_DIR/scripts/core/force-mode-protection.zsh"
-  exit 1
-fi
+# Force mode protection module already sourced at the beginning of the script
 
 # Validate force mode combinations before execution
 if ! _validate_force_combination "$archive" "$import" "$clean" "$process" "$eject" "$FORCE"; then
