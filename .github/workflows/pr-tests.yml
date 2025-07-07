@@ -23,6 +23,11 @@ jobs:
       - name: "Pull LFS files"
         run: git lfs pull
 
+      - name: "Second checkout to ensure LFS files are expanded"
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
       - name: "Debug LFS and file status"
         run: |
           echo "=== LFS Environment Debug ==="
