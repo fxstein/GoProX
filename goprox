@@ -2707,6 +2707,12 @@ if [[ -n $geonamesopt ]]; then
   geonamesacct=$geonamesopt
 fi
 
+# Set library for test mode before validation
+if [ "$test" = true ]; then
+  library="./test"
+  source="./test/originals"
+fi
+
 _debug "Source: $source ($(realpath "${source/#\~/$HOME}"))"
 _debug "Library: $library ($(realpath "${library/#\~/$HOME}"))"
 _debug "Copyright: $copyright"
@@ -2760,8 +2766,6 @@ if [ "$test" = true ]; then
     exit 1
   fi
 
-  source="./test/originals"
-  library="./test"
   _validate_storage
   _archive_media
   _import_media
