@@ -2736,9 +2736,29 @@ if [ "$test" = true ]; then
   rm -r "./test/processed"
 
   _info "Setting up test structure..."
-  mkdir "./test/archive"
-  mkdir "./test/imported"
-  mkdir "./test/processed"
+  _info "Creating test/archive directory..."
+  if mkdir "./test/archive" 2>&1; then
+    _info "Successfully created test/archive directory"
+  else
+    _error "Failed to create test/archive directory"
+    exit 1
+  fi
+  
+  _info "Creating test/imported directory..."
+  if mkdir "./test/imported" 2>&1; then
+    _info "Successfully created test/imported directory"
+  else
+    _error "Failed to create test/imported directory"
+    exit 1
+  fi
+  
+  _info "Creating test/processed directory..."
+  if mkdir "./test/processed" 2>&1; then
+    _info "Successfully created test/processed directory"
+  else
+    _error "Failed to create test/processed directory"
+    exit 1
+  fi
 
   source="./test/originals"
   library="./test"
