@@ -1,0 +1,48 @@
+---
+name: "PR Tests"
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "firmware/**"
+      - "output/**"
+
+jobs:
+  pr-validation:
+    name: "PR Validation"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh exiftool jq
+
+      - name: "Make scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+          chmod +x scripts/core/*.zsh
+          chmod +x goprox
+
+      - name: "Setup output directories"
+        run: |
+          mkdir -p output/test-results
+          mkdir -p output/test-temp
+
+      - name: "Run basic validation"
+        run: |
+          echo "🧪 Running basic validation..."
+          zsh ./scripts/testing/simple-validate.zsh
+
+      - name: "Upload test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "pr-test-results"
+          path: "output/"
+          retention-days: 3 

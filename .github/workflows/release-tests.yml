@@ -1,0 +1,128 @@
+---
+name: "Release Tests"
+on:
+  push:
+    branches: ["release/*", "hotfix/*"]
+  release:
+    types: [published]
+
+jobs:
+  release-validation:
+    name: "Release Validation"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 20
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh exiftool jq python3-pip
+          pip3 install yamllint
+
+      - name: "Make scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+          chmod +x scripts/core/*.zsh
+          chmod +x goprox
+
+      - name: "Setup output directories"
+        run: |
+          mkdir -p output/test-results
+          mkdir -p output/test-temp
+
+      - name: "Run all integration tests"
+        run: |
+          echo "🧪 Running all integration tests..."
+          zsh ./scripts/testing/validate-all.zsh
+
+      - name: "Run enhanced test suites"
+        run: |
+          echo "🧪 Running enhanced test suites..."
+          zsh ./scripts/testing/enhanced-test-suites.zsh
+
+      - name: "Run Homebrew integration tests"
+        run: |
+          echo "🧪 Running Homebrew integration tests..."
+          zsh ./scripts/testing/test-homebrew-integration.zsh
+
+      - name: "Validate release configuration"
+        run: |
+          echo "🧪 Validating release configuration..."
+          zsh ./scripts/testing/validate-setup.zsh
+
+      - name: "Upload release test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "release-test-results"
+          path: "output/"
+          retention-days: 30
+
+  release-summary:
+    name: "Release Test Summary"
+    needs: release-validation
+    runs-on: "ubuntu-latest"
+    if: always()
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Download test results"
+        uses: actions/download-artifact@v4
+        with:
+          name: "release-test-results"
+          path: "test-results"
+
+      - name: "Generate release summary"
+        run: |
+          echo "🚀 Release Test Summary"
+          echo "======================="
+          echo "Generated: $(date)"
+          echo "Branch: ${{ github.ref }}"
+          echo ""
+          
+          if [[ -d "test-results" ]]; then
+            find test-results -name "*.txt" -type f | while read -r report; do
+              echo "📋 $(basename "$report"):"
+              cat "$report"
+              echo ""
+              echo "---"
+              echo ""
+            done
+          else
+            echo "No test results found"
+          fi
+
+      - name: "Comment on release"
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let summary = '## 🚀 Release Validation Results\n\n';
+            
+            if (context.payload.workflow_run?.conclusion === 'success') {
+              summary += '✅ **Release validation passed**\n\n';
+            } else {
+              summary += '❌ **Release validation failed**\n\n';
+            }
+            
+            summary += '### Tests Executed:\n';
+            summary += '- Integration Tests\n';
+            summary += '- Enhanced Test Suites\n';
+            summary += '- Homebrew Integration\n';
+            summary += '- Release Configuration\n\n';
+            
+            summary += '📊 **Test Reports**: Available in workflow artifacts\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            }); 
