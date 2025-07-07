@@ -2759,6 +2759,17 @@ _debug "Script execution flow: Setup check completed"
 if [ "$test" = true ]; then
   _debug "Entering test mode section"
   _echo "TESTING - Performing tests..."
+  
+  # List all original files and their sizes before any operations
+  _info "Original files before test operations:"
+  if [[ -d "./test/originals" ]]; then
+    find "./test/originals" -type f -exec ls -la {} \; | while read -r line; do
+      _info "  $line"
+    done
+  else
+    _warning "test/originals directory not found"
+  fi
+  
   _info "Removing prior test data..."
   rm -rf "./test/archive"
   rm -rf "./test/imported"
@@ -2795,6 +2806,16 @@ if [ "$test" = true ]; then
 
   copyright="This is a Test Copyright"
   _process_media
+
+  # List all original files and their sizes after all operations
+  _info "Original files after test operations:"
+  if [[ -d "./test/originals" ]]; then
+    find "./test/originals" -type f -exec ls -la {} \; | while read -r line; do
+      _info "  $line"
+    done
+  else
+    _warning "test/originals directory not found"
+  fi
 
   # Log all file paths after they've been set
   _info "Test mode file paths:"
