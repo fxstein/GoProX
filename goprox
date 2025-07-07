@@ -2714,6 +2714,7 @@ fi
 
 # Set library for test mode before validation
 if [ "$test" = true ]; then
+  _debug "Test mode detected - setting library and source for test mode"
   library="./test"
   source="./test/originals"
 fi
@@ -2740,6 +2741,7 @@ if [ "$setup" = true ]; then
 fi
 
 if [ "$test" = true ]; then
+  _debug "Entering test mode section"
   _echo "TESTING - Performing tests..."
   _info "Removing prior test data..."
   rm -rf "./test/archive"
