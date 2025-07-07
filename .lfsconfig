@@ -1,15 +1,7 @@
 [lfs]
-    # Ensure LFS objects are fetched during checkout
-    fetchrecentrefsdays = 7
-    fetchrecentremoterefs = true
-    fetchrecentcommitsdays = 7
-    
-    # Configure batch size for better performance
-    batchsize = 100
+    # Configure LFS to be more aggressive about downloading
+    skipdownloaderrors = false
     
     # Ensure LFS objects are downloaded during fetch
     fetchinclude = *
     fetchexclude = 
-    
-    # Configure LFS to be more aggressive about downloading
-    skipdownloaderrors = false 
