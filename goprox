@@ -460,42 +460,65 @@ function _auto_rename_all_gopro_cards() {
 
 # Auto-rename will be called after functions are defined
 
-function _debug()
-{
-  if [[ $loglevel -le 0 ]] ; then
-    echo $fg[blue]"Debug: "$1 $2$reset_color
-    logger -t "goprox" -p user.debug "goprox: Debug: "$1 $2
+function _get_timestamp() {
+  if [[ -n "$timeformat" ]]; then
+    date +"[$timeformat]"
+  else
+    date +"[$DEFAULT_TIMEFORMAT]"
   fi
 }
 
-function _info()
-{
-  if [[ $loglevel -le 1 ]] ; then
-    echo $fg[green]"Info: "$1 $2$reset_color
-    logger -t "goprox" -p user.info "goprox: Info: "$1 $2
-  fi
-}
-
-function _echo()
-{
+function _echo() {
   if [[ $loglevel -le 2 ]] ; then
-    echo $fg[green]$1 $2$reset_color
+    if [[ "$output" == *strftime* ]]; then
+      echo "$(_get_timestamp) $fg[green]$1 $2$reset_color"
+    else
+      echo $fg[green]$1 $2$reset_color
+    fi
     logger -t "goprox" -p user.notice "goprox: "$1 $2
   fi
 }
 
-function _warning()
-{
+function _info() {
+  if [[ $loglevel -le 1 ]] ; then
+    if [[ "$output" == *strftime* ]]; then
+      echo "$(_get_timestamp) $fg[green]Info: $1 $2$reset_color"
+    else
+      echo $fg[green]"Info: "$1 $2$reset_color
+    fi
+    logger -t "goprox" -p user.info "goprox: Info: "$1 $2
+  fi
+}
+
+function _debug() {
+  if [[ $loglevel -le 0 ]] ; then
+    if [[ "$output" == *strftime* ]]; then
+      echo "$(_get_timestamp) $fg[blue]Debug: $1 $2$reset_color"
+    else
+      echo $fg[blue]"Debug: "$1 $2$reset_color
+    fi
+    logger -t "goprox" -p user.debug "goprox: Debug: "$1 $2
+  fi
+}
+
+function _warning() {
   if [[ $loglevel -le 2 ]] ; then
-    echo $fg[yellow]"Warning: "$1 $2$reset_color
+    if [[ "$output" == *strftime* ]]; then
+      echo "$(_get_timestamp) $fg[yellow]Warning: $1 $2$reset_color"
+    else
+      echo $fg[yellow]"Warning: "$1 $2$reset_color
+    fi
     logger -t "goprox" -p user.warning "goprox: Warning: "$1 $2
   fi
 }
 
-function _error()
-{
+function _error() {
   if [[ $loglevel -le 3 ]] ; then
-    >&2 echo $fg[red]"Error: "$1 $2$reset_color
+    if [[ "$output" == *strftime* ]]; then
+      >&2 echo "$(_get_timestamp) $fg[red]Error: $1 $2$reset_color"
+    else
+      >&2 echo $fg[red]"Error: "$1 $2$reset_color
+    fi
     logger -t "goprox" -p user.error -s "goprox: Error: "$1 $2
   fi
 }
@@ -518,9 +541,9 @@ function _validate_dependencies()
   if (( ${+commands[exiftool]} )); then
       [[ $loglevel -le 1 ]] && which exiftool
       if [[ "$debug" = true ]]; then
-        exiftool -ver -v
+        _exiftool_wrapper -ver -v
       else
-        [[ $loglevel -le 1 ]] && exiftool -ver
+        [[ $loglevel -le 1 ]] && _exiftool_wrapper -ver
       fi
   else
       _error "ERROR: Please install exiftool first, run:"
@@ -790,6 +813,16 @@ function _create_iffilter()
   return 0
 }
 
+function _exiftool_wrapper() {
+  if [[ "$output" == *strftime* ]]; then
+    exiftool "$@" 2>&1 | perl -pe 'use POSIX strftime; $|=1; print strftime "['"${timeformat:-$DEFAULT_TIMEFORMAT}"'] ", localtime'
+    return ${PIPESTATUS[0]}
+  else
+    exiftool "$@"
+    return $?
+  fi
+}
+
 function _import_media()
 {
   if [[ $validimported = false ]] ; then
@@ -816,7 +849,7 @@ function _import_media()
   # Remove previous import marker
   rm -f $source/$DEFAULT_IMPORTED_MARKER
 
-  exiftool -r $=exifloglevel "${iffilter[@]}" -o "${importdir/#\~/$HOME}"'/NODATE/'\
+  _exiftool_wrapper -r $=exifloglevel "${iffilter[@]}" -o "${importdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<${FileName}'\
@@ -1041,7 +1074,7 @@ function _process_media()
   # First pass - exlude mp4 and 360 files
   _echo "First pass: 1/4 - All files but mp4 and 360"
 
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+  _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -1065,7 +1098,7 @@ function _process_media()
 
   # Add copyright arguments only if they exist
   if [[ -n $artist ]]; then
-    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
     '-FileCreateDate<FileCreateDate'\
     '-FileCreateDate<CreateDate'\
     '-filename<P_%f.${FileTypeExtension}'\
@@ -1095,7 +1128,7 @@ function _process_media()
   # Need to apply different logic for various tags
   _echo "Second pass: 2/4 - Only mp4 files"
 
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+  _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename<P_%f.${FileTypeExtension}'\
@@ -1122,7 +1155,7 @@ function _process_media()
 
   # Add copyright arguments only if they exist
   if [[ -n $artist ]]; then
-    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
     '-FileCreateDate<FileCreateDate'\
     '-FileCreateDate<CreateDate'\
     '-filename<P_%f.${FileTypeExtension}'\
@@ -1158,7 +1191,7 @@ function _process_media()
   # Override - File name pattern is different for 360 media
   xmpdata[1]='-XMP:PreservedFileName<P_${FileName;s/\.[^.]*$//}.360'
 
-  exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+  _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
   '-FileCreateDate<FileCreateDate'\
   '-FileCreateDate<CreateDate'\
   '-filename=P_%f.%e'\
@@ -1185,7 +1218,7 @@ function _process_media()
 
   # Add copyright arguments only if they exist
   if [[ -n $artist ]]; then
-    exiftool -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
+    _exiftool_wrapper -r -F -sep ", " $=exifloglevel "${iffilter[@]}" -addTagsFromFile @ -o "${processdir/#\~/$HOME}"'/NODATE/'\
     '-FileCreateDate<FileCreateDate'\
     '-FileCreateDate<CreateDate'\
     '-filename=P_%f.%e'\
@@ -1221,7 +1254,7 @@ function _process_media()
   # QuickTime tags by that amount.
   _echo "Forth pass: 4/4 - Only mp4 & 360 files - timeshift QuickTime to UTC"
 
-  exiftool -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
+  _exiftool_wrapper -r -wm w -ee -d '%s' $=exifloglevel "${iffilter[@]}" -P -overwrite_original_in_place\
   '-quicktime:time:all<${GPSDateTime;$_=$self->GetValue("CreateDate")+'\
 'int((($_-$self->GetValue("CreateDate"))/3600)+(($_-$self->GetValue("CreateDate"))/3600)/'\
 'abs((($_-$self->GetValue("CreateDate"))/3600)*2 || 1))*3600}'\
@@ -2283,6 +2316,62 @@ function _select_available_workflows() {
   echo "${available_workflows[@]}"
 }
 
+# Function to execute the selected workflow
+function _execute_workflow() {
+  local workflow="$1"
+  
+  _echo "Executing workflow: $workflow"
+  
+  case "$workflow" in
+    "archive")
+      _echo "  Running archive workflow..."
+      # TODO: Implement archive logic
+      _echo "  Archive workflow completed"
+      ;;
+      
+    "archive_clean")
+      _echo "  Running archive + clean workflow..."
+      # TODO: Implement archive + clean logic
+      _echo "  Archive + clean workflow completed"
+      ;;
+      
+    "import")
+      _echo "  Running import workflow..."
+      # TODO: Implement import logic
+      _echo "  Import workflow completed"
+      ;;
+      
+    "import_clean")
+      _echo "  Running import + clean workflow..."
+      # TODO: Implement import + clean logic
+      _echo "  Import + clean workflow completed"
+      ;;
+      
+    "archive_import_clean")
+      _echo "  Running archive + import + clean workflow..."
+      # TODO: Implement archive + import + clean logic
+      _echo "  Archive + import + clean workflow completed"
+      ;;
+      
+    "skip")
+      _echo "  Skipping workflow execution"
+      ;;
+      
+    "clean_only")
+      _echo "  Running clean-only workflow..."
+      # TODO: Implement clean-only logic
+      _echo "  Clean-only workflow completed"
+      ;;
+      
+    *)
+      _error "Unknown workflow: $workflow"
+      return 1
+      ;;
+  esac
+  
+  return 0
+}
+
 function _detect_and_rename_gopro_sd()
 {
   _echo "Scanning for GoPro SD cards..."
@@ -2540,55 +2629,9 @@ function _detect_and_rename_gopro_sd()
     
     # Present workflow options if new media is detected
     if [[ "$has_new_media" == true ]]; then
-      _echo "New media detected: $total_new_files files across ${#cards_with_new_media} cards"
-      
-      # Determine content state for workflow selection
-      local content_state="new_media_present"
-      local available_workflows=($(_select_available_workflows "$system_capabilities" "$content_state"))
-      
-      _echo "Available workflows:"
-      local i=1
-      while [[ $i -le ${#available_workflows} ]]; do
-        local workflow="${available_workflows[$i]}"
-        case "$workflow" in
-          "archive") _echo "  $i. Archive media to backup storage" ;;
-          "archive_clean") _echo "  $i. Archive media and clean SD cards" ;;
-          "import") _echo "  $i. Import media to library" ;;
-          "import_clean") _echo "  $i. Import media and clean SD cards" ;;
-          "archive_import_clean") _echo "  $i. Archive, import, and clean (recommended)" ;;
-          "skip") _echo "  $i. Skip - do nothing" ;;
-        esac
-        ((i++))
-      done
-
-      # Find the default (archive_clean if available, else first)
-      local default_choice=1
-      i=1
-      while [[ $i -le ${#available_workflows} ]]; do
-        if [[ "${available_workflows[$i]}" == "archive_clean" ]]; then
-          default_choice=$i
-          break
-        fi
-        ((i++))
-      done
-      _echo "Default choice: $default_choice"
-
-      # Interactive prompt
-      local user_choice=""
-      while true; do
-        echo -n "Select workflow [${default_choice}]: "
-        read -r user_choice
-        if [[ -z "$user_choice" ]]; then
-          user_choice=$default_choice
-        fi
-        if [[ "$user_choice" =~ ^[0-9]+$ ]] && (( user_choice >= 1 && user_choice <= ${#available_workflows} )); then
-          break
-        else
-          _echo "Invalid selection. Please enter a number between 1 and ${#available_workflows}. (You entered: '$user_choice')"
-        fi
-      done
-      local selected_workflow="${available_workflows[$user_choice]}"
-      _echo "Selected workflow: $selected_workflow"
+      echo -n "Press Enter to continue: "
+      read
+      _echo "Read completed. Continuing..."
     fi
   fi
 }
@@ -2879,7 +2922,6 @@ case $loglevel in
 esac
 
 # so we can timestamp the output
-(
 _echo "GoProX started..."
 
 if [ "$version" = true ]; then
@@ -3476,5 +3518,3 @@ if (( $exiftoolstatus )) then
   _warning "exiftool reported one or more errors during this goprox run. Please check output."
 fi
 _echo "GoProX processing finished."
-
-) 2>&1 | eval ${output}
