@@ -77,15 +77,30 @@ test_check "Test output management doc" "test -f docs/testing/TEST_OUTPUT_MANAGE
 
 echo ""
 echo "${BLUE}8. Basic GoProX Test${NC}"
+
+# Debug: Show current directory and test directory contents before running GoProX
+echo "${YELLOW}DEBUG: Current directory: $(pwd)${NC}"
+echo "${YELLOW}DEBUG: Test directory contents before GoProX run:${NC}"
+ls -la test/ 2>/dev/null || echo "test/ directory does not exist"
+
 echo -n "Testing: GoProX test mode... "
 if ./goprox --test >/dev/null 2>&1; then
     echo "${GREEN}✅ PASS${NC}"
     ((PASSED++))
+    
+    # Debug: Show test directory contents after running GoProX
+    echo "${YELLOW}DEBUG: Test directory contents after GoProX run:${NC}"
+    ls -la test/ 2>/dev/null || echo "test/ directory still does not exist"
+    
     test_check "Test imported created" "test -d test/imported"
     test_check "Test processed created" "test -d test/processed"
 else
     echo "${RED}❌ FAIL${NC}"
     ((FAILED++))
+    
+    # Debug: Show error output if GoProX test mode failed
+    echo "${YELLOW}DEBUG: GoProX test mode failed. Running with verbose output:${NC}"
+    ./goprox --test --verbose 2>&1 | head -20
 fi
 
 echo ""
