@@ -45,6 +45,7 @@ jobs:
       - name: "Make test scripts executable"
         run: |
           chmod +x scripts/testing/*.zsh
+          chmod +x scripts/core/*.zsh
           chmod +x goprox
 
       - name: "Setup output directories"
