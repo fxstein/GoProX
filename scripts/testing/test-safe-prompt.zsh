@@ -77,6 +77,13 @@ while [[ ${#remaining_args[@]} -gt 0 ]]; do
     remaining_args=("${remaining_args[@]:1}")
 done
 
+# INTERACTIVE TEST: Requires user input. Skipped in CI/non-interactive mode.
+
+if [[ "$CI" == "true" || "$NON_INTERACTIVE" == "true" ]]; then
+  echo "Skipping interactive test: $0 (non-interactive mode detected)"
+  exit 0
+fi
+
 # Test function to run all safe prompt tests
 test_safe_prompts() {
     print_status $BLUE "Testing Safe Prompt Functions"

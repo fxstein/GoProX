@@ -46,6 +46,17 @@ The GoProX testing framework provides comprehensive validation of the CLI tool, 
 
 **Use When**: Setting up a new testing environment, troubleshooting environment issues, or understanding test prerequisites
 
+#### [Interactive Tests Guide](INTERACTIVE_TESTS_GUIDE.md)
+**Purpose**: Comprehensive guide to interactive tests and their behavior in different environments
+**Content**:
+- Interactive test design patterns and standards
+- Environment variable handling (CI, NON_INTERACTIVE, AUTO_CONFIRM)
+- Running interactive tests locally vs. in CI/CD
+- Best practices for writing interactive tests
+- Troubleshooting interactive test issues
+
+**Use When**: Working with interactive tests, understanding how they integrate with CI/CD, or writing new interactive tests
+
 #### [Test Media Files Requirements](TEST_MEDIA_FILES_REQUIREMENTS.md)
 **Purpose**: Specifications for test media files and coverage requirements
 **Content**:
@@ -139,8 +150,19 @@ The GoProX testing framework provides comprehensive validation of the CLI tool, 
 - **`test-template.zsh`**: Standardized template for new test scripts
 - **`test-hook-consolidation.zsh`**: Git hook testing and validation
 - **`test-enhanced-default-behavior.zsh`**: Default behavior testing
-- **`test-safe-prompt.zsh`**: Interactive prompt testing
-- **`test-interactive-prompt.zsh`**: Interactive testing utilities
+- **`test-safe-prompt.zsh`**: Interactive prompt testing (auto-skips in CI)
+- **`test-interactive-prompt.zsh`**: Interactive testing utilities (auto-skips in CI)
+- **`test-safe-confirm-interactive.zsh`**: Interactive confirmation testing (auto-skips in CI)
+
+### Interactive Tests
+
+Interactive tests require user input and are automatically skipped in CI/CD environments:
+
+- **`test-interactive-prompt.zsh`**: Basic interactive prompt testing
+- **`test-safe-confirm-interactive.zsh`**: Safe confirmation function testing
+- **`test-safe-prompt.zsh`**: Comprehensive safe prompt testing (supports `--non-interactive` flag)
+
+**Note**: All interactive tests automatically detect CI/non-interactive environments and skip execution to prevent blocking automated test runs. See [Testing Framework](TESTING_FRAMEWORK.md#interactive-tests) for detailed information.
 
 ## Quick Start Guide
 

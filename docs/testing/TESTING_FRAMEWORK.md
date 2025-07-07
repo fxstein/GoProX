@@ -172,6 +172,126 @@ Every test script outputs detailed environmental information at startup:
 #### `validate-setup.zsh`
 **Purpose**: Release configuration and production readiness validation
 
+## Interactive Tests
+
+### Overview
+
+Interactive tests require user input and are designed to test user-facing functionality like prompts, confirmations, and interactive workflows. These tests are **automatically skipped** in CI/CD environments and non-interactive modes to prevent blocking automated test runs.
+
+### Interactive Test Scripts
+
+#### `test-interactive-prompt.zsh`
+**Purpose**: Test basic interactive prompt functionality
+**Behavior**: 
+- Prompts user for confirmation
+- Tests user input handling
+- **Automatically skipped in CI/non-interactive mode**
+
+#### `test-safe-confirm-interactive.zsh`
+**Purpose**: Test safe confirmation functions with user interaction
+**Behavior**:
+- Tests `safe_confirm` function with real user input
+- Validates interactive confirmation workflows
+- **Automatically skipped in CI/non-interactive mode**
+
+#### `test-safe-prompt.zsh`
+**Purpose**: Comprehensive testing of safe prompt functions
+**Behavior**:
+- Tests multiple prompt types (confirm, input, timeout)
+- Supports `--non-interactive` and `--auto-confirm` flags
+- **Automatically skipped in CI/non-interactive mode**
+- Can be run with flags for automated testing
+
+### Interactive Test Design Pattern
+
+All interactive tests follow this standardized pattern:
+
+```zsh
+#!/bin/zsh
+# INTERACTIVE TEST: Requires user input. Skipped in CI/non-interactive mode.
+
+if [[ "$CI" == "true" || "$NON_INTERACTIVE" == "true" ]]; then
+  echo "Skipping interactive test: $0 (non-interactive mode detected)"
+  exit 0
+fi
+
+# ... test implementation ...
+```
+
+### Environment Variables
+
+Interactive tests respect these environment variables:
+
+- **`CI=true`**: Automatically skips interactive tests
+- **`NON_INTERACTIVE=true`**: Forces non-interactive mode
+- **`AUTO_CONFIRM=true`**: Auto-confirms all prompts (where supported)
+
+### Running Interactive Tests
+
+#### Local Development (Interactive Mode)
+```bash
+# Run with full user interaction
+./scripts/testing/test-interactive-prompt.zsh
+
+# Run safe prompt tests with user input
+./scripts/testing/test-safe-prompt.zsh
+```
+
+#### Automated/CI Mode
+```bash
+# Set environment to skip interactive tests
+export NON_INTERACTIVE=true
+./scripts/testing/test-interactive-prompt.zsh
+# Output: "Skipping interactive test: ... (non-interactive mode detected)"
+
+# Or use CI environment
+export CI=true
+./scripts/testing/test-safe-confirm-interactive.zsh
+# Output: "Skipping interactive test: ... (non-interactive mode detected)"
+```
+
+#### Automated Testing with Flags
+```bash
+# Use built-in non-interactive flags (where supported)
+./scripts/testing/test-safe-prompt.zsh --non-interactive
+
+# Auto-confirm all prompts
+./scripts/testing/test-safe-prompt.zsh --auto-confirm
+```
+
+### Best Practices for Interactive Tests
+
+1. **Always include skip logic**: Every interactive test must check for CI/non-interactive mode
+2. **Clear documentation**: Mark tests as interactive in the header comment
+3. **Provide alternatives**: Support flags for automated testing when possible
+4. **Graceful degradation**: Tests should exit cleanly when skipped
+5. **Consistent messaging**: Use standardized skip messages
+
+### Integration with CI/CD
+
+Interactive tests are **automatically excluded** from CI/CD pipelines:
+
+- **GitHub Actions**: CI environment variable is set automatically
+- **Local automation**: Set `NON_INTERACTIVE=true` for automated runs
+- **Test runners**: Interactive tests are skipped in batch execution
+
+### Troubleshooting Interactive Tests
+
+#### Test Hangs in CI
+- **Cause**: Interactive test missing skip logic
+- **Solution**: Add CI/non-interactive mode check
+- **Debug**: Check if `CI=true` or `NON_INTERACTIVE=true` is set
+
+#### Test Fails in Non-Interactive Mode
+- **Cause**: Test doesn't handle non-interactive mode properly
+- **Solution**: Add proper skip logic or non-interactive alternatives
+- **Debug**: Run with `--debug` flag to see execution flow
+
+#### User Input Not Working
+- **Cause**: Test running in non-interactive environment
+- **Solution**: Ensure test is running in interactive terminal
+- **Debug**: Check `is_interactive` function or terminal type
+
 ## CI/CD Integration
 
 ### Workflow Structure
