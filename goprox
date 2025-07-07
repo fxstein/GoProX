@@ -311,6 +311,12 @@ function _auto_rename_all_gopro_cards() {
   local skipped_count=0
   local found_gopro_cards=false
   
+  # Check if /Volumes exists (only exists on macOS)
+  if [[ ! -d "/Volumes" ]]; then
+    _debug "No /Volumes directory found (not macOS), skipping GoPro SD card auto-rename"
+    return 0
+  fi
+  
   for volume in /Volumes/*; do
     if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
       local volume_name=$(basename "$volume")
