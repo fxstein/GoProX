@@ -2298,7 +2298,32 @@ function _present_workflow_options() {
   # Display card details
   for card in "${cards_with_new_media[@]}"; do
     local volume_name=$(basename "$card")
-    local content_analysis=$(_analyze_content_requirements "$card" "")
+    
+    # Get camera information for this volume
+    local version_file="$card/MISC/version.txt"
+    local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+    local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+    local short_serial=${serial_number: -4}
+    
+    # Find the last archive time for this specific volume
+    local volume_last_archived=""
+    local archive_dir="${library/#\~/$HOME}/archive"
+    if [[ -L "$archive_dir" ]]; then
+      archive_dir=$(readlink "$archive_dir")
+    fi
+    if [[ -d "$archive_dir" ]]; then
+      local archive_camera_type=$(echo "$camera_type" | sed 's/ /_/g')
+      local archive_file=$(find "$archive_dir" -name "*${archive_camera_type}*${short_serial}*.tar.gz" -type f 2>/dev/null | sort | tail -n 1)
+      if [[ -n "$archive_file" ]]; then
+        local timestamp=$(basename "$archive_file" | grep -o '^[0-9]\{14\}' | head -n 1)
+        if [[ -n "$timestamp" ]]; then
+          volume_last_archived=$(date -j -f "%Y%m%d%H%M%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "")
+        fi
+      fi
+    fi
+    
+    # Analyze content requirements for this volume with its specific archive time
+    local content_analysis=$(_analyze_content_requirements "$card" "$volume_last_archived")
     local new_media_count=$(echo "$content_analysis" | cut -d: -f2)
     echo "  • $volume_name: $new_media_count files"
   done
@@ -2761,8 +2786,30 @@ function _detect_and_rename_gopro_sd()
         
         local version_file="$volume/MISC/version.txt"
         if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
-          # Analyze content requirements for this volume
-          local content_analysis=$(_analyze_content_requirements "$volume" "$last_archived")
+          # Get camera information for this volume
+          local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+          local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+          local short_serial=${serial_number: -4}
+          
+          # Find the last archive time for this specific volume
+          local volume_last_archived=""
+          local archive_dir="${library/#\~/$HOME}/archive"
+          if [[ -L "$archive_dir" ]]; then
+            archive_dir=$(readlink "$archive_dir")
+          fi
+          if [[ -d "$archive_dir" ]]; then
+            local archive_camera_type=$(echo "$camera_type" | sed 's/ /_/g')
+            local archive_file=$(find "$archive_dir" -name "*${archive_camera_type}*${short_serial}*.tar.gz" -type f 2>/dev/null | sort | tail -n 1)
+            if [[ -n "$archive_file" ]]; then
+              local timestamp=$(basename "$archive_file" | grep -o '^[0-9]\{14\}' | head -n 1)
+              if [[ -n "$timestamp" ]]; then
+                volume_last_archived=$(date -j -f "%Y%m%d%H%M%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "")
+              fi
+            fi
+          fi
+          
+          # Analyze content requirements for this volume with its specific archive time
+          local content_analysis=$(_analyze_content_requirements "$volume" "$volume_last_archived")
           local new_media_count=$(echo "$content_analysis" | cut -d: -f2)
           
           if [[ $new_media_count -gt 0 ]]; then
