@@ -2419,7 +2419,7 @@ function _present_workflow_options() {
     available_workflows+=("6")
   fi
   
-  # Add Clean option in force mode even for non-archived cards (with extra confirmation)
+  # Add Clean option in force mode even for cards without matching archives (with extra confirmation)
   if [[ "$system_capabilities" == *"clean"* ]] && [[ "$FORCE" == "true" ]] && [[ ${#cards_with_new_media[@]} -gt 0 ]]; then
     if [[ ! " ${available_workflows[@]} " =~ " 6 " ]]; then
       available_workflows+=("6")
@@ -2708,13 +2708,13 @@ function _execute_clean_only_workflow() {
         return 0
       fi
     else
-      _echo "  Non-archived cards (cannot clean without --force): ${#non_archived_cards[@]}"
+      _echo "  Cards without matching archives (cannot clean without --force): ${#non_archived_cards[@]}"
       for card in "${non_archived_cards[@]}"; do
         local volume_name=$(basename "$card")
         _echo "    • $volume_name"
       done
       
-      _error "Cannot clean non-archived cards without --force mode"
+      _error "Cannot clean cards without matching archives without --force mode"
       _error "Cards must be fully archived (marker + archive file) before cleaning"
       return 1
     fi
@@ -2732,10 +2732,10 @@ function _execute_clean_only_workflow() {
     fi
   done
   
-  # Clean non-archived cards (only in force mode with confirmation)
+  # Clean cards without matching archives (only in force mode with confirmation)
   for card in "${non_archived_cards[@]}"; do
     local volume_name=$(basename "$card")
-    _echo "Processing non-archived card: $volume_name"
+    _echo "Processing card without matching archives: $volume_name"
     
     if [[ "$dry_run" == "true" ]]; then
       _echo "  Would clean $volume_name (not fully archived - force mode)"
