@@ -1356,9 +1356,7 @@ function _archive_media()
   _apply_force_mode "archive" "$archive_force_mode" "$source"
   
   # Remove previous archive marker
-  if [[ "$dry_run" == "true" ]]; then
-    _echo "🚦 DRY RUN MODE - Would remove previous marker: $source/$DEFAULT_ARCHIVED_MARKER"
-  else
+  if [[ "$dry_run" != "true" ]]; then
     rm -f $source/$DEFAULT_ARCHIVED_MARKER
   fi
 
@@ -1386,9 +1384,7 @@ function _archive_media()
     _info "Archive: "$archivename
 
     if [[ "$dry_run" == "true" ]]; then
-      _echo "🚦 DRY RUN MODE - Would create archive: ${archivedir/#\~/$HOME}/${archivename}.tar.gz"
-      _echo "🚦 DRY RUN MODE - Would archive source: ${source/#\~/$HOME}"
-      _echo "🚦 DRY RUN MODE - Would exclude: .Spotlight-V100, .Trash*, .goprox.*"
+      _echo "  Would create: ${archivename}.tar.gz"
     else
       tar --totals --exclude='.Spotlight-V100' --exclude='.Trash*' --exclude='.goprox.*' \
           -zcvf "${archivedir/#\~/$HOME}/${archivename}.tar.gz" "${source/#\~/$HOME}" || {
@@ -1406,10 +1402,7 @@ function _archive_media()
   _echo "Finished media archive"
 
   # Leave a marker with timestamp
-  if [[ "$dry_run" == "true" ]]; then
-    _echo "🚦 DRY RUN MODE - Would create marker: $source/$DEFAULT_ARCHIVED_MARKER"
-    _echo "🚦 DRY RUN MODE - Would store timestamp: $(date +%s)"
-  else
+  if [[ "$dry_run" != "true" ]]; then
     date +%s > "$source/$DEFAULT_ARCHIVED_MARKER"
   fi
 }
@@ -1787,7 +1780,7 @@ function _eject_media()
       _info "Ejecting $source..."
       
       if [[ "$dry_run" == "true" ]]; then
-        _echo "🚦 DRY RUN MODE - Would eject $source"
+        _echo "  Would eject $source"
       else
         # Use diskutil to safely eject the volume
         if diskutil eject "$source"; then
@@ -1846,7 +1839,7 @@ function _eject_all_gopro_cards()
         if [[ -d "$volume" ]] && mount | grep -q "$volume"; then
           _info "Ejecting $volume_name..."
           if [[ "$dry_run" == "true" ]]; then
-            _echo "🚦 DRY RUN MODE - Would eject $volume_name"
+            _echo "  Would eject $volume_name"
             ((ejected_count++))
           else
             # Use diskutil to safely eject the volume
@@ -2441,9 +2434,9 @@ function _execute_archive_clean_workflow() {
     # Archive the card
     _archive_volume "$card"
     
-    # Clean the card (only if not in dry-run mode)
+    # Clean the card
     if [[ "$dry_run" == "true" ]]; then
-      _echo "  🚦 DRY RUN MODE - Would clean $volume_name after successful archive"
+      _echo "  Would clean $volume_name"
     else
       _clean_volume "$card"
     fi
@@ -2474,9 +2467,9 @@ function _execute_import_clean_workflow() {
     # Import the card
     _import_volume "$card"
     
-    # Clean the card (only if not in dry-run mode)
+    # Clean the card
     if [[ "$dry_run" == "true" ]]; then
-      _echo "  🚦 DRY RUN MODE - Would clean $volume_name after successful import"
+      _echo "  Would clean $volume_name"
     else
       _clean_volume "$card"
     fi
@@ -2510,9 +2503,9 @@ function _execute_archive_import_clean_workflow() {
     # Import the card
     _import_volume "$card"
     
-    # Clean the card (only if not in dry-run mode)
+    # Clean the card
     if [[ "$dry_run" == "true" ]]; then
-      _echo "  🚦 DRY RUN MODE - Would clean $volume_name after successful archive and import"
+      _echo "  Would clean $volume_name"
     else
       _clean_volume "$card"
     fi
