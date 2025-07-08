@@ -2738,7 +2738,7 @@ function _execute_clean_only_workflow() {
     _echo "Processing card without matching archives: $volume_name"
     
     if [[ "$dry_run" == "true" ]]; then
-      _echo "  Would clean $volume_name (not fully archived - force mode)"
+      _echo "  Would clean $volume_name (missing matching archives - force mode)"
     else
       _clean_volume "$card"
     fi
