@@ -1,0 +1,77 @@
+---
+name: "PR Tests"
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "firmware/**"
+      - "output/**"
+
+jobs:
+  pr-validation:
+    name: "PR Validation"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: "Pull LFS files"
+        run: git lfs pull
+
+      - name: "Second checkout to ensure LFS files are expanded"
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: "Debug LFS and file status"
+        run: |
+          echo "=== LFS Environment Debug ==="
+          echo "Git LFS version:"
+          git lfs version
+          echo ""
+          echo "LFS environment:"
+          git lfs env
+          echo ""
+          echo "LFS tracked files:"
+          git lfs ls-files
+          echo ""
+          echo "Test directory file sizes:"
+          find test/originals -type f -name "*.jpg" -o -name "*.JPG" -o -name "*.lrv" -o -name "*.LRV" -o -name "*.thm" -o -name "*.THM" | xargs ls -la
+          echo ""
+          echo "Git status:"
+          git status --porcelain
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh exiftool jq
+
+      - name: "Make scripts executable"
+        run: |
+          chmod +x scripts/testing/*.zsh
+          chmod +x scripts/core/*.zsh
+          chmod +x goprox
+
+      - name: "Setup output directories"
+        run: |
+          mkdir -p output/test-results
+          mkdir -p output/test-temp
+
+      - name: "Run basic validation"
+        run: |
+          echo "🧪 Running basic validation..."
+          zsh ./scripts/testing/validate-basic.zsh --debug
+
+      - name: "Upload test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "pr-test-results"
+          path: "output/"
+          retention-days: 3
+# Test comment

@@ -1,0 +1,7 @@
+[lfs]
+    # Configure LFS to be more aggressive about downloading
+    skipdownloaderrors = false
+    
+    # Ensure LFS objects are downloaded during fetch
+    fetchinclude = *
+    fetchexclude = 

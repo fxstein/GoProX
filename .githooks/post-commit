@@ -1,0 +1,30 @@
+#!/bin/zsh
+
+# GoProX Post-commit Hook
+# Provides helpful feedback after commits
+
+echo "🎉 Commit successful!"
+echo ""
+
+# Check if this is a feature branch
+current_branch=$(git branch --show-current)
+if [[ "$current_branch" =~ ^feature/ ]]; then
+    echo "💡 Tip: Consider creating a pull request when ready:"
+    echo "   gh pr create --title \"$(git log -1 --pretty=format:'%s')\""
+    echo ""
+fi
+
+# Check if there are any TODO/FIXME comments in the committed files
+committed_files=$(git diff-tree --no-commit-id --name-only -r HEAD)
+if echo "$committed_files" | xargs grep -l "TODO\|FIXME" 2>/dev/null; then
+    echo "⚠️  Note: This commit contains TODO/FIXME comments"
+    echo "   Consider addressing these in future commits"
+    echo ""
+fi
+
+# Check if yamllint is available for future commits
+if ! command -v yamllint &> /dev/null; then
+    echo "💡 Install yamllint for YAML linting in future commits:"
+    echo "   brew install yamllint"
+    echo ""
+fi 

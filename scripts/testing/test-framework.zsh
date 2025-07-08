@@ -12,7 +12,7 @@
 set -e
 
 # Test framework configuration
-TEST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEST_ROOT="$(cd "$(dirname "${0:A}")/.." && pwd)"
 TEST_DIR="${TEST_ROOT}/test"
 TEST_OUTPUT_DIR="${TEST_ROOT}/output/test-results"
 TEST_TEMP_DIR="${TEST_ROOT}/output/test-temp"

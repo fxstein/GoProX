@@ -1,298 +1,441 @@
-# GoProX Comprehensive Testing Framework
+# GoProX Testing Framework
 
 ## Overview
 
-The GoProX testing framework provides a comprehensive, maintainable approach to testing that addresses the limitations of the current built-in tests. This framework supports both success and failure scenarios, granular testing, and reliable output comparison.
+The GoProX testing framework provides a comprehensive suite of tests to validate the GoProX CLI tool functionality, CI/CD infrastructure, and development environment. All test scripts follow a standardized structure with proper logging, environmental details, and configurable verbosity levels.
 
-## Current Limitations Addressed
+## Purpose
 
-### 1. **Git-based Comparison**
-- **Problem**: Current tests rely on `git diff` for output comparison, which is fragile and depends on git state
-- **Solution**: Direct file and content comparison using assertion functions
+This document serves as the primary reference for understanding and using the GoProX testing framework. It covers the architecture, standards, and best practices for all testing activities.
 
-### 2. **Single Monolithic Test**
-- **Problem**: One large test that can't isolate specific functionality
-- **Solution**: Granular test suites with individual test functions
+## Use When
 
-### 3. **No Failure Testing**
-- **Problem**: Only tests success scenarios
-- **Solution**: Explicit testing of both success and failure cases
+- Understanding the overall testing framework architecture
+- Writing new test scripts or modifying existing ones
+- Debugging test failures and issues
+- Setting up testing environments
+- Implementing testing best practices
 
-### 4. **No Configuration Testing**
-- **Problem**: Can't test configuration file validation
-- **Solution**: Dedicated configuration test suite
+## Test Script Structure
 
-### 5. **No Unit Testing**
-- **Problem**: Can't test individual functions
-- **Solution**: Isolated test functions for specific functionality
+### Standardized Template
 
-### 6. **No Test Isolation**
-- **Problem**: Tests affect each other
-- **Solution**: Each test runs in its own temporary directory
+All test scripts follow the `test-script-template.zsh` structure with these key components:
 
-### 7. **No Test Reporting**
-- **Problem**: Limited feedback on what failed
-- **Solution**: Detailed test reports with pass/fail statistics
+1. **Environmental Details** (Always output first)
+2. **Configuration** (Command line argument parsing)
+3. **Color Definitions** (Consistent color coding)
+4. **Logging Functions** (Standardized output)
+5. **Test Functions** (Reusable test utilities)
+6. **Environment Validation** (Prerequisites check)
+7. **Main Test Logic** (Actual test execution)
+8. **Test Summary** (Results and recommendations)
 
-## Framework Structure
+### Environmental Details Output
+
+Every test script outputs detailed environmental information at startup:
 
 ```
-scripts/testing/
-├── test-framework.zsh      # Core testing framework
-├── test-suites.zsh         # Specific test implementations
-└── run-tests.zsh          # Main test runner
+🔍 =========================================
+🔍 GoProX Test Script: [script-name]
+🔍 =========================================
+🔍 Execution Details:
+🔍   Script: [script-name]
+🔍   Full Path: [absolute-path]
+🔍   Working Directory: [current-directory]
+🔍   User: [username]
+🔍   Host: [hostname]
+🔍   Shell: [shell-path]
+🔍   ZSH Version: [zsh-version]
+🔍   Date: [timestamp]
+🔍   Git Branch: [current-branch]
+🔍   Git Commit: [commit-hash]
+🔍 =========================================
 ```
 
-## Key Features
+## Verbosity Modes
 
-### 1. **Assertion Functions**
+### Default Mode (Verbose)
+- **Trigger**: Default behavior, `--verbose` flag
+- **Output**: Detailed test progress with INFO level logging
+- **Use Case**: Normal testing, CI/CD execution
+
+### Debug Mode
+- **Trigger**: `--debug` flag (implies --verbose)
+- **Output**: All verbose output plus DEBUG level details
+- **Use Case**: Troubleshooting, detailed investigation
+
+### Quiet Mode
+- **Trigger**: `--quiet` flag
+- **Output**: Minimal output, only final results
+- **Use Case**: Automated testing, batch execution
+
+## Logging Levels
+
+### INFO Level (Blue)
+- Test progress and section headers
+- Environment validation steps
+- General execution flow
+
+### SUCCESS Level (Green)
+- Passed tests and successful operations
+- Final success messages
+
+### WARNING Level (Yellow)
+- Non-critical issues or missing optional dependencies
+- Recommendations and suggestions
+
+### ERROR Level (Red)
+- Failed tests and critical errors
+- Issues that prevent successful execution
+
+### DEBUG Level (Purple)
+- Detailed command execution
+- Internal state information
+- Troubleshooting details
+
+## Test Scripts
+
+### Core Validation Scripts
+
+#### `validate-basic.zsh`
+**Purpose**: Basic GoProX testing environment and core functionality validation
+
+**Tests**:
+- Basic environment setup and dependencies
+- GoProX script execution and core functionality
+- Test framework and media files
+- Git configuration and file tracking
+- Documentation and comparison tools
+
+**Usage**:
+```bash
+# Default verbose mode
+./scripts/testing/validate-basic.zsh
+
+# Debug mode for troubleshooting
+./scripts/testing/validate-basic.zsh --debug
+
+# Quiet mode for automation
+./scripts/testing/validate-basic.zsh --quiet
+```
+
+#### `validate-integration.zsh`
+**Purpose**: Comprehensive validation including testing setup and CI/CD infrastructure
+
+**Tests**:
+- Runs both `validate-basic.zsh` and `validate-ci.zsh`
+- Provides unified summary and recommendations
+- Orchestrates multiple validation scripts
+
+**Usage**:
+```bash
+# Run comprehensive validation
+./scripts/testing/validate-integration.zsh
+
+# Debug mode for detailed output
+./scripts/testing/validate-integration.zsh --debug
+```
+
+#### `validate-ci.zsh`
+**Purpose**: GitHub Actions workflows and CI/CD infrastructure validation
+
+**Tests**:
+- GitHub Actions workflow configuration
+- Workflow syntax and triggers
+- Test script availability and permissions
+- CI environment simulation
+- Test output and artifact management
+- Git LFS configuration
+- Documentation and error handling
+
+**Usage**:
+```bash
+# Validate CI/CD setup
+./scripts/testing/validate-ci.zsh
+
+# Debug mode for workflow analysis
+./scripts/testing/validate-ci.zsh --debug
+```
+
+### Specialized Test Scripts
+
+#### `test-regression.zsh`
+**Purpose**: File comparison and regression testing with real media files
+
+#### `test-integration.zsh`
+**Purpose**: Advanced test scenarios and edge cases
+
+#### `test-homebrew.zsh`
+**Purpose**: Homebrew formula and multi-channel testing
+
+#### `validate-setup.zsh`
+**Purpose**: Release configuration and production readiness validation
+
+## Interactive Tests
+
+### Overview
+
+Interactive tests require user input and are designed to test user-facing functionality like prompts, confirmations, and interactive workflows. These tests are **automatically skipped** in CI/CD environments and non-interactive modes to prevent blocking automated test runs.
+
+### Interactive Test Scripts
+
+#### `test-interactive-prompt.zsh`
+**Purpose**: Test basic interactive prompt functionality
+**Behavior**: 
+- Prompts user for confirmation
+- Tests user input handling
+- **Automatically skipped in CI/non-interactive mode**
+
+#### `test-safe-confirm-interactive.zsh`
+**Purpose**: Test safe confirmation functions with user interaction
+**Behavior**:
+- Tests `safe_confirm` function with real user input
+- Validates interactive confirmation workflows
+- **Automatically skipped in CI/non-interactive mode**
+
+#### `test-safe-prompt.zsh`
+**Purpose**: Comprehensive testing of safe prompt functions
+**Behavior**:
+- Tests multiple prompt types (confirm, input, timeout)
+- Supports `--non-interactive` and `--auto-confirm` flags
+- **Automatically skipped in CI/non-interactive mode**
+- Can be run with flags for automated testing
+
+### Interactive Test Design Pattern
+
+All interactive tests follow this standardized pattern:
+
 ```zsh
-assert_equal "expected" "actual" "message"
-assert_not_equal "expected" "actual" "message"
-assert_file_exists "path/to/file" "message"
-assert_file_not_exists "path/to/file" "message"
-assert_directory_exists "path/to/dir" "message"
-assert_contains "text" "pattern" "message"
-assert_exit_code 0 "$?" "message"
-```
+#!/bin/zsh
+# INTERACTIVE TEST: Requires user input. Skipped in CI/non-interactive mode.
 
-### 2. **Test Isolation**
-- Each test runs in its own temporary directory
-- Automatic cleanup after each test
-- No interference between tests
-
-### 3. **Comprehensive Reporting**
-- Detailed test reports saved to `output/test-results/`
-- Pass/fail statistics
-- Test execution time tracking
-- Colored output for easy reading
-
-### 4. **Test Suites**
-- **Configuration Tests**: Validate config file format and content
-- **Parameter Processing Tests**: Test command-line argument handling
-- **Storage Validation Tests**: Test storage hierarchy and permissions
-- **Integration Tests**: Test complete workflows
-- **Logger Tests**: Validate structured logging functionality and output
-
-## Logger Testing
-
-The testing framework includes comprehensive support for testing the logger module:
-
-### Logger Test Suite
-```zsh
-./scripts/testing/run-tests.zsh --logger
-```
-
-### Logger Test Capabilities
-- **Log Level Testing**: Verify DEBUG, INFO, WARN, ERROR levels work correctly
-- **JSON Output Validation**: Ensure logs are properly formatted JSON
-- **Performance Timing**: Test timing functions and performance monitoring
-- **Log Rotation**: Validate log file management and cleanup
-- **Integration Testing**: Test logger integration with other scripts
-- **CI/CD Integration**: Automated testing in GitHub Actions
-
-### Logger Test Output
-- Test results saved to `output/test-results/`
-- Logger-specific validation reports
-- Performance benchmarks for timing functions
-- Integration test results for all logger-enabled scripts
-
-## Usage
-
-### Running All Tests
-```zsh
-./scripts/testing/run-tests.zsh
-```
-
-### Running Specific Test Suites
-```zsh
-./scripts/testing/run-tests.zsh --config      # Configuration tests only
-./scripts/testing/run-tests.zsh --params      # Parameter tests only
-./scripts/testing/run-tests.zsh --storage     # Storage tests only
-./scripts/testing/run-tests.zsh --integration # Integration tests only
-```
-
-### Verbose Output
-```zsh
-./scripts/testing/run-tests.zsh --verbose
-```
-
-## Test Design Principles
-
-### 1. **Test for Success AND Failure**
-Every feature should have tests for both successful operation and failure scenarios:
-
-```zsh
-function test_config_validation() {
-    # Test success case
-    create_test_config "valid.conf" "library=\"~/test\""
-    assert_file_exists "valid.conf"
-    
-    # Test failure case
-    create_test_config "invalid.conf" "library="
-    # Should detect missing value
-}
-```
-
-### 2. **Isolated Tests**
-Each test should be completely independent:
-
-```zsh
-function test_something() {
-    # Create test-specific files
-    create_test_media_file "test-file.jpg" "content"
-    
-    # Run test
-    assert_file_exists "test-file.jpg"
-    
-    # Cleanup happens automatically
-}
-```
-
-### 3. **Descriptive Test Names**
-Test names should clearly indicate what is being tested:
-
-```zsh
-run_test "config_missing_library" test_config_missing_library "Test configuration with missing library"
-```
-
-### 4. **Comprehensive Coverage**
-Test all code paths, including edge cases:
-
-- Valid inputs
-- Invalid inputs
-- Boundary conditions
-- Error conditions
-- Missing dependencies
-
-## Example Test Implementation
-
-### Configuration Testing
-```zsh
-function test_config_valid_format() {
-    local config_file="test-config.txt"
-    local config_content='# GoProX Configuration File
-source="."
-library="~/test-goprox"
-copyright="Test User"
-geonamesacct=""
-mountoptions=(--archive --import --clean --firmware)'
-    
-    create_test_config "$config_file" "$config_content"
-    
-    # Test that config file exists and has correct format
-    assert_file_exists "$config_file" "Configuration file should be created"
-    assert_contains "$(cat "$config_file")" "source=" "Config should contain source setting"
-    assert_contains "$(cat "$config_file")" "library=" "Config should contain library setting"
-    
-    cleanup_test_files "$config_file"
-}
-```
-
-### Parameter Processing Testing
-```zsh
-function test_params_missing_required() {
-    # Test that missing required parameters are handled
-    local output
-    output=$(../goprox --import 2>&1)
-    assert_exit_code 1 "$?" "Missing library should exit with code 1"
-    assert_contains "$output" "Missing library" "Should show missing library error"
-}
-```
-
-## Integration with Existing Tests
-
-The framework can coexist with the current built-in tests. The built-in test can be enhanced to use the framework:
-
-```zsh
-# In goprox script, replace the current test section:
-if [ "$test" = true ]; then
-    # Use the comprehensive test framework
-    source "./scripts/testing/run-tests.zsh"
-    run_all_tests
-    exit $?
+if [[ "$CI" == "true" || "$NON_INTERACTIVE" == "true" ]]; then
+  echo "Skipping interactive test: $0 (non-interactive mode detected)"
+  exit 0
 fi
+
+# ... test implementation ...
 ```
 
-## Adding New Tests
+### Environment Variables
 
-### 1. **Create Test Function**
-```zsh
-function test_new_feature() {
-    # Setup
-    create_test_config "test.conf" "library=\"~/test\""
-    
-    # Test
-    assert_file_exists "test.conf"
-    
-    # Cleanup happens automatically
-}
+Interactive tests respect these environment variables:
+
+- **`CI=true`**: Automatically skips interactive tests
+- **`NON_INTERACTIVE=true`**: Forces non-interactive mode
+- **`AUTO_CONFIRM=true`**: Auto-confirms all prompts (where supported)
+
+### Running Interactive Tests
+
+#### Local Development (Interactive Mode)
+```bash
+# Run with full user interaction
+./scripts/testing/test-interactive-prompt.zsh
+
+# Run safe prompt tests with user input
+./scripts/testing/test-safe-prompt.zsh
 ```
 
-### 2. **Add to Test Suite**
-```zsh
-function test_new_feature_suite() {
-    run_test "new_feature_basic" test_new_feature "Test basic new feature functionality"
-    run_test "new_feature_error" test_new_feature_error "Test new feature error handling"
-}
+#### Automated/CI Mode
+```bash
+# Set environment to skip interactive tests
+export NON_INTERACTIVE=true
+./scripts/testing/test-interactive-prompt.zsh
+# Output: "Skipping interactive test: ... (non-interactive mode detected)"
+
+# Or use CI environment
+export CI=true
+./scripts/testing/test-safe-confirm-interactive.zsh
+# Output: "Skipping interactive test: ... (non-interactive mode detected)"
 ```
 
-### 3. **Register Suite**
-```zsh
-# In run-tests.zsh, add to main function:
-test_suite "New Feature Tests" test_new_feature_suite
+#### Automated Testing with Flags
+```bash
+# Use built-in non-interactive flags (where supported)
+./scripts/testing/test-safe-prompt.zsh --non-interactive
+
+# Auto-confirm all prompts
+./scripts/testing/test-safe-prompt.zsh --auto-confirm
 ```
+
+### Best Practices for Interactive Tests
+
+1. **Always include skip logic**: Every interactive test must check for CI/non-interactive mode
+2. **Clear documentation**: Mark tests as interactive in the header comment
+3. **Provide alternatives**: Support flags for automated testing when possible
+4. **Graceful degradation**: Tests should exit cleanly when skipped
+5. **Consistent messaging**: Use standardized skip messages
+
+### Integration with CI/CD
+
+Interactive tests are **automatically excluded** from CI/CD pipelines:
+
+- **GitHub Actions**: CI environment variable is set automatically
+- **Local automation**: Set `NON_INTERACTIVE=true` for automated runs
+- **Test runners**: Interactive tests are skipped in batch execution
+
+### Troubleshooting Interactive Tests
+
+#### Test Hangs in CI
+- **Cause**: Interactive test missing skip logic
+- **Solution**: Add CI/non-interactive mode check
+- **Debug**: Check if `CI=true` or `NON_INTERACTIVE=true` is set
+
+#### Test Fails in Non-Interactive Mode
+- **Cause**: Test doesn't handle non-interactive mode properly
+- **Solution**: Add proper skip logic or non-interactive alternatives
+- **Debug**: Run with `--debug` flag to see execution flow
+
+#### User Input Not Working
+- **Cause**: Test running in non-interactive environment
+- **Solution**: Ensure test is running in interactive terminal
+- **Debug**: Check `is_interactive` function or terminal type
+
+## CI/CD Integration
+
+### Workflow Structure
+
+The CI/CD system uses a hierarchical approach:
+
+1. **PR Tests** (`pr-tests.yml`)
+   - Fast validation for pull requests
+   - Runs `validate-basic.zsh`
+   - Duration: ~2-3 minutes
+
+2. **Integration Tests** (`integration-tests.yml`)
+   - Full regression testing for main/develop
+   - Runs `validate-integration.zsh` and `test-regression.zsh`
+   - Duration: ~5-10 minutes
+
+3. **Release Tests** (`release-tests.yml`)
+   - Production validation for releases
+   - Runs all integration tests plus specialized suites
+   - Duration: ~10-15 minutes
+
+### Test Execution in CI
+
+All test scripts in CI:
+- Run with explicit `zsh` execution
+- Use `--verbose` mode by default
+- Output environmental details for debugging
+- Provide clear pass/fail results
+- Upload artifacts for analysis
+
+## Test Environment Requirements
+
+### Dependencies
+- **zsh**: Shell environment (version 5.0+)
+- **exiftool**: Media metadata processing
+- **jq**: JSON processing and validation
+- **git**: Version control and LFS support
+
+### Directory Structure
+```
+test/
+├── originals/          # Test media files
+│   ├── HERO9/         # HERO9 test data
+│   ├── HERO10/        # HERO10 test data
+│   └── HERO11/        # HERO11 test data
+├── imported/          # Generated during tests
+├── processed/         # Generated during tests
+└── archive/          # Generated during tests
+```
+
+### Output Management
+- All test artifacts go to `output/` directory
+- Test results: `output/test-results/`
+- Temporary files: `output/test-temp/`
+- CI artifacts: Uploaded to GitHub Actions
 
 ## Best Practices
 
-### 1. **Test Organization**
-- Group related tests into suites
-- Use descriptive test names
-- Include both positive and negative test cases
+### Writing New Test Scripts
 
-### 2. **Test Data**
-- Use minimal, realistic test data
-- Create test data programmatically
-- Clean up test data automatically
+1. **Use the template**: Start with `test-script-template.zsh`
+2. **Include environmental details**: Always output execution context
+3. **Use standardized logging**: Follow the color-coded log levels
+4. **Provide descriptions**: Add meaningful descriptions to all tests
+5. **Handle errors gracefully**: Use proper exit codes and error messages
+6. **Support all verbosity modes**: Implement --verbose, --debug, --quiet
 
-### 3. **Assertions**
-- Use specific assertion functions
-- Provide clear error messages
-- Test one thing per assertion
+### Test Script Guidelines
 
-### 4. **Error Handling**
-- Test error conditions explicitly
-- Verify error messages
-- Test exit codes
+1. **Environment validation first**: Check prerequisites before main tests
+2. **Clear section organization**: Group related tests logically
+3. **Descriptive test names**: Use clear, action-oriented test names
+4. **Proper exit codes**: 0 for success, 1 for failure
+5. **Comprehensive summaries**: Include what was tested and next steps
 
-### 5. **Performance**
-- Keep tests fast
-- Avoid unnecessary file I/O
-- Use temporary directories efficiently
+### Debugging Test Failures
+
+1. **Use debug mode**: Run with `--debug` for detailed output
+2. **Check environmental details**: Verify execution context
+3. **Review dependencies**: Ensure all required tools are available
+4. **Check permissions**: Verify file and directory permissions
+5. **Examine CI logs**: Look for environmental differences
+
+## Troubleshooting
+
+### Common Issues
+
+#### Script Execution Failures
+- **Symptom**: Script fails to execute in CI
+- **Solution**: Ensure explicit `zsh` execution in workflows
+- **Debug**: Check environmental details output
+
+#### Permission Issues
+- **Symptom**: "Permission denied" errors
+- **Solution**: Run `chmod +x` on test scripts
+- **Debug**: Check file permissions in environmental details
+
+#### Missing Dependencies
+- **Symptom**: "Command not found" errors
+- **Solution**: Install required dependencies (zsh, exiftool, jq)
+- **Debug**: Check dependency validation in environment section
+
+#### Test Media Issues
+- **Symptom**: Test media files not found
+- **Solution**: Ensure Git LFS is properly configured
+- **Debug**: Check test media validation in environmental details
+
+### Debug Commands
+
+```bash
+# Check script execution
+zsh ./scripts/testing/validate-basic.zsh --debug
+
+# Validate environment
+zsh ./scripts/testing/validate-ci.zsh --debug
+
+# Test specific functionality
+zsh ./scripts/testing/test-regression.zsh --debug
+
+# Check CI simulation
+zsh ./scripts/testing/validate-ci.zsh --debug | grep "Ubuntu environment"
+```
 
 ## Future Enhancements
 
-### 1. **Mock Support**
-- Mock external dependencies (exiftool, jq)
-- Test error conditions without real failures
+### Planned Improvements
 
-### 2. **Performance Testing**
-- Measure execution time
-- Test with large datasets
-- Memory usage monitoring
+1. **Parallel Test Execution**: Support for concurrent test runs
+2. **Test Result Caching**: Cache results for faster re-runs
+3. **Custom Test Suites**: Allow selective test execution
+4. **Performance Metrics**: Track test execution times
+5. **Test Coverage Reporting**: Measure code coverage
 
-### 3. **Continuous Integration**
-- GitHub Actions integration
-- Automated test runs
-- Test result reporting
+### Integration Opportunities
 
-### 4. **Coverage Reporting**
-- Code coverage metrics
-- Identify untested code paths
-- Coverage thresholds
+1. **IDE Integration**: VS Code and other IDE support
+2. **Test Result Visualization**: Web-based test result display
+3. **Automated Test Generation**: Generate tests from specifications
+4. **Continuous Monitoring**: Real-time test health monitoring
 
-## Conclusion
+## References
 
-This comprehensive testing framework addresses all the current limitations while providing a maintainable, extensible foundation for GoProX testing. It supports both success and failure scenarios, provides detailed reporting, and follows established testing best practices.
-
-The framework is designed to be simple to use while providing powerful testing capabilities, making it easy to add new tests and maintain existing ones. 
+- [Test Script Template](../scripts/testing/test-template.zsh)
+- [CI/CD Integration Guide](CI_INTEGRATION.md)
+- [Test Media Requirements](TEST_MEDIA_FILES_REQUIREMENTS.md)
+- [Test Output Management](TEST_OUTPUT_MANAGEMENT.md)
+- [GitHub Actions Workflows](../../.github/workflows/) 

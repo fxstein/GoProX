@@ -15,6 +15,7 @@ Thank you for your interest in contributing to GoProX! This document outlines th
    - [AI_INSTRUCTIONS.md](./AI_INSTRUCTIONS.md) — Project standards and AI assistant guidelines
    - [docs/architecture/DESIGN_PRINCIPLES.md](./docs/architecture/DESIGN_PRINCIPLES.md) — Design principles
    - [docs/testing/TESTING_FRAMEWORK.md](./docs/testing/TESTING_FRAMEWORK.md) — Testing framework and requirements
+   - [docs/HOOK_SYSTEM_GUIDE.md](./docs/HOOK_SYSTEM_GUIDE.md) — Git hook system testing and troubleshooting
    - [docs/README.md](./docs/README.md) — Documentation structure and navigation
 
 ## 🛠️ Development Standards
@@ -23,6 +24,11 @@ Thank you for your interest in contributing to GoProX! This document outlines th
   - All code must pass linting and validation before being committed (YAML, JSON, and shell scripts).
   - Use the pre-commit hook to catch issues early.
   - Follow the project's [Design Principles](./docs/architecture/DESIGN_PRINCIPLES.md).
+  - **Hook System:** The project uses automatically configured Git hooks for quality assurance
+    - Hooks are automatically set up when you clone the repository
+    - Run `./scripts/testing/verify-hooks.zsh` for quick verification
+    - Run `./scripts/maintenance/check-hook-health-simple.zsh` for comprehensive health check
+    - See [Hook System Guide](./docs/HOOK_SYSTEM_GUIDE.md) for troubleshooting
 - **Logging:**
   - Use the structured logger module (`scripts/core/logger.zsh`) for all output.
   - Replace `echo` statements with appropriate log levels (DEBUG, INFO, WARN, ERROR).

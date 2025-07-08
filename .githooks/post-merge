@@ -1,0 +1,47 @@
+#!/bin/zsh
+
+# GoProX Post-Merge Hook
+# Automatically configures Git hooks after pulling or merging
+
+echo "🔧 Checking GoProX Git hooks configuration..."
+
+# Check if hooks are configured
+current_hooks_path=$(git config --local core.hooksPath 2>/dev/null || echo "")
+
+if [[ "$current_hooks_path" != ".githooks" ]]; then
+    echo "📝 Configuring Git hooks..."
+    git config --local core.hooksPath .githooks
+    echo "✅ Git hooks configured automatically!"
+    echo "   Commit messages will now require GitHub issue references (refs #123)"
+    echo "   Pre-commit checks will run before each commit"
+    echo "   YAML files will be linted (if yamllint is installed)"
+    echo "   Logger usage will be validated in zsh scripts"
+    echo ""
+    echo "💡 Optional: Install yamllint for YAML linting:"
+    echo "   brew install yamllint"
+    echo "   or: pip3 install yamllint"
+else
+    echo "✅ Git hooks already configured"
+fi
+
+# GoProX post-merge hook: auto-configure hooks and install Homebrew dependencies
+
+# Run setup-hooks.zsh to ensure hooks are configured
+if [[ -f scripts/maintenance/setup-hooks.zsh ]]; then
+  echo "[GoProX] Running setup-hooks.zsh to configure git hooks..."
+  ./scripts/maintenance/setup-hooks.zsh
+else
+  echo "[GoProX] setup-hooks.zsh not found, skipping hook setup."
+fi
+
+# Run setup-brew.zsh to install Homebrew dependencies (if Homebrew is available)
+if command -v brew &> /dev/null; then
+  if [[ -f scripts/maintenance/setup-brew.zsh ]]; then
+    echo "[GoProX] Running setup-brew.zsh to install Homebrew dependencies..."
+    ./scripts/maintenance/setup-brew.zsh
+  else
+    echo "[GoProX] setup-brew.zsh not found, skipping Homebrew dependency setup."
+  fi
+else
+  echo "[GoProX] Homebrew not found, skipping Homebrew dependency setup."
+fi 

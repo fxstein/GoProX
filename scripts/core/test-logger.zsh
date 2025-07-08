@@ -1,7 +1,7 @@
 #!/bin/zsh
 # test-logger.zsh: Test script for GoProX logger module
 
-export LOG_MAX_SIZE=16384  # 16KB for rapid rotation test
+export LOG_MAX_SIZE=8192  # 8KB for rotation test
 source "$(dirname $0)/logger.zsh"
 
 log_info "This is an info message."
@@ -16,8 +16,9 @@ log_time_start
 sleep 1
 log_time_end
 
-# Test log rotation by writing many lines (simulate large log)
-for i in {1..2000}; do
+# Test log rotation by writing enough lines to exceed 8KB
+# Each log line is approximately 60-70 bytes, so ~120 lines should trigger rotation
+for i in {1..150}; do
   log_info "Filling log for rotation test: line $i"
 done
 

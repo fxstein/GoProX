@@ -138,7 +138,8 @@ GoProX/
 │   └── test/               # Testing utilities
 ├── docs/                    # Documentation
 ├── firmware/               # Firmware files (LFS)
-├── firmware.labs/          # Labs firmware (LFS)
+│   ├── official/          # Official firmware
+│   └── labs/              # Labs firmware
 ├── test/                   # Test data (LFS)
 └── output/                 # Generated output
 ```

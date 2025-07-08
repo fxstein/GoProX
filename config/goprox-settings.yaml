@@ -1,0 +1,49 @@
+---
+# GoProX Configuration Settings
+# This file contains user-configurable settings for GoProX behavior
+
+enhanced_behavior:
+  # Enable automatic workflow execution
+  auto_execute: false
+  # Default confirmation behavior
+  default_confirm: false
+  # Show detailed analysis
+  show_details: true
+
+firmware:
+  # Enable automatic firmware checking
+  auto_check: true
+  # Enable automatic firmware updates
+  auto_update: false
+  # Firmware update confirmation required
+  confirm_updates: true
+
+logging:
+  # Enable file logging
+  file_logging: true
+  # Log level (debug, info, warning, error)
+  level: "info"
+  # Log file path (relative to project root)
+  log_file: "output/goprox.log"
+
+sd_card_naming:
+  # Characters to allow (in addition to alphanumeric)
+  allowed_chars: "-"
+  # Enable automatic renaming of GoPro SD cards
+  auto_rename: true
+  # Clean camera type by removing common words/phrases
+  clean_camera_type: true
+  # Naming format for GoPro SD cards
+  # Available placeholders:
+  #   {camera_type} - Camera type (e.g., "HERO11", "MAX")
+  #   {serial_full} - Full serial number
+  #   {serial_short} - Last 4 digits of serial number
+  #   {firmware_version} - Firmware version
+  #   {firmware_type} - Firmware type (official/labs)
+  format: "{camera_type}-{serial_short}"
+  # Remove special characters (keep only alphanumeric and specified characters)
+  remove_special_chars: true
+  # Words to remove from camera type (space-separated)
+  remove_words: "Black"
+  # Replace spaces with this character
+  space_replacement: "-"

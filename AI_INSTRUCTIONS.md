@@ -85,6 +85,46 @@ This document establishes the foundational architectural decisions and design pa
 - Treat this file as the canonical source for project-specific standards and instructions.
 - If a rule is ambiguous, ask for clarification before proceeding.
 
+## Git Operations (CRITICAL)
+- **NEVER run git operations in interactive mode** when performing automated tasks, commits, merges, or rebases.
+- **Always use non-interactive git commands** to avoid opening editors (vim, nano, etc.) that can hang the process.
+- **For rebases and merges**: Use `--no-edit` flag or set `GIT_EDITOR=true` to prevent interactive editor opening.
+- **For commits**: Use `-m` flag to specify commit messages directly on command line.
+- **For interactive rebases**: Avoid `git rebase -i` unless explicitly requested by user.
+- **When conflicts occur**: Resolve them programmatically and use `git add` to stage resolved files.
+- **Examples of safe git commands**:
+  ```zsh
+  git commit -m "message"                    # Non-interactive commit
+  git merge --no-edit                        # Non-interactive merge
+  GIT_EDITOR=true git rebase --continue     # Non-interactive rebase continue
+  git rebase --abort                         # Abort stuck operations
+  ```
+- **If git operations hang**: Use `Ctrl+C` to interrupt and then `git rebase --abort` or `git merge --abort` to reset state.
+
+## Git Rebase Debugging (CRITICAL)
+- **NEVER automatically perform a rebase** if a rebase prompt appears during push operations.
+- **STOP immediately** when a rebase is suggested or required and present the situation to the user.
+- **Debug first**: Before any rebase operation, run detailed branch comparison commands to identify the root cause:
+  ```zsh
+  git fetch origin
+  git log --oneline --decorate --graph -20
+  git log --oneline --decorate --graph -20 origin/<branch-name>
+  git cherry -v origin/<branch-name> <local-branch-name>
+  ```
+- **Present findings**: Show the user the exact differences between local and remote branches.
+- **Wait for direction**: Do not proceed with rebase until the user explicitly requests it after reviewing the debug information.
+- **Root cause analysis**: If rebase prompts occur repeatedly, investigate for history rewrites, force-pushes, or automation that may be causing branch divergence.
+
+## Commit Message Hook Protection (CRITICAL)
+- **NEVER modify the commit-msg hook to add extra features, scripts, or complexity**
+- **The commit-msg hook is a SIMPLE, FOCUSED solution designed to prevent branch divergence**
+- **Purpose**: Block commits without (refs #XX) to prevent the need for amending pushed commits
+- **Solution**: Simple validation only - let the user fix the message and commit again
+- **If tempted to add more features**: STOP and ask the user first
+- **This hook should remain minimal and focused on its single responsibility**
+- **DO NOT create additional scripts or workflows** to "fix" commit messages
+- **The hook itself IS the solution** - it prevents the problem before it occurs
+
 ## Release Workflow Automation
 
 - When the user requests a release, always use the `./scripts/release/gitflow-release.zsh` script to perform the entire release process (version bump, workflow trigger, monitoring) in a single, automated step.
@@ -110,6 +150,44 @@ This document establishes the foundational architectural decisions and design pa
 - All shell scripts must have `#!/bin/zsh` shebang.
 - Use zsh-specific features like `typeset -a` for arrays when appropriate.
 - If debugging is needed, test with bash temporarily but always fix the root cause in zsh.
+
+## GoProX Command Execution (CRITICAL)
+
+- **ALWAYS use `unbuffer` when running GoProX commands** to ensure all output appears in chat environments like Cursor.
+- **For all GoProX tests, runs, or executions**, use the format: `unbuffer ./goprox [options]`
+- **This ensures real-time output visibility** and prevents hanging on interactive prompts.
+- **Examples**:
+  ```zsh
+  unbuffer ./goprox --firmware-labs --verbose
+  unbuffer ./goprox --dry-run --archive --import --clean
+  unbuffer ./goprox --enhanced --auto-confirm
+  ```
+- **For non-interactive runs**, add `--auto-confirm` or `--dry-run` flags to avoid prompts.
+- **If `unbuffer` is not available**, use `stdbuf -oL` as fallback: `stdbuf -oL ./goprox [options] | cat`
+
+## GitHub CLI Environment Issues (CRITICAL)
+
+- **If GitHub CLI (`gh`) commands fail with errors like "head: |: No such file or directory" or similar malformed command errors**, immediately check the `PAGER` environment variable.
+- **The issue is likely caused by an incorrectly set PAGER variable** that contains malformed commands or pipe characters.
+- **Diagnosis**: Run `echo $PAGER` to check the current value. If it contains pipes (`|`) or malformed commands, this is the problem.
+- **Solution**: Unset the PAGER variable: `unset PAGER`
+- **Root cause**: This typically happens when PAGER gets set to invalid values during testing or debugging sessions.
+- **Prevention**: Be careful when setting environment variables for testing - avoid setting PAGER to complex commands with pipes.
+- **Verification**: After unsetting PAGER, test GitHub CLI commands to confirm they work properly.
+- **CRITICAL**: You MUST fix any shell environment problems you encounter and MUST NOT ignore or mask them. Shell environment issues can cause cascading failures and must be resolved at the root cause.
+
+## Logging and Debug Output Requirements
+
+- **MANDATORY**: Always use the structured logger module (`scripts/core/logger.zsh`) for all output, including debug information.
+- **NEVER use random echo statements** for debug output, status messages, or any user-facing information.
+- **Use appropriate logger functions**:
+  - `log_debug` for debug information and troubleshooting
+  - `log_info` for general information and status updates
+  - `log_warn` for warnings and non-critical issues
+  - `log_error` for errors and critical issues
+- **Debug output must be structured** and use the logger's debug level for consistency across all scripts.
+- **Remove any existing echo statements** used for debugging and replace them with appropriate logger calls.
+- **Exception**: Only use echo for actual user prompts or when the logger is not available (very rare cases).
 
 ## GitHub Issue Awareness (AI Assistant)
 
@@ -797,11 +875,25 @@ I'm now fully equipped with all mandatory reading requirements and ready to proc
 
 **RATIONALE**: Provides branch awareness in logs without overwhelming output, using familiar Git-style hashing approach with meaningful type prefixes for easy identification.
 
+## Git Divergence Handling
+
+- When encountering diverging branches (local and remote both have unique commits), always check for commit timestamp collisions before defaulting to a rebase. If two commits have the same timestamp, amend the local commit to have a unique timestamp, then rebase or merge as appropriate. This prevents persistent divergence caused by identical commit times.
+
 ## Critical Rules
 
 1. **NEVER hardcode paths to system utilities** (rm, mkdir, cat, echo, etc.) - always use the command name and let the shell find it in PATH
 2. **NEVER create mock versions of system utilities** - this breaks the shell's ability to find the real commands
-3. All scripts that generate output files (including AI summaries, release notes, etc.) for the GoProX project MUST place their output in the output/ directory, not the project root, to keep the source tree clean
+3. **NEVER mock zsh, Linux, or macOS system commands** (dirname, mkdir, touch, date, sha1sum, ls, cat, echo, etc.) - this corrupts the shell environment and breaks fundamental shell functionality
+4. **NEVER modify PATH to include mock system commands** - this prevents the shell from finding real system utilities
+
+### **Proper Mocking Guidelines**
+- **ONLY mock application-specific commands** (curl, git, exiftool, jq, etc.) - never system utilities
+- **Use function mocking** instead of PATH modification when possible
+- **Test in clean environments** with real system commands available
+- **If system commands are missing, fix the environment** rather than mocking them
+- **System commands are fundamental** - mocking them breaks shell functionality and corrupts the environment
+
+5. All scripts that generate output files (including AI summaries, release notes, etc.) for the GoProX project MUST place their output in the output/ directory, not the project root, to keep the source tree clean
 4. Always read and follow AI_INSTRUCTIONS.md at the project root for all work, suggestions, and communication in the GoProX repository. Treat it as the canonical source for project-specific standards and instructions
 5. Never automatically run git commands. Only run scripts or commands that the user explicitly requests. All git operations must be user-initiated
 6. After each attempt to fix a problem in the GoProX firmware tracker script, always automatically run the script to validate the fix. This should be the default workflow for all future script fixes and iterations

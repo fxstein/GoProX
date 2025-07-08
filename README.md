@@ -24,6 +24,18 @@ developed and tested with GoPro Hero8, Hero9, Hero10, Hero11 and GoPro Max.
 
 The most common way to install `goprox` is via Homebrew.
 
+### For Developers
+
+If you're cloning this repository for development:
+
+```zsh
+git clone https://github.com/fxstein/GoProX.git
+cd GoProX
+./scripts/maintenance/setup-hooks.zsh  # Sets up Git hooks automatically
+```
+
+**Note:** The setup script will automatically configure Git hooks to enforce commit message standards and run pre-commit checks.
+
 ### Official Release (Recommended)
 
 To install the latest stable release of `goprox`:
@@ -657,3 +669,19 @@ Homebrew tap to enable the installation of `goprox`: [homebrew-fxstein](https://
 ## 🤝 Contributing
 
 For developer setup, contribution guidelines, and environment configuration, please see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Development Tools
+
+The project includes several tools to help with development:
+
+- **Hook System:** Automatically configured Git hooks for quality assurance
+  - See [Hook System Guide](docs/HOOK_SYSTEM_GUIDE.md) for testing and troubleshooting
+  - Run `./scripts/testing/verify-hooks.zsh` for quick verification
+  - Run `./scripts/maintenance/check-hook-health-simple.zsh` for comprehensive health check
+
+- **Testing Framework:** Comprehensive test suites for validation
+  - See [Testing Framework](docs/testing/TESTING_FRAMEWORK.md) for details
+  - Run `./scripts/testing/run-tests.zsh` for full test suite
+
+- **Configuration Management:** Unified configuration system
+  - See [Configuration Strategy](docs/feature-planning/issue-73-enhanced-default-behavior/CONFIGURATION_STRATEGY.md) for details

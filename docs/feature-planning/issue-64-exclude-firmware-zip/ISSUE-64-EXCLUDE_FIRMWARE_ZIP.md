@@ -7,7 +7,7 @@
 
 ## Overview
 
-Modify .gitattributes so that all zip files in the firmware and firmware.labs trees are excluded from future release packages. This will significantly reduce package size now that live fetch and caching from URLs for firmware files has been implemented.
+Modify .gitattributes so that all zip files in the firmware tree are excluded from future release packages. This will significantly reduce package size now that live fetch and caching from URLs for firmware files has been implemented.
 
 ## Current State Analysis
 
@@ -32,11 +32,9 @@ Modify .gitattributes so that all zip files in the firmware and firmware.labs tr
 ```gitattributes
 # Exclude firmware zip files from release packages
 firmware/**/*.zip export-ignore
-firmware.labs/**/*.zip export-ignore
 
 # Keep download.url files for reference
 !firmware/**/download.url
-!firmware.labs/**/download.url
 ```
 
 #### 1.2 Validation Script
@@ -88,15 +86,12 @@ scripts/release/validate-package.zsh
 ```gitattributes
 # Firmware file exclusions
 firmware/**/*.zip export-ignore
-firmware.labs/**/*.zip export-ignore
 
 # Preserve URL files
 !firmware/**/download.url export-ignore
-!firmware.labs/**/download.url export-ignore
 
 # Preserve README files
 !firmware/**/README.txt export-ignore
-!firmware.labs/**/README.txt export-ignore
 ```
 
 ### Package Structure

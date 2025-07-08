@@ -79,7 +79,16 @@ rename_gopro_sd() {
     local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
     local firmware_version=$(grep "firmware version" "$version_file" | cut -d'"' -f4)
     
+    # Extract volume UUID using diskutil
+    local volume_uuid=""
+    if command -v diskutil >/dev/null 2>&1; then
+        volume_uuid=$(diskutil info "$volume_path" | grep "Volume UUID" | awk '{print $3}')
+    fi
+    
     log_info "GoPro SD card detected: $camera_type (serial: $serial_number, firmware: $firmware_version)"
+    if [[ -n "$volume_uuid" ]]; then
+        log_info "Volume UUID: $volume_uuid"
+    fi
     
     # Extract last 4 digits of serial number for shorter name
     local short_serial=${serial_number: -4}
@@ -91,6 +100,9 @@ rename_gopro_sd() {
     
     print_status $BLUE "GoPro SD card detected:"
     print_status $BLUE "  Current name: $volume_name"
+    if [[ -n "$volume_uuid" ]]; then
+        print_status $BLUE "  Volume UUID: $volume_uuid"
+    fi
     print_status $BLUE "  Camera type: $camera_type"
     print_status $BLUE "  Serial number: $serial_number"
     print_status $BLUE "  Firmware version: $firmware_version"

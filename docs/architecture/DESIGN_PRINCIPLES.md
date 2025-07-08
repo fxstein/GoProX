@@ -528,6 +528,10 @@ for key val in "${(kv@)opts}"; do
 
 **Note:** This requirement is mandatory for all future scripts and features. All usage/help output must document the command-line argument controls for interactive mode. Environment variables are not supported for interactive control to avoid scope and persistence issues.
 
+## Sourcing Scripts for Function Visibility
+
+All core and helper scripts (such as workflow modules and shared logic) must always be sourced, never executed in a subshell or with `$(...)`, to ensure all functions and variables are available in the current shell context. This ensures correct function visibility and avoids context loss. Scripts intended for sourcing (modules) must not have a shebang (`#!/bin/zsh`).
+
 ## Decision Recording Process
 
 When making significant design or architectural decisions:
