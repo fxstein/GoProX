@@ -2326,10 +2326,20 @@ function _present_workflow_options() {
       fi
     fi
     
-    # Analyze content requirements for this volume with its specific archive time
-    local content_analysis=$(_analyze_content_requirements "$card" "$volume_last_archived")
-    local new_media_count=$(echo "$content_analysis" | cut -d: -f2)
-    echo "  • $volume_name: $new_media_count files"
+    # In force mode, show total files; otherwise show new files
+    if [[ "$FORCE" == "true" ]]; then
+      local total_media_count=$(find "$card" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
+      if [[ -n "$volume_last_archived" ]]; then
+        echo "  • $volume_name: $total_media_count files (previously archived: $volume_last_archived)"
+      else
+        echo "  • $volume_name: $total_media_count files (never archived)"
+      fi
+    else
+      # Analyze content requirements for this volume with its specific archive time
+      local content_analysis=$(_analyze_content_requirements "$card" "$volume_last_archived")
+      local new_media_count=$(echo "$content_analysis" | cut -d: -f2)
+      echo "  • $volume_name: $new_media_count files"
+    fi
   done
   echo
   
@@ -2881,9 +2891,38 @@ function _detect_and_rename_gopro_sd()
       fi
     fi
     
-    # Present workflow options if new media is detected
-    if [[ "$has_new_media" == true ]]; then
-      _present_workflow_options "$system_capabilities" "$total_new_files" "${cards_with_new_media[@]}"
+    # Present workflow options if new media is detected OR if force mode is active
+    if [[ "$has_new_media" == true ]] || [[ "$FORCE" == "true" ]]; then
+      # In force mode, include all cards regardless of archive status
+      if [[ "$FORCE" == "true" && "$has_new_media" != true ]]; then
+        # Force mode but no new media - show all cards for re-archiving
+        local all_cards=()
+        local total_all_files=0
+        
+        for volume in /Volumes/*; do
+          if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+            local volume_name=$(basename "$volume")
+            if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+              continue
+            fi
+            
+            local version_file="$volume/MISC/version.txt"
+            if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+              # Count all media files for force mode
+              local total_media_count=$(find "$volume" -type f \( -name "*.MP4" -o -name "*.JPG" -o -name "*.LRV" -o -name "*.THM" \) 2>/dev/null | wc -l | tr -d ' ')
+              if [[ $total_media_count -gt 0 ]]; then
+                all_cards+=("$volume")
+                total_all_files=$((total_all_files + total_media_count))
+              fi
+            fi
+          fi
+        done
+        
+        _present_workflow_options "$system_capabilities" "$total_all_files" "${all_cards[@]}"
+      else
+        # Normal mode or force mode with new media
+        _present_workflow_options "$system_capabilities" "$total_new_files" "${cards_with_new_media[@]}"
+      fi
     fi
   fi
 }
