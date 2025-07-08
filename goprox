@@ -2701,7 +2701,6 @@ function _execute_clean_only_workflow() {
       if [[ "$dry_run" == "true" ]]; then
         _warning "   🚦 DRY RUN MODE - No actual changes will be made"
       fi
-      _warning ""
       echo -n "Type 'CLEAN_UNSAFE' to confirm cleaning these cards: "
       read -r confirmation
       if [[ "$confirmation" != "CLEAN_UNSAFE" ]]; then
