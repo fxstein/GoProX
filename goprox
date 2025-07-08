@@ -2286,7 +2286,13 @@ function _present_workflow_options() {
   echo
   echo "📸 New Media Detected - Workflow Options"
   echo "========================================"
-  if [[ "$FORCE" == "true" ]]; then
+  if [[ "$dry_run" == "true" ]]; then
+    echo "🚦 DRY RUN MODE ACTIVE - No changes will be made to any media"
+    if [[ "$FORCE" == "true" ]]; then
+      echo "🚨 FORCE MODE ACTIVE - Safety checks will be bypassed (simulation only)"
+    fi
+    echo ""
+  elif [[ "$FORCE" == "true" ]]; then
     echo "🚨 FORCE MODE ACTIVE - Safety checks will be bypassed"
     echo ""
   fi
@@ -3215,6 +3221,16 @@ if [ "$version" = true ]; then
 fi
 
 _info $BANNER_TEXT
+
+# Display dry-run mode indicator early in execution
+if [[ "$dry_run" == "true" ]]; then
+  _echo "🚦 DRY RUN MODE ENABLED - All actions will be simulated"
+  _echo "   No files will be modified, moved, or deleted"
+  if [[ "$FORCE" == "true" ]]; then
+    _echo "   Force mode is active but will only simulate bypassing safety checks"
+  fi
+  _echo ""
+fi
 
 _debug "Script execution flow: Starting main execution"
 
