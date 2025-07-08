@@ -2293,6 +2293,10 @@ function _present_workflow_options() {
   echo
   echo "📸 New Media Detected - Workflow Options"
   echo "========================================"
+  if [[ "$FORCE" == "true" ]]; then
+    echo "🚨 FORCE MODE ACTIVE - Safety checks will be bypassed"
+    echo ""
+  fi
   echo "Found ${#cards_with_new_media[@]} card(s) with $total_new_files total media files:"
   
   # Display card details
@@ -2520,12 +2524,18 @@ function _archive_volume() {
   local original_source=$source
   source="$volume"
   
+  # Preserve force mode settings
+  local original_force=$FORCE
+  local original_force_scopes=("${force_scopes[@]}")
+  
   # Call the existing archive function
   _archive_media
   
   # Restore original settings
   archive=$original_archive
   source=$original_source
+  FORCE=$original_force
+  force_scopes=("${original_force_scopes[@]}")
 }
 
 # Function to import a volume
@@ -2543,12 +2553,18 @@ function _import_volume() {
   local original_source=$source
   source="$volume"
   
+  # Preserve force mode settings
+  local original_force=$FORCE
+  local original_force_scopes=("${force_scopes[@]}")
+  
   # Call the existing import function
   _import_media
   
   # Restore original settings
   import=$original_import
   source=$original_source
+  FORCE=$original_force
+  force_scopes=("${original_force_scopes[@]}")
 }
 
 # Function to clean a volume
@@ -2558,10 +2574,11 @@ function _clean_volume() {
   
   _echo "  Cleaning $volume_name..."
   
-  # Check if volume has been archived or imported before cleaning
-  if [[ ! -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]] && [[ ! -f "$volume/$DEFAULT_IMPORTED_MARKER" ]]; then
+  # Check if volume has been archived or imported before cleaning (unless force mode)
+  if [[ "$FORCE" != "true" ]] && [[ ! -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]] && [[ ! -f "$volume/$DEFAULT_IMPORTED_MARKER" ]]; then
     _error "Cannot clean $volume_name - no archive or import marker found"
     _error "Volume must be archived or imported before cleaning"
+    _error "Or use --force to bypass this check"
     return 1
   fi
   
@@ -2573,12 +2590,18 @@ function _clean_volume() {
   local original_source=$source
   source="$volume"
   
+  # Preserve force mode settings
+  local original_force=$FORCE
+  local original_force_scopes=("${force_scopes[@]}")
+  
   # Call the existing clean function
   _clean_media
   
   # Restore original settings
   clean=$original_clean
   source=$original_source
+  FORCE=$original_force
+  force_scopes=("${original_force_scopes[@]}")
 }
 
 function _detect_and_rename_gopro_sd()
