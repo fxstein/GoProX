@@ -1,10 +1,5 @@
 #!/bin/zsh
 
-# Debug: Log all arguments received and working directory
-echo "DEBUG: Script started with arguments: $@" >&2
-echo "DEBUG: Current working directory: $(pwd)" >&2
-echo "DEBUG: Script location: $(cd "$(dirname "$0")" && pwd)/$(basename "$0")" >&2
-
 #
 # goprox: The missing GoPro data and workflow manager for macOS
 #
@@ -2243,12 +2238,6 @@ function _is_card_fully_archived() {
   local volume="$1"
   local volume_name=$(basename "$volume")
   
-  # Check if archive marker exists
-  if [[ ! -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
-    echo "false"
-    return
-  fi
-  
   # Get camera information for this volume
   local version_file="$volume/MISC/version.txt"
   if [[ ! -f "$version_file" ]]; then
@@ -2679,11 +2668,33 @@ function _execute_clean_only_workflow() {
   # Show summary of what will be cleaned
   _echo "Clean Only Workflow Summary:"
   if [[ ${#fully_archived_cards[@]} -gt 0 ]]; then
-    _echo "  Fully archived cards (safe to clean): ${#fully_archived_cards[@]}"
-    for card in "${fully_archived_cards[@]}"; do
-      local volume_name=$(basename "$card")
-      _echo "    • $volume_name"
-    done
+    if [[ "$FORCE" == "true" ]]; then
+      _echo "  Fully archived cards (force mode - requires confirmation): ${#fully_archived_cards[@]}"
+      for card in "${fully_archived_cards[@]}"; do
+        local volume_name=$(basename "$card")
+        _echo "    • $volume_name"
+      done
+      
+      # Extra confirmation for fully archived cards in force mode
+      _warning "⚠️  WARNING: You are about to clean fully archived cards in force mode!"
+      _warning "   These cards have both archive markers and matching archive files."
+      if [[ "$dry_run" == "true" ]]; then
+        _warning "   🚦 DRY RUN MODE - No actual changes will be made"
+      fi
+      _warning ""
+      echo -n "Type 'CLEAN_UNSAFE' to confirm cleaning these cards: "
+      read -r confirmation
+      if [[ "$confirmation" != "CLEAN_UNSAFE" ]]; then
+        _echo "Clean operation cancelled."
+        return 0
+      fi
+    else
+      _echo "  Fully archived cards (safe to clean): ${#fully_archived_cards[@]}"
+      for card in "${fully_archived_cards[@]}"; do
+        local volume_name=$(basename "$card")
+        _echo "    • $volume_name"
+      done
+    fi
   fi
   
   if [[ ${#non_archived_cards[@]} -gt 0 ]]; then
@@ -2732,15 +2743,35 @@ function _execute_clean_only_workflow() {
     fi
   done
   
-  # Clean cards without matching archives (only in force mode with confirmation)
+  # Clean cards (checking each one's archive status individually)
   for card in "${non_archived_cards[@]}"; do
     local volume_name=$(basename "$card")
-    _echo "Processing card without matching archives: $volume_name"
+    local is_fully_archived=$(_is_card_fully_archived "$card")
     
-    if [[ "$dry_run" == "true" ]]; then
-      _echo "  Would clean $volume_name (missing matching archives - force mode)"
+    if [[ "$is_fully_archived" == "true" ]]; then
+      # Check if marker exists to determine if it's fully archived or just has archive file
+      if [[ -f "$card/$DEFAULT_ARCHIVED_MARKER" ]]; then
+        _echo "Processing fully archived card: $volume_name"
+        if [[ "$dry_run" == "true" ]]; then
+          _echo "  Would clean $volume_name (fully archived)"
+        else
+          _clean_volume "$card"
+        fi
+      else
+        _echo "Processing previously archived card: $volume_name"
+        if [[ "$dry_run" == "true" ]]; then
+          _echo "  Would clean $volume_name (previously archived but missing marker - force mode)"
+        else
+          _clean_volume "$card"
+        fi
+      fi
     else
-      _clean_volume "$card"
+      _echo "Processing card without matching archives: $volume_name"
+      if [[ "$dry_run" == "true" ]]; then
+        _echo "  Would clean $volume_name (missing matching archives - force mode)"
+      else
+        _clean_volume "$card"
+      fi
     fi
   done
 }
