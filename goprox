@@ -2417,6 +2417,21 @@ function _present_workflow_options() {
   
   available_workflows+=("7")
   
+  # Add Eject option if at least one GoPro card is detected
+  local gopro_card_found=false
+  for volume in /Volumes/*; do
+    if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+      local version_file="$volume/MISC/version.txt"
+      if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+        gopro_card_found=true
+        break
+      fi
+    fi
+  done
+  if [[ "$gopro_card_found" == true ]]; then
+    available_workflows+=("8")
+  fi
+  
   echo "Available workflows:"
   echo "  1. Archive + Clean (archive media, clean cards)"
   echo "  2. Archive Only (archive media, leave cards)"
@@ -2431,6 +2446,9 @@ function _present_workflow_options() {
     fi
   fi
   echo "  7. Do nothing (exit without changes)"
+  if [[ " ${available_workflows[@]} " =~ " 8 " ]]; then
+    echo "  8. Eject all detected cards and exit"
+  fi
   echo
   
   # Get user selection
@@ -2439,12 +2457,14 @@ function _present_workflow_options() {
   
   # Determine the range of valid selections
   local max_selection=7
-  if [[ ! " ${available_workflows[@]} " =~ " 6 " ]]; then
+  if [[ " ${available_workflows[@]} " =~ " 8 " ]]; then
+    max_selection=8
+  elif [[ " ${available_workflows[@]} " =~ " 6 " ]]; then
     max_selection=6
   fi
   
   while [[ "$valid_selection" == false ]]; do
-    echo -n "Select workflow [1/2/3/4/5/6/7] (default: $max_selection): "
+    echo -n "Select workflow [1/2/3/4/5/6/7/8] (default: $max_selection): "
     read -r selection
     
     # Set default if empty
@@ -2453,7 +2473,7 @@ function _present_workflow_options() {
     fi
     
     # Validate selection
-    if [[ "$selection" =~ ^[1-7]$ ]]; then
+    if [[ "$selection" =~ ^[1-8]$ ]]; then
       # Check if selection is available based on system capabilities
       if [[ " ${available_workflows[@]} " =~ " ${selection} " ]]; then
         valid_selection=true
@@ -2462,7 +2482,7 @@ function _present_workflow_options() {
         echo "   Available workflows: ${available_workflows[*]}"
       fi
     else
-      echo "❌ Invalid selection. Please enter 1, 2, 3, 4, 5, 6, or 7"
+      echo "❌ Invalid selection. Please enter 1, 2, 3, 4, 5, 6, 7, or 8"
     fi
   done
   
@@ -2494,6 +2514,28 @@ function _present_workflow_options() {
       ;;
     "7")
       _echo "No workflow selected. Exiting."
+      ;;
+    "8")
+      _echo "Ejecting all detected cards..."
+      # Eject all detected GoPro cards, not just the ones with media
+      for volume in /Volumes/*; do
+        if [[ -d "$volume" ]] && [[ "$(basename "$volume")" != "." ]] && [[ "$(basename "$volume")" != ".." ]]; then
+          local volume_name=$(basename "$volume")
+          
+          # Skip system volumes
+          if [[ "$volume_name" == "Macintosh HD" ]] || [[ "$volume_name" == ".timemachine" ]] || [[ "$volume_name" == "Time Machine" ]]; then
+            continue
+          fi
+          
+          # Check if this is a GoPro SD card
+          local version_file="$volume/MISC/version.txt"
+          if [[ -f "$version_file" ]] && grep -q "camera type" "$version_file"; then
+            _echo "  Ejecting $volume_name..."
+            diskutil unmount "$volume" || _warning "  Failed to eject $volume_name"
+          fi
+        fi
+      done
+      _echo "All detected cards have been ejected. Exiting."
       ;;
     *)
       _error "Unknown workflow selection: $selection"
