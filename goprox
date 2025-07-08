@@ -2436,7 +2436,7 @@ function _present_workflow_options() {
   echo "  5. Archive + Import + Clean (full workflow)"
   if [[ " ${available_workflows[@]} " =~ " 6 " ]]; then
     if [[ "$FORCE" == "true" ]] && [[ ${#non_archived_cards[@]} -gt 0 ]]; then
-      echo "  6. Clean Only (clean cards - requires extra confirmation for non-archived cards)"
+      echo "  6. Clean Only (clean cards - requires extra confirmation for cards without matching archives)"
     else
       echo "  6. Clean Only (clean fully archived cards)"
     fi
@@ -2687,27 +2687,34 @@ function _execute_clean_only_workflow() {
   fi
   
   if [[ ${#non_archived_cards[@]} -gt 0 ]]; then
-    _echo "  Non-archived cards (requires extra confirmation): ${#non_archived_cards[@]}"
-    for card in "${non_archived_cards[@]}"; do
-      local volume_name=$(basename "$card")
-      _echo "    • $volume_name"
-    done
-    
-    # Extra confirmation for non-archived cards
     if [[ "$FORCE" == "true" ]]; then
-      _warning "⚠️  WARNING: You are about to clean cards that are not fully archived!"
+      _echo "  Cards requiring extra confirmation (force mode): ${#non_archived_cards[@]}"
+      for card in "${non_archived_cards[@]}"; do
+        local volume_name=$(basename "$card")
+        _echo "    • $volume_name"
+      done
+      
+      # Extra confirmation for cards that aren't fully archived in force mode
+      _warning "⚠️  WARNING: You are about to clean cards that may not be fully archived!"
+      _warning "   These cards have archive markers but may be missing matching archive files."
       _warning "   This may result in permanent data loss if archives are incomplete."
       if [[ "$dry_run" == "true" ]]; then
         _warning "   🚦 DRY RUN MODE - No actual changes will be made"
       fi
       _warning ""
-      echo -n "Type 'CLEAN_UNSAFE' to confirm cleaning non-archived cards: "
+      echo -n "Type 'CLEAN_UNSAFE' to confirm cleaning these cards: "
       read -r confirmation
       if [[ "$confirmation" != "CLEAN_UNSAFE" ]]; then
         _echo "Clean operation cancelled."
         return 0
       fi
     else
+      _echo "  Non-archived cards (cannot clean without --force): ${#non_archived_cards[@]}"
+      for card in "${non_archived_cards[@]}"; do
+        local volume_name=$(basename "$card")
+        _echo "    • $volume_name"
+      done
+      
       _error "Cannot clean non-archived cards without --force mode"
       _error "Cards must be fully archived (marker + archive file) before cleaning"
       return 1
