@@ -2238,6 +2238,49 @@ function _analyze_content_requirements() {
   echo "new_media:$new_media_count"
 }
 
+# Function to check if a card is fully archived (marker + archive file)
+function _is_card_fully_archived() {
+  local volume="$1"
+  local volume_name=$(basename "$volume")
+  
+  # Check if archive marker exists
+  if [[ ! -f "$volume/$DEFAULT_ARCHIVED_MARKER" ]]; then
+    echo "false"
+    return
+  fi
+  
+  # Get camera information for this volume
+  local version_file="$volume/MISC/version.txt"
+  if [[ ! -f "$version_file" ]]; then
+    echo "false"
+    return
+  fi
+  
+  local camera_type=$(grep "camera type" "$version_file" | cut -d'"' -f4)
+  local serial_number=$(grep "camera serial number" "$version_file" | cut -d'"' -f4)
+  local short_serial=${serial_number: -4}
+  
+  # Check if matching archive file exists
+  local archive_dir="${library/#\~/$HOME}/archive"
+  if [[ -L "$archive_dir" ]]; then
+    archive_dir=$(readlink "$archive_dir")
+  fi
+  
+  if [[ ! -d "$archive_dir" ]]; then
+    echo "false"
+    return
+  fi
+  
+  local archive_camera_type=$(echo "$camera_type" | sed 's/ /_/g')
+  local archive_file=$(find "$archive_dir" -name "*${archive_camera_type}*${short_serial}*.tar.gz" -type f 2>/dev/null | sort | tail -n 1)
+  
+  if [[ -n "$archive_file" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 # Function to select available workflows based on system capabilities and content
 function _select_available_workflows() {
   local capabilities="$1"
@@ -2342,8 +2385,20 @@ function _present_workflow_options() {
   done
   echo
   
-  # Determine available workflows based on system capabilities
+  # Determine available workflows based on system capabilities and card status
   local available_workflows=()
+  local fully_archived_cards=()
+  local non_archived_cards=()
+  
+  # Categorize cards by archive status
+  for card in "${cards_with_new_media[@]}"; do
+    local is_fully_archived=$(_is_card_fully_archived "$card")
+    if [[ "$is_fully_archived" == "true" ]]; then
+      fully_archived_cards+=("$card")
+    else
+      non_archived_cards+=("$card")
+    fi
+  done
   
   if [[ "$system_capabilities" == *"archive"* ]]; then
     available_workflows+=("1")
@@ -2359,7 +2414,19 @@ function _present_workflow_options() {
     available_workflows+=("5")
   fi
   
-  available_workflows+=("6")
+  # Add Clean option if we have clean capability and fully archived cards
+  if [[ "$system_capabilities" == *"clean"* ]] && [[ ${#fully_archived_cards[@]} -gt 0 ]]; then
+    available_workflows+=("6")
+  fi
+  
+  # Add Clean option in force mode even for non-archived cards (with extra confirmation)
+  if [[ "$system_capabilities" == *"clean"* ]] && [[ "$FORCE" == "true" ]] && [[ ${#cards_with_new_media[@]} -gt 0 ]]; then
+    if [[ ! " ${available_workflows[@]} " =~ " 6 " ]]; then
+      available_workflows+=("6")
+    fi
+  fi
+  
+  available_workflows+=("7")
   
   echo "Available workflows:"
   echo "  1. Archive + Clean (archive media, clean cards)"
@@ -2367,24 +2434,37 @@ function _present_workflow_options() {
   echo "  3. Import + Clean (import media, clean cards)"
   echo "  4. Import Only (import media, leave cards)"
   echo "  5. Archive + Import + Clean (full workflow)"
-  echo "  6. Do nothing (exit without changes)"
+  if [[ " ${available_workflows[@]} " =~ " 6 " ]]; then
+    if [[ "$FORCE" == "true" ]] && [[ ${#non_archived_cards[@]} -gt 0 ]]; then
+      echo "  6. Clean Only (clean cards - requires extra confirmation for non-archived cards)"
+    else
+      echo "  6. Clean Only (clean fully archived cards)"
+    fi
+  fi
+  echo "  7. Do nothing (exit without changes)"
   echo
   
   # Get user selection
   local selection=""
   local valid_selection=false
   
+  # Determine the range of valid selections
+  local max_selection=7
+  if [[ ! " ${available_workflows[@]} " =~ " 6 " ]]; then
+    max_selection=6
+  fi
+  
   while [[ "$valid_selection" == false ]]; do
-    echo -n "Select workflow [1/2/3/4/5/6] (default: 6): "
+    echo -n "Select workflow [1/2/3/4/5/6/7] (default: $max_selection): "
     read -r selection
     
     # Set default if empty
     if [[ -z "$selection" ]]; then
-      selection="6"
+      selection="$max_selection"
     fi
     
     # Validate selection
-    if [[ "$selection" =~ ^[1-6]$ ]]; then
+    if [[ "$selection" =~ ^[1-7]$ ]]; then
       # Check if selection is available based on system capabilities
       if [[ " ${available_workflows[@]} " =~ " ${selection} " ]]; then
         valid_selection=true
@@ -2393,7 +2473,7 @@ function _present_workflow_options() {
         echo "   Available workflows: ${available_workflows[*]}"
       fi
     else
-      echo "❌ Invalid selection. Please enter 1, 2, 3, 4, 5, or 6"
+      echo "❌ Invalid selection. Please enter 1, 2, 3, 4, 5, 6, or 7"
     fi
   done
   
@@ -2420,6 +2500,10 @@ function _present_workflow_options() {
       _execute_archive_import_clean_workflow "${cards_with_new_media[@]}"
       ;;
     "6")
+      _echo "Executing: Clean Only workflow"
+      _execute_clean_only_workflow "${cards_with_new_media[@]}"
+      ;;
+    "7")
       _echo "No workflow selected. Exiting."
       ;;
     *)
@@ -2574,6 +2658,85 @@ function _import_volume() {
   source=$original_source
   FORCE=$original_force
   force_scopes=("${original_force_scopes[@]}")
+}
+
+# Function to execute Clean Only workflow
+function _execute_clean_only_workflow() {
+  local all_cards=("$@")
+  local fully_archived_cards=()
+  local non_archived_cards=()
+  
+  # Categorize cards by archive status
+  for card in "${all_cards[@]}"; do
+    local is_fully_archived=$(_is_card_fully_archived "$card")
+    if [[ "$is_fully_archived" == "true" ]]; then
+      fully_archived_cards+=("$card")
+    else
+      non_archived_cards+=("$card")
+    fi
+  done
+  
+  # Show summary of what will be cleaned
+  _echo "Clean Only Workflow Summary:"
+  if [[ ${#fully_archived_cards[@]} -gt 0 ]]; then
+    _echo "  Fully archived cards (safe to clean): ${#fully_archived_cards[@]}"
+    for card in "${fully_archived_cards[@]}"; do
+      local volume_name=$(basename "$card")
+      _echo "    • $volume_name"
+    done
+  fi
+  
+  if [[ ${#non_archived_cards[@]} -gt 0 ]]; then
+    _echo "  Non-archived cards (requires extra confirmation): ${#non_archived_cards[@]}"
+    for card in "${non_archived_cards[@]}"; do
+      local volume_name=$(basename "$card")
+      _echo "    • $volume_name"
+    done
+    
+    # Extra confirmation for non-archived cards
+    if [[ "$FORCE" == "true" ]]; then
+      _warning "⚠️  WARNING: You are about to clean cards that are not fully archived!"
+      _warning "   This may result in permanent data loss if archives are incomplete."
+      if [[ "$dry_run" == "true" ]]; then
+        _warning "   🚦 DRY RUN MODE - No actual changes will be made"
+      fi
+      _warning ""
+      echo -n "Type 'CLEAN_UNSAFE' to confirm cleaning non-archived cards: "
+      read -r confirmation
+      if [[ "$confirmation" != "CLEAN_UNSAFE" ]]; then
+        _echo "Clean operation cancelled."
+        return 0
+      fi
+    else
+      _error "Cannot clean non-archived cards without --force mode"
+      _error "Cards must be fully archived (marker + archive file) before cleaning"
+      return 1
+    fi
+  fi
+  
+  # Clean fully archived cards
+  for card in "${fully_archived_cards[@]}"; do
+    local volume_name=$(basename "$card")
+    _echo "Processing fully archived card: $volume_name"
+    
+    if [[ "$dry_run" == "true" ]]; then
+      _echo "  Would clean $volume_name (fully archived)"
+    else
+      _clean_volume "$card"
+    fi
+  done
+  
+  # Clean non-archived cards (only in force mode with confirmation)
+  for card in "${non_archived_cards[@]}"; do
+    local volume_name=$(basename "$card")
+    _echo "Processing non-archived card: $volume_name"
+    
+    if [[ "$dry_run" == "true" ]]; then
+      _echo "  Would clean $volume_name (not fully archived - force mode)"
+    else
+      _clean_volume "$card"
+    fi
+  done
 }
 
 # Function to clean a volume
